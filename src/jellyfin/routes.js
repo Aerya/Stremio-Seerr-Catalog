@@ -478,7 +478,9 @@ router.delete('/Auth/Keys/:key', (req, res) => {
 
 // ============== Images (1x1 Transparent PNG) ==============
 
-router.get('*/Images/*', (req, res) => {
+// Handle all image requests with a transparent 1x1 PNG
+router.get(/.*\/Images\/.*/, (req, res) => {
+    console.log(`[Jellyfin] Image request: ${req.path}`);
     // 1x1 Transparent PNG
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
     res.writeHead(200, {
