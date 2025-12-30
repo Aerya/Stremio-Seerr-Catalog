@@ -60,6 +60,7 @@ const translations = {
         serie: 'TV Show',
         available: 'Available',
         available_singular: 'Available',
+        jellyfin_auth: 'Auth',
 
         // Stremio
         stremio_config: 'Stremio Configuration',
@@ -158,6 +159,7 @@ const translations = {
         serie: 'Série',
         available: 'Disponibles',
         available_singular: 'Disponible',
+        jellyfin_auth: 'Auth',
 
         // Stremio
         stremio_config: 'Configuration Stremio',

@@ -377,6 +377,15 @@
                 <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/sonarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/sonarr')">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_api_key')}</span><code>seerrcatalog-api-key</code><button class="btn-icon btn-copy" onclick="copyToClipboard('seerrcatalog-api-key')">📋</button></div>
               </div>
+
+              <div class="user-config-card">
+                <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" alt="" class="config-icon"> Jellyfin (${t('jellyfin_auth')})</h5>
+                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? 'Yes' : 'No'}</code></div>
+                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/jellyfin</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/jellyfin')">📋</button></div>
+                <div class="config-row-mini"><span>Username:</span><code>${u.username}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${u.username}')">📋</button></div>
+              </div>
             </div>
           </div>
           <div class="user-actions">

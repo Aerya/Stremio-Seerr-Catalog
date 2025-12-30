@@ -1,6 +1,6 @@
 services:
   seerr-catalog:
-    build: .
+    image: ghcr.io/aerya/stremio-seerr-catalog:latest
     container_name: seerr-catalog
     restart: unless-stopped
     ports:
@@ -14,7 +14,6 @@ services:
       - PORT=7000
       - HOST=0.0.0.0
       - TMDB_API_KEY=${TMDB_API_KEY:-}
-      # Optional: Set BASE_URL if behind reverse proxy
       # - BASE_URL=https://your-domain.com
     volumes:
       - seerr-data:/app/data
