@@ -2,21 +2,18 @@ services:
   seerr-catalog:
     image: ghcr.io/aerya/stremio-seerr-catalog:latest
     container_name: seerr-catalog
-    restart: unless-stopped
     ports:
       - "7000:7000"
     env_file:
       - .env
     environment:
+      - BASE_URL=${BASE_URL}
       - ADDON_USER=${ADDON_USER:-admin}
       - ADDON_PASSWORD=${ADDON_PASSWORD:-changeme}
       - API_KEY=${API_KEY:-seerrcatalog-api-key}
       - PORT=7000
       - HOST=0.0.0.0
       - TMDB_API_KEY=${TMDB_API_KEY:-}
-      # - BASE_URL=https://your-domain.com
     volumes:
-      - seerr-data:/app/data
-
-volumes:
-  seerr-data:
+      - /mnt/Docker/stremio/seerrcatalog:/app/data
+    restart: always

@@ -109,14 +109,15 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-const defaultUser = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+const defaultUsername = process.env.ADDON_USER || 'admin';
+const defaultUser = db.prepare('SELECT * FROM users WHERE username = ?').get(defaultUsername);
 if (!defaultUser) {
   const adminPass = process.env.ADDON_PASSWORD || 'changeme';
   db.prepare(`
     INSERT INTO users (username, password_hash, display_name, is_admin)
     VALUES (?, ?, ?, 1)
-  `).run('admin', hashPassword(adminPass), 'Administrator');
-  console.log('[DB] Created default admin user');
+  `).run(defaultUsername, hashPassword(adminPass), 'Administrator');
+  console.log(`[DB] Created default admin user: ${defaultUsername}`);
 }
 
 // Prepared statements
