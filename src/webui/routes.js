@@ -113,7 +113,7 @@ router.get('/api/settings', (req, res) => {
 
 // API: Config status
 router.get('/api/config', (req, res) => {
-    const tmdbKey = db.getSetting('tmdb_api_key');
+    const tmdbKey = tmdb.getApiKey(db);
     res.json({
         tmdbConfigured: tmdb.isConfigured(db),
         tmdbKey: tmdbKey ? '•'.repeat(Math.min(tmdbKey.length, 20)) : null,

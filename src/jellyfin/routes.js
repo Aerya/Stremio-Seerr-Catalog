@@ -25,9 +25,11 @@ const sessions = new Map();
 // ============== System Endpoints ==============
 
 // Helper to get server URL from request
+// Helper to get server URL from request
 function getServerUrl(req) {
-    const host = req.get('host') || `localhost:${process.env.PORT || 7000}`;
-    const protocol = req.protocol || 'http';
+    if (process.env.BASE_URL) return process.env.BASE_URL.replace(/\/$/, '');
+    const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${process.env.PORT || 7000}`;
+    const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
     return `${protocol}://${host}`;
 }
 
