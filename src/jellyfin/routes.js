@@ -33,6 +33,7 @@ function getServerUrl(req) {
 
 // Public server info (no auth required)
 router.get('/System/Info/Public', (req, res) => {
+    console.log(`[Jellyfin] Public Info check from ${req.ip}`);
     const serverUrl = getServerUrl(req);
     res.json({
         LocalAddress: serverUrl,
@@ -69,7 +70,8 @@ router.get('/System/Info', (req, res) => {
 router.post('/Users/AuthenticateByName', (req, res) => {
     const { Username, Pw } = req.body;
 
-    console.log(`[Jellyfin] Auth attempt for: ${Username}`);
+    console.log(`[Jellyfin] Auth attempt raw body:`, JSON.stringify(req.body));
+    console.log(`[Jellyfin] Auth attempt for Username: ${Username}`);
 
     // Find user in our database
     const user = db.getUserByUsername(Username);
