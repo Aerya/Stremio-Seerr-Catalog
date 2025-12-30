@@ -473,6 +473,12 @@ router.delete('/Auth/Keys/:key', (req, res) => {
     res.status(204).send();
 });
 
+// ============== Images (404 for now) ==============
+
+router.get('*/Images/*', (req, res) => {
+    res.status(404).send('Not found');
+});
+
 // ============== Catch-all for unsupported endpoints ==============
 
 router.all('*', (req, res) => {
