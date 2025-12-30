@@ -132,7 +132,8 @@ router.post('/Users/AuthenticateByName', (req, res) => {
                 EnableAllDevices: true,
                 EnabledFolders: [],
                 AuthenticationProviderId: 'Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider'
-            }
+            },
+            PrimaryImageTag: null
         },
         SessionInfo: {
             Id: crypto.randomUUID(),
@@ -196,7 +197,8 @@ router.get('/Users/:id', (req, res) => {
             IsHidden: false,
             IsDisabled: false,
             EnableAllFolders: true
-        }
+        },
+        PrimaryImageTag: null
     });
 });
 
@@ -225,7 +227,8 @@ router.get('/Users/Me', (req, res) => {
         Policy: {
             IsAdministrator: !!user.is_admin,
             EnableAllFolders: true
-        }
+        },
+        PrimaryImageTag: null
     });
 });
 
@@ -473,10 +476,16 @@ router.delete('/Auth/Keys/:key', (req, res) => {
     res.status(204).send();
 });
 
-// ============== Images (404 for now) ==============
+// ============== Images (1x1 Transparent PNG) ==============
 
 router.get('*/Images/*', (req, res) => {
-    res.status(404).send('Not found');
+    // 1x1 Transparent PNG
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+    res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': png.length
+    });
+    res.end(png);
 });
 
 // ============== Catch-all for unsupported endpoints ==============
