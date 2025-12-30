@@ -22,7 +22,8 @@ const BASE_URL = process.env.BASE_URL || null;
 
 // Initialize Express
 const app = express();
-app.enable('trust proxy'); // Trust reverse proxy (Nginx) headers for protocol/ip
+// Trust ALL proxies - important for HTTPS detection behind reverse proxies
+app.set('trust proxy', true);
 app.use(express.json());
 
 // CORS for Stremio
