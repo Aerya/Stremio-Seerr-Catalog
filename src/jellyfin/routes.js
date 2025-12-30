@@ -25,12 +25,36 @@ const sessions = new Map();
 // ============== System Endpoints ==============
 
 // Helper to get server URL from request
-// Helper to get server URL from request
 function getServerUrl(req) {
-    if (process.env.BASE_URL) return process.env.BASE_URL.replace(/\/$/, '');
+    // If BASE_URL is explicitly set, use it
+    if (process.env.BASE_URL) {
+        return process.env.BASE_URL.replace(/\/$/, '');
+    }
+
+    // Detect host from reverse proxy headers or request
     const host = req.get('x-forwarded-host') || req.get('host') || `localhost:${process.env.PORT || 7000}`;
-    const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
-    return `${protocol}://${host}`;
+
+    // Detect protocol from multiple possible headers (Nginx Proxy Manager, Traefik, etc.)
+    let protocol = req.get('x-forwarded-proto')
+        || req.get('x-forwarded-protocol')
+        || req.get('x-url-scheme')
+        || req.protocol
+        || 'http';
+
+    // Ensure we only get the first protocol if multiple are listed
+    protocol = protocol.split(',')[0].trim();
+
+    const serverUrl = `${protocol}://${host}`;
+
+    // Debug logging to help troubleshoot
+    console.log(`[Jellyfin] Server URL detection:`, {
+        'x-forwarded-proto': req.get('x-forwarded-proto'),
+        'x-forwarded-host': req.get('x-forwarded-host'),
+        'req.protocol': req.protocol,
+        'final': serverUrl
+    });
+
+    return serverUrl;
 }
 
 // Public server info (no auth required)
