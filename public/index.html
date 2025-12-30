@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SeerrCatalog</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="/lang.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" />
+            <path d="M2 17L12 22L22 17" />
+            <path d="M2 12L12 17L22 12" />
+          </svg>
+          <h1>SeerrCatalog</h1>
+        </div>
+
+        <nav class="nav-pills">
+          <button class="nav-pill active" data-page="catalog"><span data-i18n="nav_catalog">Catalog</span></button>
+          <button class="nav-pill" data-page="users"><span data-i18n="nav_users">Users</span></button>
+          <button class="nav-pill" data-page="settings"><span data-i18n="nav_settings">Settings</span></button>
+        </nav>
+
+        <div class="stats-bar">
+          <span class="stat-item"><strong id="stat-movies">0</strong> <span id="stat-movies-label">Movies</span></span>
+          <span class="stat-item"><strong id="stat-series">0</strong> <span id="stat-series-label">Series</span></span>
+          <span class="stat-item"><strong id="stat-available">0</strong> <span
+              id="stat-available-label">Available</span></span>
+        </div>
+
+        <div class="lang-buttons" id="lang-buttons">
+          <button class="lang-btn" data-lang="en" title="English"><img src="https://flagcdn.com/w20/gb.png"
+              alt="EN"></button>
+          <button class="lang-btn active" data-lang="fr" title="Français"><img src="https://flagcdn.com/w20/fr.png"
+              alt="FR"></button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Catalog Page -->
+      <section class="page active" id="page-catalog">
+
+        <div class="card">
+          <div class="filter-row">
+            <div class="filter-pills">
+              <button class="filter-pill active" data-filter="all" data-i18n="filter_all">All</button>
+              <button class="filter-pill" data-filter="available"><span
+                  data-i18n="filter_available">Available</span></button>
+              <button class="filter-pill" data-filter="unavailable"><span data-i18n="filter_unavailable">No
+                  Sources</span></button>
+            </div>
+            <div class="filter-pills type-filters">
+              <button class="type-pill active" data-type="all" data-i18n="filter_all">All</button>
+              <button class="type-pill" data-type="movie"><img
+                  src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" alt=""
+                  class="filter-icon"> <span data-i18n="movies">Movies</span></button>
+              <button class="type-pill" data-type="series"><img
+                  src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" alt=""
+                  class="filter-icon"> <span data-i18n="series">Series</span></button>
+            </div>
+            <div class="user-select-container">
+              <select class="user-select" id="user-filter">
+                <option value="" data-i18n="all_users">All Users</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="catalog-grid" id="catalog-grid">
+          <div class="empty-state">
+            <p data-i18n="empty_catalog">No media in catalog</p>
+            <p class="hint" data-i18n="empty_hint">Search and add content above</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Users Page -->
+      <section class="page" id="page-users">
+        <div class="card">
+          <div class="card-header">
+            <h2 data-i18n="user_management">User Management</h2>
+            <button class="btn btn-primary" onclick="showUserModal()">➕ <span data-i18n="add_user">Add
+                User</span></button>
+          </div>
+          <div class="users-grid" id="users-list"></div>
+        </div>
+      </section>
+
+      <!-- Settings Page -->
+      <section class="page" id="page-settings">
+        <div class="card">
+
+          <div class="settings-section">
+            <h3><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tmdb.webp" alt="TMDB"
+                class="section-icon"> <span data-i18n="tmdb_config">TMDB Configuration</span></h3>
+            <div class="settings-item">
+              <h4 data-i18n="tmdb_key">TMDB API Key</h4>
+              <div class="input-group">
+                <input type="password" id="tmdb-key" placeholder="Enter your TMDB API key">
+                <button class="btn btn-primary btn-small" onclick="saveTmdbKey()" data-i18n="tmdb_save">Save</button>
+              </div>
+              <p class="hint"><span data-i18n="tmdb_key_hint">Get your free key at</span> <a
+                  href="https://www.themoviedb.org/settings/api" target="_blank"
+                  style="color: var(--accent);">themoviedb.org/settings/api</a></p>
+              <p class="hint" id="tmdb-status"></p>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyseerr.webp" alt="Jellyseerr"
+                class="section-icon"> <span data-i18n="jellyseerr_integration">Jellyseerr Integration</span></h3>
+            <div class="settings-item">
+              <h4 data-i18n="jellyseerr_url">Jellyseerr URL</h4>
+              <div class="input-group">
+                <input type="url" id="jellyseerr-url" placeholder="http://192.168.0.139:5055">
+                <button class="btn btn-primary btn-small" onclick="saveJellyseerrSettings()"
+                  data-i18n="tmdb_save">Save</button>
+              </div>
+              <p class="hint" data-i18n="jellyseerr_url_hint">URL of your Jellyseerr instance (for auto-sync when
+                streams are found)</p>
+            </div>
+            <div class="settings-item">
+              <h4 data-i18n="jellyseerr_api_key">Jellyseerr API Key (optional)</h4>
+              <div class="input-group">
+                <input type="password" id="jellyseerr-key" placeholder="API Key from Jellyseerr Settings">
+              </div>
+              <p class="hint" data-i18n="jellyseerr_api_key_hint">Required only if your Jellyseerr API is protected</p>
+              <p class="hint" id="jellyseerr-status"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
+        <span>SeerrCatalog v1.3.0</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong style="color: #667eea;">Aerya</strong>
+          <img src="https://upandclear.org/wp-content/uploads/2024/06/Logo.detoure1.png.webp" alt="Aerya"
+            style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <a href="https://github.com/Aerya" target="_blank"
+            style="color: #667eea; text-decoration: none; font-size: 12px; font-weight: 500;">GitHub</a>
+          <a href="https://upandclear.org/" target="_blank"
+            style="color: #667eea; text-decoration: none; font-size: 12px; font-weight: 500;">Blog</a>
+          <a href="https://ko-fi.com/upandclear" target="_blank"
+            style="display: flex; align-items: center; gap: 4px; text-decoration: none;"><img
+              src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/ko-fi.webp" alt="Ko-fi"
+              style="width: 18px; height: 18px;"> ❤️</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Media Actions Modal -->
+  <div class="modal" id="action-modal">
+    <div class="modal-content">
+      <h3 id="modal-title"></h3>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal" id="user-modal">
+    <div class="modal-content">
+      <h3 data-i18n="add_user">Add User</h3>
+      <form id="user-form">
+        <div class="form-group">
+          <label data-i18n="username">Username</label>
+          <input type="text" name="username" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="password">Password</label>
+          <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="display_name">Display Name</label>
+          <input type="text" name="displayName">
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="isAdmin"> <span data-i18n="admin">Admin</span>
+          </label>
+        </div>
+        <div class="modal-actions" style="flex-direction:row;gap:0.75rem">
+          <button type="submit" class="btn btn-primary" data-i18n="create">Create</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('user-modal')"
+            data-i18n="cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stremio Config Modal -->
+  <div class="modal" id="stremio-modal">
+    <div class="modal-content">
+      <h3 data-i18n="stremio_config">Stremio Configuration</h3>
+      <p id="stremio-user-info" class="modal-subtitle"></p>
+
+      <div id="stremio-status" style="display:none;margin-bottom:1rem">
+        <div class="stremio-connected">
+          <span class="status-badge success">🟢 <span data-i18n="connected">Connected</span></span>
+          <span id="stremio-addons-count"></span>
+        </div>
+        <div id="stremio-addons-list" class="addons-list"></div>
+      </div>
+
+      <form id="stremio-form">
+        <div class="form-group">
+          <label data-i18n="stremio_email">Stremio Email</label>
+          <input type="email" name="email" id="stremio-email" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="stremio_password">Stremio Password</label>
+          <input type="password" name="password" id="stremio-password" required>
+        </div>
+        <div class="modal-actions" style="flex-direction:row;gap:0.75rem">
+          <button type="submit" class="btn btn-primary" data-i18n="connect">Connect</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('stremio-modal')"
+            data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="stremio-disconnect" style="display:none"
+            onclick="disconnectStremio()" data-i18n="disconnect">Disconnect</button>
+        </div>
+      </form>
+      <p id="stremio-error" class="error-msg" style="display:none"></p>
+    </div>
+  </div>
+
+  <script>
+    const baseUrl = location.origin;
+    let currentLang = localStorage.getItem('lang') || 'en';
+    let currentFilter = 'all';
+    let currentTypeFilter = 'all';
+    let currentUserId = '';
+    let selectedMedia = null;
+
+    // i18n
+    function t(key) { return translations[currentLang]?.[key] || translations.en[key] || key; }
+
+    function applyTranslations() {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.dataset.i18nPlaceholder);
+      });
+    }
+
+    // Language buttons
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      if (btn.dataset.lang === currentLang) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLang = btn.dataset.lang;
+        localStorage.setItem('lang', currentLang);
+        applyTranslations();
+        loadStats(); // Refresh stats labels
+      });
+    });
+
+    // Navigation
+    document.querySelectorAll('.nav-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-pill').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`page-${btn.dataset.page}`).classList.add('active');
+      });
+    });
+
+    // Filters
+    document.querySelectorAll('.filter-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        loadCatalog();
+      });
+    });
+
+    document.querySelectorAll('.type-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.type-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTypeFilter = btn.dataset.type;
+        loadCatalog();
+      });
+    });
+
+    document.getElementById('user-filter').addEventListener('change', (e) => {
+      currentUserId = e.target.value;
+      loadCatalog();
+    });
+
+    // Load data
+    async function loadStats() {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      document.getElementById('stat-movies').textContent = data.movies;
+      document.getElementById('stat-series').textContent = data.series;
+      document.getElementById('stat-available').textContent = data.available;
+
+      document.getElementById('stat-movies-label').textContent = data.movies <= 1 ? t('movie') : t('movies');
+      document.getElementById('stat-series-label').textContent = data.series <= 1 ? t('serie') : t('series');
+      document.getElementById('stat-available-label').textContent = data.available <= 1 ? t('available_singular') : t('available');
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+
+      const select = document.getElementById('user-filter');
+      select.innerHTML = `<option value="">${t('all_users')}</option>` +
+        users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
+
+      // Load Stremio status for each user
+      const usersWithStremio = await Promise.all(users.map(async u => {
+        try {
+          const stremioRes = await fetch(`/api/users/${u.id}/stremio`);
+          const stremioData = await stremioRes.json();
+          return { ...u, stremioConfigured: stremioData.configured };
+        } catch (e) {
+          return { ...u, stremioConfigured: false };
+        }
+      }));
+
+      document.getElementById('users-list').innerHTML = usersWithStremio.map(u => `
+        <div class="user-card">
+          <div class="user-info">
+            <div class="user-header">
+              <strong>${u.display_name || u.username}</strong>
+              <span class="user-meta">@${u.username} ${u.is_admin ? '👑' : ''}</span>
+              <span class="user-stremio ${u.stremioConfigured ? 'stremio-connected' : 'stremio-disconnected'}">Stremio ${u.stremioConfigured ? t('connected') : t('stremio_not_configured')}</span>
+            </div>
+            
+            <div class="user-config-section">
+              <div class="user-config-card">
+                <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="config-icon"> Stremio Addon</h5>
+                <div class="config-row-mini">
+                  <span>Manifest URL:</span>
+                  <code>${baseUrl}/user/${u.id}/manifest.json</code>
+                  <button class="btn-icon btn-copy" onclick="copyToClipboard('${baseUrl}/user/${u.id}/manifest.json')">📋</button>
+                </div>
+              </div>
+
+              <div class="user-config-card">
+                <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" alt="" class="config-icon"> Radarr (${t('config_movies')})</h5>
+                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? 'Yes' : 'No'}</code></div>
+                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/radarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/radarr')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_api_key')}</span><code>seerrcatalog-api-key</code><button class="btn-icon btn-copy" onclick="copyToClipboard('seerrcatalog-api-key')">📋</button></div>
+              </div>
+
+              <div class="user-config-card">
+                <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" alt="" class="config-icon"> Sonarr (${t('config_series')})</h5>
+                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? 'Yes' : 'No'}</code></div>
+                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/sonarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/sonarr')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_api_key')}</span><code>seerrcatalog-api-key</code><button class="btn-icon btn-copy" onclick="copyToClipboard('seerrcatalog-api-key')">📋</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="user-actions">
+            <button class="btn-icon" onclick="showStremioModal(${u.id}, '${u.username}')" title="${t('stremio_config')}"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="Stremio" class="btn-icon-img"></button>
+            <button class="btn-icon" onclick="deleteUserConfirm(${u.id})">🗑️</button>
+          </div>
+        </div>
+      `).join('') || `<div class="empty-state"><p>${t('no_users')}</p></div>`;
+    }
+
+
+    async function loadCatalog() {
+      let url = '/api/media?';
+      if (currentFilter === 'available') url += 'available=true&';
+      else if (currentFilter === 'unavailable') url += 'available=false&';
+      else if (currentFilter === 'watched') url += 'watched=true&';
+      if (currentTypeFilter !== 'all') url += `type=${currentTypeFilter}&`;
+      if (currentUserId) url += `userId=${currentUserId}`;
+
+      const res = await fetch(url);
+      const media = await res.json();
+      renderCatalog(media);
+    }
+
+    function renderCatalog(media) {
+      const grid = document.getElementById('catalog-grid');
+      if (!media.length) {
+        grid.innerHTML = `<div class="empty-state"><p>${t('empty_catalog')}</p><p class="hint">${t('empty_hint')}</p></div>`;
+        return;
+      }
+      grid.innerHTML = media.map(item => `
+        <div class="media-card ${item.watched ? 'watched' : ''} ${item.streams_available ? '' : 'unavailable'}" onclick="showMediaActions(${item.id})">
+          <div class="media-poster">
+            ${item.poster ? `<img src="${item.poster}" alt="${item.title}" loading="lazy">` : `<div class="no-poster">${item.title[0]}</div>`}
+            <div class="media-badges">
+              <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/${item.type === 'movie' ? 'radarr' : 'sonarr'}.webp" alt="${item.type}" class="badge-icon">
+              <span class="badge ${item.streams_available ? 'badge-status' : 'badge-unavailable'}">${item.streams_available ? '✓' : '!'}</span>
+            </div>
+            ${item.watched ? '<span class="badge badge-watched" style="position:absolute;bottom:0.5rem;right:0.5rem">👁️</span>' : ''}
+          </div>
+          <div class="media-info"><h4>${item.title}</h4><span>${item.year || ''}</span></div>
+        </div>
+      `).join('');
+    }
+
+
+    // Media actions
+    async function showMediaActions(id) {
+      const res = await fetch('/api/media');
+      const media = await res.json();
+      selectedMedia = media.find(m => m.id === id);
+      if (!selectedMedia) return;
+
+      // Clear previous sources list if exists
+      const prevSources = document.querySelector('.sources-list');
+      if (prevSources) prevSources.remove();
+
+      document.getElementById('modal-title').textContent = selectedMedia.title;
+      document.getElementById('modal-actions').innerHTML = `
+        <button class="btn btn-secondary" onclick="checkStreams()"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="btn-icon-img"> ${t('check_streams')}</button>
+        <button class="btn btn-danger" onclick="deleteMedia()">${t('delete')}</button>
+        <button class="btn btn-secondary" onclick="closeModal('action-modal')">${t('cancel')}</button>
+      `;
+
+      // Display sources if available with detailed stream info
+      if (selectedMedia.streams_detail && selectedMedia.streams_detail.length > 0) {
+        const sourcesHtml = selectedMedia.streams_detail.map(addon => {
+          // Create expandable list of streams for each addon
+          const streamsHtml = addon.streams && addon.streams.length > 0
+            ? addon.streams.map(s => {
+              const quality = s.quality ? `<span class="stream-quality">${s.quality}</span>` : '';
+              const size = s.size ? `<span class="stream-size">${s.size}</span>` : '';
+              return `<div class="stream-item">
+                <div class="stream-tags">${quality}${size}</div>
+                <div class="stream-name">${s.name}</div>
+              </div>`;
+            }).join('')
+            : '';
+          return `
+            <div class="addon-source">
+              <div class="addon-header" onclick="this.parentElement.classList.toggle('expanded')">
+                <span class="addon-name">${addon.name}</span>
+                <span class="addon-count">${addon.streamCount} fichiers</span>
+              </div>
+              <div class="addon-streams">${streamsHtml}</div>
+            </div>`;
+        }).join('');
+        document.getElementById('modal-actions').insertAdjacentHTML('beforebegin', `
+          <div class="sources-list">
+            <h4>✅ Sources trouvées:</h4>
+            <div class="sources-addons">${sourcesHtml}</div>
+          </div>
+        `);
+      } else if (selectedMedia.last_stream_check) {
+        // Already checked but no sources
+        document.getElementById('modal-actions').insertAdjacentHTML('beforebegin', `
+          <div class="sources-list" style="color: var(--warning);">
+            <p>⚠️ Aucune source trouvée lors de la dernière vérification</p>
+          </div>
+        `);
+      }
+      document.getElementById('action-modal').classList.add('active');
+    }
+
+
+
+    async function deleteMedia() {
+      // Direct delete without confirm (confirm() can be blocked in some contexts)
+      const title = selectedMedia.title;
+      const id = selectedMedia.id;
+      try {
+        const res = await fetch(`/api/media/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          console.log('Deleted:', title);
+          closeModal('action-modal');
+          loadStats();
+          loadCatalog();
+        } else {
+          alert('Erreur lors de la suppression');
+        }
+      } catch (e) {
+        console.error('Delete error:', e);
+        alert('Erreur: ' + e.message);
+      }
+    }
+
+    async function checkStreams() {
+      const btn = document.querySelector('[onclick="checkStreams()"]');
+      if (btn) btn.textContent = "⏳ ...";
+
+      const res = await fetch(`/api/media/${selectedMedia.id}/check-streams`, { method: 'POST' });
+      const data = await res.json();
+
+      loadCatalog();
+      // Re-open modal with updated data
+      showMediaActions(selectedMedia.id);
+    }
+
+
+    // Users
+    function showUserModal() { document.getElementById('user-modal').classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    document.getElementById('user-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      await fetch('/api/users', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: f.username.value, password: f.password.value, displayName: f.displayName.value, isAdmin: f.isAdmin.checked })
+      });
+      f.reset(); closeModal('user-modal'); loadUsers();
+    });
+
+    async function deleteUserConfirm(id) { if (confirm(t('delete_user_confirm'))) { await fetch(`/api/users/${id}`, { method: 'DELETE' }); loadUsers(); } }
+
+    // Settings
+    async function loadConfig() {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      document.getElementById('tmdb-status').textContent = cfg.tmdbConfigured ? `✅ ${t('tmdb_configured')}` : `❌ ${t('tmdb_not_configured')}`;
+      if (cfg.tmdbKey) document.getElementById('tmdb-key').value = cfg.tmdbKey;
+    }
+
+    async function saveTmdbKey() {
+      const key = document.getElementById('tmdb-key').value;
+      const res = await fetch('/api/settings/tmdb_api_key', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: key })
+      });
+      if (res.ok) {
+        document.getElementById('tmdb-status').textContent = `✅ ${t('tmdb_saved')}`;
+        setTimeout(loadConfig, 1500);
+      }
+    }
+
+    // Stremio Configuration
+    let currentStremioUserId = null;
+
+    async function showStremioModal(userId, username) {
+      currentStremioUserId = userId;
+      document.getElementById('stremio-user-info').textContent = `${t('user')}: ${username}`;
+      document.getElementById('stremio-error').style.display = 'none';
+      document.getElementById('stremio-email').value = '';
+      document.getElementById('stremio-password').value = '';
+
+      // Check if already connected
+      try {
+        const res = await fetch(`/api/users/${userId}/stremio`);
+        const data = await res.json();
+
+        if (data.configured) {
+          // Load addons list
+          const addonsRes = await fetch(`/api/users/${userId}/stremio/addons`);
+          const addonsData = await addonsRes.json();
+
+          document.getElementById('stremio-status').style.display = 'block';
+          document.getElementById('stremio-addons-count').textContent = `(${addonsData.addons?.length || 0} addons)`;
+          document.getElementById('stremio-addons-list').innerHTML =
+            (addonsData.addons || []).map(a => `<span class="addon-tag">${a.name}</span>`).join('');
+          document.getElementById('stremio-disconnect').style.display = 'inline-block';
+          document.getElementById('stremio-form').querySelector('[type="submit"]').textContent = t('reconnect');
+        } else {
+          document.getElementById('stremio-status').style.display = 'none';
+          document.getElementById('stremio-disconnect').style.display = 'none';
+          document.getElementById('stremio-form').querySelector('[type="submit"]').textContent = t('connect');
+        }
+      } catch (e) {
+        console.error('Error checking Stremio status:', e);
+      }
+
+      document.getElementById('stremio-modal').classList.add('active');
+    }
+
+    document.getElementById('stremio-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('stremio-email').value;
+      const password = document.getElementById('stremio-password').value;
+      const errorEl = document.getElementById('stremio-error');
+
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/users/${currentStremioUserId}/stremio/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const errorMsg = typeof data.details === 'string' ? data.details :
+            typeof data.error === 'string' ? data.error :
+              JSON.stringify(data.error || data.details) || t('stremio_login_failed');
+          errorEl.textContent = errorMsg;
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        // Success! Show connected state
+        document.getElementById('stremio-status').style.display = 'block';
+        document.getElementById('stremio-addons-count').textContent = `(${data.addonsCount} addons)`;
+        document.getElementById('stremio-addons-list').innerHTML =
+          (data.addons || []).map(a => `<span class="addon-tag">${a}</span>`).join('');
+        document.getElementById('stremio-disconnect').style.display = 'inline-block';
+        document.getElementById('stremio-form').querySelector('[type="submit"]').textContent = t('reconnect');
+
+        // Refresh users list
+        loadUsers();
+
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+      }
+    });
+
+    async function disconnectStremio() {
+      if (!confirm(t('stremio_disconnect_confirm'))) return;
+
+      await fetch(`/api/users/${currentStremioUserId}/stremio`, { method: 'DELETE' });
+      closeModal('stremio-modal');
+      loadUsers();
+    }
+
+    function copyUrl(id) {
+      const text = document.getElementById(id).textContent;
+      // Try modern API first, fallback to textarea method
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      // Show feedback
+      const btn = document.querySelector(`[onclick="copyUrl('${id}')"]`);
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = original, 1500);
+      }
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      alert('Copied: ' + text);
+    }
+
+    // Jellyseerr settings
+    async function saveJellyseerrSettings() {
+      const url = document.getElementById('jellyseerr-url').value.trim();
+      const key = document.getElementById('jellyseerr-key').value.trim();
+
+      try {
+        await fetch('/api/settings/jellyseerr_url', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: url })
+        });
+
+        if (key) {
+          await fetch('/api/settings/jellyseerr_api_key', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: key })
+          });
+        }
+
+        document.getElementById('jellyseerr-status').textContent = '✅ Saved!';
+        setTimeout(() => document.getElementById('jellyseerr-status').textContent = '', 3000);
+      } catch (e) {
+        document.getElementById('jellyseerr-status').textContent = '❌ Error: ' + e.message;
+      }
+    }
+
+    async function loadJellyseerrSettings() {
+      try {
+        const urlRes = await fetch('/api/settings/jellyseerr_url');
+        const urlData = await urlRes.json();
+        if (urlData.value) {
+          document.getElementById('jellyseerr-url').value = urlData.value;
+        }
+
+        const keyRes = await fetch('/api/settings/jellyseerr_api_key');
+        const keyData = await keyRes.json();
+        if (keyData.value) {
+          document.getElementById('jellyseerr-key').value = '••••••••';
+        }
+      } catch (e) {
+        console.log('Could not load Jellyseerr settings');
+      }
+    }
+
+
+    // Init
+    applyTranslations();
+    loadStats(); loadUsers(); loadCatalog(); loadConfig(); loadJellyseerrSettings();
+    setInterval(() => { loadStats(); loadCatalog(); }, 30000);
+  </script>
+</body>
+
+</html>

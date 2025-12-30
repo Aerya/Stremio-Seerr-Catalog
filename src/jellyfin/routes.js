@@ -1,0 +1,479 @@
+/**
+ * Jellyfin API Emulation
+ * Minimal endpoints for Jellyseerr authentication
+ */
+
+const express = require('express');
+const crypto = require('crypto');
+const db = require('../db');
+
+const router = express.Router();
+
+// Generate a Jellyfin-style UUID
+function generateJellyfinId() {
+    return crypto.randomUUID().replace(/-/g, '');
+}
+
+// Generate access token
+function generateAccessToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Store active sessions (in-memory, could be moved to DB)
+const sessions = new Map();
+
+// ============== System Endpoints ==============
+
+// Helper to get server URL from request
+function getServerUrl(req) {
+    const host = req.get('host') || `localhost:${process.env.PORT || 7000}`;
+    const protocol = req.protocol || 'http';
+    return `${protocol}://${host}`;
+}
+
+// Public server info (no auth required)
+router.get('/System/Info/Public', (req, res) => {
+    const serverUrl = getServerUrl(req);
+    res.json({
+        LocalAddress: serverUrl,
+        ServerName: 'SeerrCatalog',
+        Version: '10.8.13',
+        ProductName: 'Jellyfin Server',
+        OperatingSystem: 'Linux',
+        Id: 'seerrcatalog-jellyfin-emulated',
+        StartupWizardCompleted: true
+    });
+});
+
+// Full server info (auth may be required)
+router.get('/System/Info', (req, res) => {
+    const serverUrl = getServerUrl(req);
+    res.json({
+        LocalAddress: serverUrl,
+        ServerName: 'SeerrCatalog',
+        Version: '10.8.13',
+        ProductName: 'Jellyfin Server',
+        OperatingSystem: 'Linux',
+        Id: 'seerrcatalog-jellyfin-emulated',
+        StartupWizardCompleted: true,
+        CanSelfRestart: false,
+        CanLaunchWebBrowser: false,
+        HasPendingRestart: false,
+        HasUpdateAvailable: false
+    });
+});
+
+// ============== Authentication ==============
+
+// Authenticate by username/password
+router.post('/Users/AuthenticateByName', (req, res) => {
+    const { Username, Pw } = req.body;
+
+    console.log(`[Jellyfin] Auth attempt for: ${Username}`);
+
+    // Find user in our database
+    const user = db.getUserByUsername(Username);
+
+    if (!user) {
+        console.log(`[Jellyfin] User not found: ${Username}`);
+        return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    // Verify password
+    if (!db.verifyPassword(user.id, Pw)) {
+        console.log(`[Jellyfin] Invalid password for: ${Username}`);
+        return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    // Generate access token
+    const accessToken = generateAccessToken();
+
+    // Ensure user has a Jellyfin ID
+    let jellyfinId = user.jellyfin_id;
+    if (!jellyfinId) {
+        jellyfinId = generateJellyfinId();
+        db.updateUserJellyfinId(user.id, jellyfinId);
+    }
+
+    // Store session
+    sessions.set(accessToken, {
+        userId: user.id,
+        jellyfinId,
+        username: user.username
+    });
+
+    console.log(`[Jellyfin] Auth successful for: ${Username}`);
+
+    res.json({
+        User: {
+            Name: user.username,
+            ServerId: 'seerrcatalog',
+            Id: jellyfinId,
+            HasPassword: true,
+            HasConfiguredPassword: true,
+            HasConfiguredEasyPassword: false,
+            EnableAutoLogin: false,
+            Policy: {
+                IsAdministrator: !!user.is_admin,
+                IsHidden: false,
+                IsDisabled: false,
+                EnableAllFolders: true,
+                EnableContentDeletion: false,
+                EnableContentDownloading: false,
+                EnableRemoteAccess: true,
+                EnableLiveTvManagement: false,
+                EnableLiveTvAccess: false,
+                EnableMediaPlayback: true,
+                EnableSubtitleManagement: false,
+                EnableAllDevices: true,
+                EnabledFolders: [],
+                AuthenticationProviderId: 'Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider'
+            }
+        },
+        SessionInfo: {
+            Id: crypto.randomUUID(),
+            UserId: jellyfinId,
+            UserName: user.username,
+            Client: 'Jellyseerr',
+            DeviceId: req.headers['x-emby-device-id'] || 'unknown',
+            DeviceName: req.headers['x-emby-device-name'] || 'Unknown Device'
+        },
+        AccessToken: accessToken,
+        ServerId: 'seerrcatalog'
+    });
+});
+
+// ============== Users Endpoints ==============
+
+// Get all users
+router.get('/Users', (req, res) => {
+    const users = db.getAllUsers();
+
+    res.json(users.map(user => ({
+        Name: user.username,
+        ServerId: 'seerrcatalog',
+        Id: user.jellyfin_id || generateJellyfinId(),
+        HasPassword: true,
+        HasConfiguredPassword: true,
+        HasConfiguredEasyPassword: false,
+        EnableAutoLogin: false,
+        LastLoginDate: user.last_login || new Date().toISOString(),
+        LastActivityDate: new Date().toISOString(),
+        Policy: {
+            IsAdministrator: !!user.is_admin,
+            IsHidden: false,
+            IsDisabled: false,
+            EnableAllFolders: true
+        },
+        PrimaryImageTag: null
+    })));
+});
+
+// Get user by ID
+router.get('/Users/:id', (req, res) => {
+    const jellyfinId = req.params.id;
+    const users = db.getAllUsers();
+    const user = users.find(u => u.jellyfin_id === jellyfinId);
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+        Name: user.username,
+        ServerId: 'seerrcatalog',
+        Id: user.jellyfin_id,
+        HasPassword: true,
+        HasConfiguredPassword: true,
+        HasConfiguredEasyPassword: false,
+        EnableAutoLogin: false,
+        Policy: {
+            IsAdministrator: !!user.is_admin,
+            IsHidden: false,
+            IsDisabled: false,
+            EnableAllFolders: true
+        }
+    });
+});
+
+// Get current user (from token)
+router.get('/Users/Me', (req, res) => {
+    const authHeader = req.headers['x-emby-authorization'] || req.headers['authorization'] || '';
+    const tokenMatch = authHeader.match(/Token="([^"]+)"/);
+    const token = tokenMatch ? tokenMatch[1] : null;
+
+    if (!token || !sessions.has(token)) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const session = sessions.get(token);
+    const user = db.getUserById(session.userId);
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+        Name: user.username,
+        ServerId: 'seerrcatalog',
+        Id: session.jellyfinId,
+        HasPassword: true,
+        Policy: {
+            IsAdministrator: !!user.is_admin,
+            EnableAllFolders: true
+        }
+    });
+});
+
+// ============== Library Endpoints ==============
+
+// Pre-defined library IDs
+const MOVIES_LIBRARY_ID = 'f137a2dd21bbc1b99aa5c0f6bf02a805';
+const TV_LIBRARY_ID = 'a656b907eb3a73532e40e44b968d0225';
+
+// Media folders - Jellyseerr needs these to sync libraries
+router.get('/Library/MediaFolders', (req, res) => {
+    res.json({
+        Items: [
+            {
+                Name: 'Movies',
+                ServerId: 'seerrcatalog',
+                Id: MOVIES_LIBRARY_ID,
+                Guid: MOVIES_LIBRARY_ID,
+                Type: 'CollectionFolder',
+                CollectionType: 'movies',
+                IsFolder: true,
+                ImageTags: {},
+                BackdropImageTags: [],
+                LocationType: 'FileSystem',
+                Path: '/media/movies'
+            },
+            {
+                Name: 'TV Shows',
+                ServerId: 'seerrcatalog',
+                Id: TV_LIBRARY_ID,
+                Guid: TV_LIBRARY_ID,
+                Type: 'CollectionFolder',
+                CollectionType: 'tvshows',
+                IsFolder: true,
+                ImageTags: {},
+                BackdropImageTags: [],
+                LocationType: 'FileSystem',
+                Path: '/media/tv'
+            }
+        ],
+        TotalRecordCount: 2,
+        StartIndex: 0
+    });
+});
+
+// Virtual folders
+router.get('/Library/VirtualFolders', (req, res) => {
+    res.json([
+        {
+            Name: 'Movies',
+            Locations: ['/media/movies'],
+            CollectionType: 'movies',
+            ItemId: MOVIES_LIBRARY_ID
+        },
+        {
+            Name: 'TV Shows',
+            Locations: ['/media/tv'],
+            CollectionType: 'tvshows',
+            ItemId: TV_LIBRARY_ID
+        }
+    ]);
+});
+
+// Items endpoint - returns media items from a library
+router.get('/Items', (req, res) => {
+    const { ParentId, IncludeItemTypes } = req.query;
+
+    // Get media from database
+    let items = [];
+
+    if (ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
+        const movies = db.getMediaByType('movie');
+        items = movies.map(m => ({
+            Name: m.title,
+            ServerId: 'seerrcatalog',
+            Id: `movie-${m.id}`,
+            Type: 'Movie',
+            MediaType: 'Video',
+            IsFolder: false,
+            ProviderIds: {
+                Tmdb: m.tmdb_id?.toString(),
+                Imdb: m.imdb_id
+            }
+        }));
+    } else if (ParentId === TV_LIBRARY_ID || IncludeItemTypes?.includes('Series')) {
+        const series = db.getMediaByType('series');
+        items = series.map(s => ({
+            Name: s.title,
+            ServerId: 'seerrcatalog',
+            Id: `series-${s.id}`,
+            Type: 'Series',
+            MediaType: 'Video',
+            IsFolder: true,
+            ProviderIds: {
+                Tmdb: s.tmdb_id?.toString(),
+                Imdb: s.imdb_id,
+                Tvdb: s.tvdb_id?.toString()
+            }
+        }));
+    }
+
+    res.json({
+        Items: items,
+        TotalRecordCount: items.length,
+        StartIndex: 0
+    });
+});
+
+// User items (for library access check)
+router.get('/Users/:userId/Items', (req, res) => {
+    const { ParentId, IncludeItemTypes } = req.query;
+
+    // Delegate to Items endpoint
+    req.query.ParentId = ParentId;
+    req.query.IncludeItemTypes = IncludeItemTypes;
+
+    let items = [];
+
+    if (ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
+        const movies = db.getMediaByType('movie');
+        items = movies.map(m => ({
+            Name: m.title,
+            ServerId: 'seerrcatalog',
+            Id: `movie-${m.id}`,
+            Type: 'Movie',
+            ProviderIds: { Tmdb: m.tmdb_id?.toString(), Imdb: m.imdb_id }
+        }));
+    } else if (ParentId === TV_LIBRARY_ID || IncludeItemTypes?.includes('Series')) {
+        const series = db.getMediaByType('series');
+        items = series.map(s => ({
+            Name: s.title,
+            ServerId: 'seerrcatalog',
+            Id: `series-${s.id}`,
+            Type: 'Series',
+            ProviderIds: { Tmdb: s.tmdb_id?.toString(), Imdb: s.imdb_id, Tvdb: s.tvdb_id?.toString() }
+        }));
+    }
+
+    res.json({
+        Items: items,
+        TotalRecordCount: items.length,
+        StartIndex: 0
+    });
+});
+
+// User views (libraries accessible to user)
+router.get('/Users/:userId/Views', (req, res) => {
+    res.json({
+        Items: [
+            {
+                Name: 'Movies',
+                ServerId: 'seerrcatalog',
+                Id: MOVIES_LIBRARY_ID,
+                CollectionType: 'movies',
+                Type: 'CollectionFolder'
+            },
+            {
+                Name: 'TV Shows',
+                ServerId: 'seerrcatalog',
+                Id: TV_LIBRARY_ID,
+                CollectionType: 'tvshows',
+                Type: 'CollectionFolder'
+            }
+        ],
+        TotalRecordCount: 2
+    });
+});
+
+// ============== Branding ==============
+
+router.get('/Branding/Configuration', (req, res) => {
+    res.json({
+        LoginDisclaimer: '',
+        CustomCss: '',
+        SplashscreenEnabled: false
+    });
+});
+
+// ============== Plugins (empty) ==============
+
+router.get('/Plugins', (req, res) => {
+    res.json([]);
+});
+
+// ============== Activity Log ==============
+
+router.get('/System/ActivityLog/Entries', (req, res) => {
+    res.json({
+        Items: [],
+        TotalRecordCount: 0
+    });
+});
+
+// ============== API Keys ==============
+
+// Store API keys (in-memory)
+const apiKeys = new Map();
+
+// Get all API keys
+router.get('/Auth/Keys', (req, res) => {
+    const keys = Array.from(apiKeys.entries()).map(([key, data]) => ({
+        AccessToken: key,
+        AppName: data.appName,
+        AppVersion: data.appVersion,
+        DeviceId: data.deviceId,
+        DeviceName: data.deviceName,
+        UserId: data.userId,
+        DateCreated: data.dateCreated,
+        DateLastActivity: new Date().toISOString()
+    }));
+
+    res.json({
+        Items: keys,
+        TotalRecordCount: keys.length,
+        StartIndex: 0
+    });
+});
+
+// Create a new API key
+router.post('/Auth/Keys', (req, res) => {
+    const { App } = req.query;
+    const accessToken = generateAccessToken();
+
+    apiKeys.set(accessToken, {
+        appName: App || 'Jellyseerr',
+        appVersion: '1.0.0',
+        deviceId: req.headers['x-emby-device-id'] || 'unknown',
+        deviceName: req.headers['x-emby-device-name'] || 'Unknown Device',
+        userId: null,
+        dateCreated: new Date().toISOString()
+    });
+
+    console.log(`[Jellyfin] API key created for: ${App}`);
+
+    // Return the key directly in the response
+    res.status(200).json({
+        AccessToken: accessToken
+    });
+});
+
+// Delete an API key
+router.delete('/Auth/Keys/:key', (req, res) => {
+    const { key } = req.params;
+    apiKeys.delete(key);
+    res.status(204).send();
+});
+
+// ============== Catch-all for unsupported endpoints ==============
+
+router.all('*', (req, res) => {
+    console.log(`[Jellyfin] Unhandled: ${req.method} ${req.path}`);
+    res.json({});
+});
+
+module.exports = router;
