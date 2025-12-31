@@ -27,10 +27,18 @@ const sessions = new Map();
 // Middleware to extract and validate authentication token from headers
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['x-emby-authorization'] || req.headers['authorization'] || '';
-
+    
+    // DEBUG
+    console.log(`[Jellyfin] Auth on ${req.path}, headers:`, {
+        'x-emby-auth': !!req.headers['x-emby-authorization'],
+        'auth': !!req.headers['authorization']
+    });
+    
     // Parse token from header (format: MediaBrowser Client="...", Device="...", Token="...")
     const tokenMatch = authHeader.match(/Token="?([^",\s]+)"?/i);
     const token = tokenMatch ? tokenMatch[1] : null;
+    
+    if (token) console.log(`[Jellyfin] Token: ${token.substring(0, 10)}...`);
 
     if (token && sessions.has(token)) {
         const session = sessions.get(token);
