@@ -26,15 +26,15 @@ const app = express();
 app.set('trust proxy', true);
 app.use(express.json());
 
-// CORS for Stremio
+// CORS for Stremio and Jellyseerr
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, X-Api-Key');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, X-Api-Key, X-Emby-Authorization, Authorization, X-Emby-Token, X-Emby-Device-Id, X-Emby-Device-Name');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
-    next();
+    next(); \n
 });
 
 // Health check endpoint (no auth)
