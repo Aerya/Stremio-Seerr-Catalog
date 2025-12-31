@@ -27,18 +27,10 @@ const sessions = new Map();
 // Middleware to extract and validate authentication token from headers
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['x-emby-authorization'] || req.headers['authorization'] || '';
-    
-    // DEBUG
-    console.log(`[Jellyfin] Auth on ${req.path}, headers:`, {
-        'x-emby-auth': !!req.headers['x-emby-authorization'],
-        'auth': !!req.headers['authorization']
-    });
-    
+
     // Parse token from header (format: MediaBrowser Client="...", Device="...", Token="...")
     const tokenMatch = authHeader.match(/Token="?([^",\s]+)"?/i);
     const token = tokenMatch ? tokenMatch[1] : null;
-    
-    if (token) console.log(`[Jellyfin] Token: ${token.substring(0, 10)}...`);
 
     if (token && sessions.has(token)) {
         const session = sessions.get(token);
@@ -530,7 +522,7 @@ router.get('/Auth/Keys', (req, res) => {
 });
 
 // Create a new API key
-router.post('/Auth/Keys', (req, res) => {
+router.post('/Auth/Keys', optionalAuth, (req, res) => {
     const { App } = req.query;
     const accessToken = generateAccessToken();
 
@@ -539,7 +531,7 @@ router.post('/Auth/Keys', (req, res) => {
         appVersion: '1.0.0',
         deviceId: req.headers['x-emby-device-id'] || 'unknown',
         deviceName: req.headers['x-emby-device-name'] || 'Unknown Device',
-        userId: null,
+        userId: req.authenticatedUser ? req.authenticatedUser.jellyfinId : null,
         dateCreated: new Date().toISOString()
     });
 
