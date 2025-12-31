@@ -34,7 +34,7 @@ app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
-    next(); \n
+    next();
 });
 
 // Health check endpoint (no auth)
