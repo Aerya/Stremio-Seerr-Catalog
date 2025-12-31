@@ -100,8 +100,9 @@ function catalogHandler(args) {
         filters.search = extra.search;
     }
 
-    // Filter by userId if provided (user-specific catalog)
-    if (userId) {
+    // Filter by userId ONLY if explicitly provided (user-specific catalog)
+    // Global catalog shows all media regardless of user
+    if (userId !== undefined && userId !== null) {
         filters.userId = userId;
     }
 

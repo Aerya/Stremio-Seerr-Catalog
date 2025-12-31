@@ -31,44 +31,6 @@ const manifest = {
                 { name: 'genre', isRequired: false },
                 { name: 'search', isRequired: false }
             ]
-        },
-        // Availability-filtered catalogs
-        {
-            id: 'seerr-available',
-            type: 'movie',
-            name: '✅ Available',
-            extra: [{ name: 'skip', isRequired: false }]
-        },
-        {
-            id: 'seerr-available-series',
-            type: 'series',
-            name: '✅ Available',
-            extra: [{ name: 'skip', isRequired: false }]
-        },
-        {
-            id: 'seerr-unavailable',
-            type: 'movie',
-            name: '⚠️ No Sources',
-            extra: [{ name: 'skip', isRequired: false }]
-        },
-        {
-            id: 'seerr-unavailable-series',
-            type: 'series',
-            name: '⚠️ No Sources',
-            extra: [{ name: 'skip', isRequired: false }]
-        },
-        // Watched catalogs
-        {
-            id: 'seerr-watched',
-            type: 'movie',
-            name: '👁️ Watched',
-            extra: [{ name: 'skip', isRequired: false }]
-        },
-        {
-            id: 'seerr-watched-series',
-            type: 'series',
-            name: '👁️ Watched',
-            extra: [{ name: 'skip', isRequired: false }]
         }
     ],
 
