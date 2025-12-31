@@ -22,6 +22,52 @@ function generateAccessToken() {
 // Store active sessions (in-memory, could be moved to DB)
 const sessions = new Map();
 
+// ============== Authentication Middleware ==============
+
+// Middleware to extract and validate authentication token from headers
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['x-emby-authorization'] || req.headers['authorization'] || '';
+
+    // Parse token from header (format: MediaBrowser Client="...", Device="...", Token="...")
+    const tokenMatch = authHeader.match(/Token="?([^",\s]+)"?/i);
+    const token = tokenMatch ? tokenMatch[1] : null;
+
+    if (token && sessions.has(token)) {
+        const session = sessions.get(token);
+        const user = db.getUserById(session.userId);
+
+        if (user) {
+            req.authenticatedUser = {
+                ...user,
+                jellyfinId: session.jellyfinId,
+                sessionId: session.sessionId
+            };
+            console.log(`[Jellyfin] Authenticated via token: ${user.username}`);
+            return next();
+        }
+    }
+
+    // If no valid token, continue without authentication (some endpoints don't require it)
+    next();
+}
+
+// Optional authentication - continues even if not authenticated
+function optionalAuth(req, res, next) {
+    authenticateToken(req, res, next);
+}
+
+// Required authentication - returns 401 if not authenticated
+function requireAuth(req, res, next) {
+    authenticateToken(req, res, (err) => {
+        if (err) return next(err);
+        if (!req.authenticatedUser) {
+            console.log(`[Jellyfin] Unauthorized request to ${req.path}`);
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        next();
+    });
+}
+
 // ============== System Endpoints ==============
 
 // Helper to get server URL from request
@@ -57,8 +103,8 @@ function getServerUrl(req) {
     return serverUrl;
 }
 
-// Public server info (no auth required)
-router.get('/System/Info/Public', (req, res) => {
+// Public server info (no auth required, but accepts auth)
+router.get('/System/Info/Public', optionalAuth, (req, res) => {
     console.log(`[Jellyfin] Public Info check from ${req.ip}`);
     const serverUrl = getServerUrl(req);
     res.json({
@@ -73,7 +119,7 @@ router.get('/System/Info/Public', (req, res) => {
 });
 
 // Full server info (auth may be required)
-router.get('/System/Info', (req, res) => {
+router.get('/System/Info', optionalAuth, (req, res) => {
     const serverUrl = getServerUrl(req);
     res.json({
         LocalAddress: serverUrl,
@@ -123,11 +169,15 @@ router.post('/Users/AuthenticateByName', (req, res) => {
         db.updateUserJellyfinId(user.id, jellyfinId);
     }
 
+    // Generate session ID
+    const sessionId = crypto.randomUUID();
+
     // Store session
     sessions.set(accessToken, {
         userId: user.id,
         jellyfinId,
-        username: user.username
+        username: user.username,
+        sessionId
     });
 
     console.log(`[Jellyfin] Auth successful for: ${Username}`);
@@ -160,7 +210,7 @@ router.post('/Users/AuthenticateByName', (req, res) => {
             PrimaryImageTag: null
         },
         SessionInfo: {
-            Id: crypto.randomUUID(),
+            Id: sessionId,
             UserId: jellyfinId,
             UserName: user.username,
             Client: 'Jellyseerr',

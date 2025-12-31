@@ -117,7 +117,8 @@ router.get('/api/config', (req, res) => {
     res.json({
         tmdbConfigured: tmdb.isConfigured(db),
         tmdbKey: tmdbKey ? '•'.repeat(Math.min(tmdbKey.length, 20)) : null,
-        version: '1.3.0'
+        apiKey: process.env.API_KEY || 'seerrcatalog-api-key',
+        version: '1.4.0'
     });
 });
 

@@ -245,7 +245,7 @@ app.use('/', (req, res, next) => {
 app.listen(PORT, HOST, () => {
     console.log('');
     console.log('╔═══════════════════════════════════════════════════════════╗');
-    console.log('║                    SeerrCatalog v1.3.0                     ║');
+    console.log('║                    SeerrCatalog v1.4.0                     ║');
     console.log('╠═══════════════════════════════════════════════════════════╣');
     console.log(`║  WebUI:     http://${HOST}:${PORT}/`.padEnd(60) + '║');
     console.log(`║  Stremio:   http://${HOST}:${PORT}/manifest.json`.padEnd(60) + '║');

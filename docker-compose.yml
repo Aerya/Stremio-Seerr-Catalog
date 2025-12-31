@@ -8,12 +8,12 @@ services:
       - .env
     environment:
       - BASE_URL=${BASE_URL}
-      - ADDON_USER=${ADDON_USER:-admin}
-      - ADDON_PASSWORD=${ADDON_PASSWORD:-changeme}
-      - API_KEY=${API_KEY:-seerrcatalog-api-key}
-      - PORT=7000
-      - HOST=0.0.0.0
-      - TMDB_API_KEY=${TMDB_API_KEY:-}
+      - ADDON_USER=${ADDON_USER}
+      - ADDON_PASSWORD=${ADDON_PASSWORD}
+      - API_KEY=${API_KEY}
+      - PORT=${PORT}
+      - HOST=${HOST}
+      - TMDB_API_KEY=${TMDB_API_KEY}
     volumes:
       - /mnt/Docker/stremio/seerrcatalog:/app/data
     restart: always
