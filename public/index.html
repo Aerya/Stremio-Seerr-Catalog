@@ -394,6 +394,9 @@
           </div>
         </div>
       `).join('') || `<div class="empty-state"><p>${t('no_users')}</p></div>`;
+
+      // Load config after users are rendered to populate API keys
+      loadConfig();
     }
 
 
@@ -745,7 +748,7 @@
 
     // Init
     applyTranslations();
-    loadStats(); loadUsers(); loadCatalog(); loadConfig(); loadJellyseerrSettings();
+    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings();
     setInterval(() => { loadStats(); loadCatalog(); }, 30000);
   </script>
 </body>
