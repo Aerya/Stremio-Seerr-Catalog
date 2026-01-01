@@ -122,6 +122,11 @@ router.get('/api/config', (req, res) => {
     });
 });
 
+// Login page
+router.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../public/login.html'));
+});
+
 // Home
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../../public/index.html'));

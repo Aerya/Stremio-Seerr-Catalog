@@ -94,6 +94,14 @@ const translations = {
         jellyseerr_url_hint: 'URL of your Jellyseerr instance (for auto-sync when streams are found)',
         jellyseerr_api_key: 'Jellyseerr API Key (optional)',
         jellyseerr_api_key_hint: 'Required only if your Jellyseerr API is protected',
+        jellyseerr_test_connection: 'Test Connection',
+        jellyseerr_auto_sync_info: 'Jellyseerr automatically checks Radarr/Sonarr every 5 minutes. When SeerrCatalog finds streams, Jellyseerr will detect the change within 5 minutes and send notifications.',
+
+        // Stream Filters
+        stream_filters: 'Stream Filters',
+        language_tags: 'Language Tags (max 2):',
+        min_resolution: 'Min Resolution:',
+        auto_cleanup: 'Auto-cleanup watched content',
 
         // Modal
         sources_found: 'Sources found:',
@@ -193,6 +201,14 @@ const translations = {
         jellyseerr_url_hint: 'URL de votre instance Jellyseerr (pour synchronisation auto quand des sources sont trouvées)',
         jellyseerr_api_key: 'Clé API Jellyseerr (optionnelle)',
         jellyseerr_api_key_hint: 'Requis uniquement si votre API Jellyseerr est protégée',
+        jellyseerr_test_connection: 'Tester la connexion',
+        jellyseerr_auto_sync_info: 'Jellyseerr vérifie automatiquement Radarr/Sonarr toutes les 5 minutes. Quand SeerrCatalog trouve des sources, Jellyseerr détectera le changement dans les 5 minutes et enverra les notifications.',
+
+        // Stream Filters
+        stream_filters: 'Filtres de sources',
+        language_tags: 'Tags de langue (max 2) :',
+        min_resolution: 'Résolution minimale :',
+        auto_cleanup: 'Nettoyage auto du contenu regardé',
 
         // Modal
         sources_found: 'Sources trouvées :',

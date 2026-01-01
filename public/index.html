@@ -43,6 +43,10 @@
           <button class="lang-btn active" data-lang="fr" title="Français"><img src="https://flagcdn.com/w20/fr.png"
               alt="FR"></button>
         </div>
+
+        <button class="btn btn-secondary btn-small" onclick="handleLogout()" style="margin-left:1rem;" title="Logout">
+          🚪 Logout
+        </button>
       </div>
     </header>
 
@@ -399,14 +403,14 @@
               </div>
 
               <div class="user-config-card">
-                <h5>🎬 Stream Filters</h5>
+                <h5>🎬 <span data-i18n="stream_filters">Stream Filters</span></h5>
                 <div class="config-row-mini">
-                  <span>Language Tags (max 2):</span>
+                  <span data-i18n="language_tags">Language Tags (max 2):</span>
                   <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
                   <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
                 </div>
                 <div class="config-row-mini">
-                  <span>Min Resolution:</span>
+                  <span data-i18n="min_resolution">Min Resolution:</span>
                   <select id="resolution-${u.id}" style="padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
                     <option value="">All</option>
                     <option value="720p">720p+</option>
@@ -418,7 +422,7 @@
                 <div class="config-row-mini">
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="auto-cleanup-${u.id}" onchange="saveAutoCleanup(${u.id})" style="cursor:pointer;">
-                    <span>Auto-cleanup watched content</span>
+                    <span data-i18n="auto_cleanup">Auto-cleanup watched content</span>
                   </label>
                 </div>
               </div>
@@ -928,6 +932,34 @@
       }
     }
 
+
+    // Logout handler
+    async function handleLogout() {
+      if (confirm('Are you sure you want to logout?')) {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+          window.location.href = '/login';
+        } catch (e) {
+          console.error('Logout failed:', e);
+        }
+      }
+    }
+
+    // Language switching
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.dataset.lang;
+        currentLang = lang;
+        localStorage.setItem('lang', lang);
+
+        // Update active button
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Apply translations instantly
+        applyTranslations();
+      });
+    });
 
     // Init
     applyTranslations();

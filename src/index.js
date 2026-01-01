@@ -1,5 +1,5 @@
 const express = require('express');
-const basicAuth = require('express-basic-auth');
+const cookieParser = require('cookie-parser');
 const { getRouter } = require('stremio-addon-sdk');
 
 const { getManifest } = require('./addon/manifest');
@@ -11,6 +11,7 @@ const webuiRoutes = require('./webui/routes');
 const usersRoutes = require('./api/users');
 const db = require('./db');
 const { startBackgroundChecker } = require('./services/streamChecker');
+const { configureSession, requireAuth, handleLogin, handleLogout, getCurrentUser } = require('./auth/session');
 
 // Environment configuration
 const PORT = process.env.PORT || 7000;
@@ -25,6 +26,10 @@ const app = express();
 // Trust ALL proxies - important for HTTPS detection behind reverse proxies
 app.set('trust proxy', true);
 app.use(express.json());
+app.use(cookieParser());
+
+// Configure session
+configureSession(app);
 
 // CORS for Stremio and Jellyseerr
 app.use((req, res, next) => {
@@ -219,26 +224,33 @@ app.get('/user/:userId/meta/:type/:id.json', async (req, res) => {
     }
 });
 
-// WebUI (Basic auth)
-const webAuth = basicAuth({
-    users: { [ADDON_USER]: ADDON_PASSWORD },
-    challenge: true,
-    realm: 'SeerrCatalog'
-});
+// Auth endpoints (no auth required)
+app.post('/api/auth/login', handleLogin);
+app.post('/api/auth/logout', handleLogout);
+app.get('/api/auth/me', getCurrentUser);
 
-// Apply basic auth to WebUI routes (except static Stremio files)
-app.use('/api/users', webAuth, usersRoutes);
-app.use('/api', webAuth);
+// WebUI routes with session auth
+app.use('/api/users', requireAuth, usersRoutes);
+app.use('/api', (req, res, next) => {
+    // Skip auth for auth endpoints
+    if (req.path.startsWith('/auth/')) {
+        return next();
+    }
+    requireAuth(req, res, next);
+});
 app.use('/', (req, res, next) => {
-    // Skip auth for Stremio-related endpoints
+    // Skip auth for Stremio-related endpoints and login page
     if (req.path.startsWith('/manifest') ||
         req.path.startsWith('/catalog') ||
         req.path.startsWith('/meta') ||
         req.path.startsWith('/stream') ||
-        req.path === '/health') {
+        req.path === '/health' ||
+        req.path === '/login' ||
+        req.path === '/login.html' ||
+        req.path.startsWith('/api/auth/')) {
         return next();
     }
-    webAuth(req, res, next);
+    requireAuth(req, res, next);
 }, webuiRoutes);
 
 // Start server
