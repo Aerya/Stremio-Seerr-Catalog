@@ -260,7 +260,7 @@ app.post('/api/jellyseerr/test', requireAuth, async (req, res) => {
     }
 
     try {
-        const fetch = require('node-fetch');
+        const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
         const headers = { 'Content-Type': 'application/json' };
         if (apiKey) headers['X-Api-Key'] = apiKey;
 
