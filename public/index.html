@@ -137,6 +137,17 @@
               <p class="hint" data-i18n="jellyseerr_api_key_hint">Required only if your Jellyseerr API is protected</p>
               <p class="hint" id="jellyseerr-status"></p>
             </div>
+            <div class="settings-item">
+              <button class="btn btn-secondary btn-small" onclick="testJellyseerrConnection()">🔗 Test
+                Connection</button>
+              <p class="hint"
+                style="margin-top:12px; padding:12px; background:rgba(102,126,234,0.1); border-left:3px solid var(--accent); border-radius:4px;">
+                ℹ️ <strong>Auto-Sync:</strong> Jellyseerr automatically checks Radarr/Sonarr every <strong>5
+                  minutes</strong>.
+                When SeerrCatalog finds streams, Jellyseerr will detect the change within 5 minutes and send
+                notifications.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -404,6 +415,12 @@
                   </select>
                   <button class="btn-icon btn-primary" onclick="saveStreamFilters(${u.id})" style="margin-left:8px;">💾</button>
                 </div>
+                <div class="config-row-mini">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="auto-cleanup-${u.id}" onchange="saveAutoCleanup(${u.id})" style="cursor:pointer;">
+                    <span>Auto-cleanup watched content</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -419,6 +436,9 @@
 
       // Load stream filters for each user
       users.forEach(u => loadStreamFilters(u.id));
+
+      // Load auto-cleanup preferences for each user
+      users.forEach(u => loadAutoCleanup(u.id));
     }
 
 
@@ -619,6 +639,34 @@
       }
     }
 
+    // Load auto-cleanup preference for a specific user
+    async function loadAutoCleanup(userId) {
+      try {
+        const res = await fetch(`/api/users/${userId}/auto-cleanup`);
+        const data = await res.json();
+        document.getElementById(`auto-cleanup-${userId}`).checked = data.enabled;
+      } catch (e) {
+        console.error('Failed to load auto-cleanup:', e);
+      }
+    }
+
+    // Save auto-cleanup preference for a specific user
+    async function saveAutoCleanup(userId) {
+      const enabled = document.getElementById(`auto-cleanup-${userId}`).checked;
+
+      try {
+        await fetch(`/api/users/${userId}/auto-cleanup`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+
+        console.log(`Auto-cleanup ${enabled ? 'enabled' : 'disabled'} for user ${userId}`);
+      } catch (e) {
+        alert('❌ Failed to save auto-cleanup: ' + e.message);
+      }
+    }
+
     async function saveTmdbKey() {
       const key = document.getElementById('tmdb-key').value;
       const res = await fetch('/api/settings/tmdb_api_key', {
@@ -628,6 +676,81 @@
       if (res.ok) {
         document.getElementById('tmdb-status').textContent = `✅ ${t('tmdb_saved')}`;
         setTimeout(loadConfig, 1500);
+      }
+    }
+
+    // Jellyseerr Settings
+    async function loadJellyseerrSettings() {
+      try {
+        const urlRes = await fetch('/api/settings/jellyseerr_url');
+        const keyRes = await fetch('/api/settings/jellyseerr_api_key');
+
+        const urlData = await urlRes.json();
+        const keyData = await keyRes.json();
+
+        if (urlData.value) document.getElementById('jellyseerr-url').value = urlData.value;
+        if (keyData.value) document.getElementById('jellyseerr-key').value = keyData.value;
+      } catch (e) {
+        console.error('Failed to load Jellyseerr settings:', e);
+      }
+    }
+
+    async function saveJellyseerrSettings() {
+      const url = document.getElementById('jellyseerr-url').value.trim();
+      const apiKey = document.getElementById('jellyseerr-key').value.trim();
+
+      try {
+        await fetch('/api/settings/jellyseerr_url', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: url })
+        });
+
+        await fetch('/api/settings/jellyseerr_api_key', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: apiKey })
+        });
+
+        document.getElementById('jellyseerr-status').textContent = '✅ Jellyseerr settings saved!';
+        document.getElementById('jellyseerr-status').style.color = 'var(--success)';
+        setTimeout(() => { document.getElementById('jellyseerr-status').textContent = ''; }, 3000);
+      } catch (e) {
+        document.getElementById('jellyseerr-status').textContent = '❌ Failed to save: ' + e.message;
+        document.getElementById('jellyseerr-status').style.color = 'var(--error)';
+      }
+    }
+
+    async function testJellyseerrConnection() {
+      const url = document.getElementById('jellyseerr-url').value.trim();
+      const apiKey = document.getElementById('jellyseerr-key').value.trim();
+
+      if (!url) {
+        alert('Please enter Jellyseerr URL first');
+        return;
+      }
+
+      document.getElementById('jellyseerr-status').textContent = '⏳ Testing connection...';
+      document.getElementById('jellyseerr-status').style.color = 'var(--text-secondary)';
+
+      try {
+        // Test by fetching Jellyseerr status endpoint
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['X-Api-Key'] = apiKey;
+
+        const response = await fetch(`${url}/api/v1/status`, { headers });
+
+        if (response.ok) {
+          const data = await response.json();
+          document.getElementById('jellyseerr-status').textContent = `✅ Connected to Jellyseerr v${data.version || 'unknown'}`;
+          document.getElementById('jellyseerr-status').style.color = 'var(--success)';
+        } else {
+          document.getElementById('jellyseerr-status').textContent = `❌ Connection failed: ${response.status} ${response.statusText}`;
+          document.getElementById('jellyseerr-status').style.color = 'var(--error)';
+        }
+      } catch (e) {
+        document.getElementById('jellyseerr-status').textContent = `❌ Connection error: ${e.message}`;
+        document.getElementById('jellyseerr-status').style.color = 'var(--error)';
       }
     }
 

@@ -325,6 +325,33 @@ router.get('/:id/stream-filters', (req, res) => {
     });
 });
 
+// Save auto-cleanup preference
+router.put('/:id/auto-cleanup', (req, res) => {
+    const id = parseInt(req.params.id);
+    const { enabled } = req.body;
+
+    const user = db.getUserById(id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    db.setSetting(`auto_cleanup_${id}`, enabled ? 'true' : 'false');
+    res.json({ success: true, enabled });
+});
+
+// Get auto-cleanup preference
+router.get('/:id/auto-cleanup', (req, res) => {
+    const id = parseInt(req.params.id);
+
+    const user = db.getUserById(id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const enabled = db.getSetting(`auto_cleanup_${id}`) === 'true';
+    res.json({ enabled });
+});
+
 module.exports = router;
 
 

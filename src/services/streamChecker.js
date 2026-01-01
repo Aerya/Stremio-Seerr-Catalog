@@ -105,6 +105,7 @@ async function recheckUnavailableMedia(db) {
  * Cleanup watched content
  * - Movies: delete if watched
  * - Series: delete if ALL episodes are watched
+ * Only deletes content for users with auto-cleanup enabled
  * @param {Object} db - Database instance
  */
 async function cleanupWatchedContent(db) {
@@ -113,8 +114,12 @@ async function cleanupWatchedContent(db) {
     // Cleanup watched movies
     const watchedMovies = db.getWatchedMediaByType('movie');
     for (const movie of watchedMovies) {
-        db.deleteMedia(movie.id);
-        console.log(`[Cleanup] 🗑️ Removed watched movie: ${movie.title}`);
+        // Check if user has auto-cleanup enabled
+        const autoCleanup = db.getSetting(`auto_cleanup_${movie.user_id}`);
+        if (autoCleanup === 'true') {
+            db.deleteMedia(movie.id);
+            console.log(`[Cleanup] 🗑️ Removed watched movie: ${movie.title} (user ${movie.user_id})`);
+        }
     }
 
     // Cleanup fully watched series
@@ -124,8 +129,12 @@ async function cleanupWatchedContent(db) {
 
         // Only delete if there are episodes AND all are watched
         if (status.allWatched) {
-            db.deleteMedia(series.id);
-            console.log(`[Cleanup] 🗑️ Removed fully watched series: ${series.title} (${status.total} episodes)`);
+            // Check if user has auto-cleanup enabled
+            const autoCleanup = db.getSetting(`auto_cleanup_${series.user_id}`);
+            if (autoCleanup === 'true') {
+                db.deleteMedia(series.id);
+                console.log(`[Cleanup] 🗑️ Removed fully watched series: ${series.title} (${status.total} episodes, user ${series.user_id})`);
+            }
         }
     }
 
