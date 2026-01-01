@@ -142,10 +142,12 @@
               <p class="hint" id="jellyseerr-status"></p>
             </div>
             <div class="settings-item">
-              <button class="btn btn-secondary btn-small" onclick="testJellyseerrConnection()">🔗 Test
+              <button class="btn btn-secondary btn-small" onclick="testJellyseerrConnection()"
+                data-i18n="jellyseerr_test_connection">🔗 Test
                 Connection</button>
               <p class="hint"
-                style="margin-top:12px; padding:12px; background:rgba(102,126,234,0.1); border-left:3px solid var(--accent); border-radius:4px;">
+                style="margin-top:12px; padding:12px; background:rgba(102,126,234,0.1); border-left:3px solid var(--accent); border-radius:4px;"
+                data-i18n="jellyseerr_auto_sync_info">
                 ℹ️ <strong>Auto-Sync:</strong> Jellyseerr automatically checks Radarr/Sonarr every <strong>5
                   minutes</strong>.
                 When SeerrCatalog finds streams, Jellyseerr will detect the change within 5 minutes and send
@@ -963,6 +965,7 @@
         loadStats();
         loadCatalog();
         loadConfig();
+        loadUsers();
       });
     });
 
