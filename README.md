@@ -47,16 +47,19 @@ services:
     container_name: seerr-catalog
     ports:
       - "7000:7000"
+    env_file:
+      - .env
     environment:
-      - PORT=7000
-      - HOST=0.0.0.0
-      - BASE_URL=http://YOUR_IP:7000
-      - ADDON_USER=admin
-      - ADDON_PASSWORD=changeme
-      - API_KEY=seerrcatalog-api-key
+      - BASE_URL=${BASE_URL}
+      - ADDON_USER=${ADDON_USER}
+      - ADDON_PASSWORD=${ADDON_PASSWORD}
+      - API_KEY=${API_KEY}
+      - PORT=${PORT}
+      - HOST=${HOST}
+      - TMDB_API_KEY=${TMDB_API_KEY}
     volumes:
-      - ./data:/app/data
-    restart: unless-stopped
+      - /mnt/Docker/stremio/seerrcatalog:/app/data
+    restart: always
 ```
 
 2. Start the container:
@@ -125,16 +128,19 @@ services:
     container_name: seerr-catalog
     ports:
       - "7000:7000"
+    env_file:
+      - .env
     environment:
-      - PORT=7000
-      - HOST=0.0.0.0
-      - BASE_URL=http://VOTRE_IP:7000
-      - ADDON_USER=admin
-      - ADDON_PASSWORD=changeme
-      - API_KEY=seerrcatalog-api-key
+      - BASE_URL=${BASE_URL}
+      - ADDON_USER=${ADDON_USER}
+      - ADDON_PASSWORD=${ADDON_PASSWORD}
+      - API_KEY=${API_KEY}
+      - PORT=${PORT}
+      - HOST=${HOST}
+      - TMDB_API_KEY=${TMDB_API_KEY}
     volumes:
-      - ./data:/app/data
-    restart: unless-stopped
+      - /mnt/Docker/stremio/seerrcatalog:/app/data
+    restart: always
 ```
 
 2. Lancez le conteneur :
