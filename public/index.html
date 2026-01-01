@@ -949,7 +949,7 @@
 
     // Language switching
     document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const lang = btn.dataset.lang;
         currentLang = lang;
         localStorage.setItem('lang', lang);
@@ -958,14 +958,17 @@
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // Apply translations instantly
+        // Apply translations to static elements first
         applyTranslations();
 
         // Reload dynamic content to apply translations
         loadStats();
         loadCatalog();
         loadConfig();
-        loadUsers();
+        await loadUsers();
+
+        // Apply translations again after dynamic content is loaded
+        applyTranslations();
       });
     });
 
