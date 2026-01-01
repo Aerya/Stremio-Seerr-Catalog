@@ -16,8 +16,6 @@ const { configureSession, requireAuth, handleLogin, handleLogout, getCurrentUser
 // Environment configuration
 const PORT = process.env.PORT || 7000;
 const HOST = process.env.HOST || '0.0.0.0';
-const ADDON_USER = process.env.ADDON_USER || 'admin';
-const ADDON_PASSWORD = process.env.ADDON_PASSWORD || 'changeme';
 const API_KEY = process.env.API_KEY || 'seerrcatalog-api-key';
 const BASE_URL = process.env.BASE_URL || null;
 
@@ -284,20 +282,12 @@ app.use('/', (req, res, next) => {
 // Start server
 app.listen(PORT, HOST, () => {
     console.log('');
-    console.log('╔═══════════════════════════════════════════════════════════╗');
-    console.log('║                    SeerrCatalog v1.4.0                     ║');
-    console.log('╠═══════════════════════════════════════════════════════════╣');
-    console.log(`║  WebUI:     http://${HOST}:${PORT}/`.padEnd(60) + '║');
-    console.log(`║  Stremio:   http://${HOST}:${PORT}/manifest.json`.padEnd(60) + '║');
-    console.log(`║  Radarr:    http://${HOST}:${PORT}/radarr`.padEnd(60) + '║');
-    console.log(`║  Sonarr:    http://${HOST}:${PORT}/sonarr`.padEnd(60) + '|');
-    console.log(`║  Jellyfin:  http://${HOST}:${PORT}/jellyfin`.padEnd(60) + '|');
-    console.log('|------------------------------------------------------------|');
-    console.log(`║  User:      ${ADDON_USER}`.padEnd(60) + '|');
-    console.log(`║  API Key:   ${API_KEY.substring(0, 20)}...`.padEnd(60) + '|');
-    console.log('|------------------------------------------------------------|');
-    console.log('|  Features:  🌍 FR/EN  👥 Users  ✅ Streams  🎬 Jellyfin    |');
-    console.log('╚═══════════════════════════════════════════════════════════╝');
+    console.log('╔════════════════════════════════════════════════════════╗');
+    console.log('║              SeerrCatalog by Aerya                     ║');
+    console.log('║  https://github.com/Aerya/Stremio-Seerr-Catalog        ║');
+    console.log('╠════════════════════════════════════════════════════════╣');
+    console.log(`║  Server running on http://${HOST}:${PORT}`.padEnd(57) + '║');
+    console.log('╚════════════════════════════════════════════════════════╝');
     console.log('');
 
     // Start background stream checker (checks every 24h)
