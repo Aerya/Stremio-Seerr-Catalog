@@ -34,8 +34,7 @@ async function triggerJellyseerrSync() {
     }
 
     try {
-        // Trigger Radarr sync
-        const radarrSyncUrl = `${config.url}/api/v1/settings/radarr/sync`;
+        const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
         const headers = {
             'Content-Type': 'application/json'
         };
@@ -43,19 +42,36 @@ async function triggerJellyseerrSync() {
             headers['X-Api-Key'] = config.apiKey;
         }
 
+        // Trigger Radarr sync
+        const radarrSyncUrl = `${config.url}/api/v1/settings/radarr/sync`;
         console.log('[Jellyseerr] Triggering Radarr sync...');
-        const response = await fetch(radarrSyncUrl, {
-            method: 'POST',
+        const radarrResponse = await fetch(radarrSyncUrl, {
+            method: 'GET',
             headers
         });
 
-        if (response.ok) {
-            console.log('[Jellyseerr] ✅ Radarr sync triggered successfully');
-            return true;
+        if (!radarrResponse.ok) {
+            console.log(`[Jellyseerr] Radarr sync request failed: ${radarrResponse.status}`);
         } else {
-            console.log(`[Jellyseerr] Sync request failed: ${response.status}`);
-            return false;
+            console.log('[Jellyseerr] ✅ Radarr sync triggered successfully');
         }
+
+        // Trigger Sonarr sync
+        const sonarrSyncUrl = `${config.url}/api/v1/settings/sonarr/sync`;
+        console.log('[Jellyseerr] Triggering Sonarr sync...');
+        const sonarrResponse = await fetch(sonarrSyncUrl, {
+            method: 'GET',
+            headers
+        });
+
+        if (!sonarrResponse.ok) {
+            console.log(`[Jellyseerr] Sonarr sync request failed: ${sonarrResponse.status}`);
+        } else {
+            console.log('[Jellyseerr] ✅ Sonarr sync triggered successfully');
+        }
+
+        return radarrResponse.ok && sonarrResponse.ok;
+
     } catch (error) {
         console.error('[Jellyseerr] Sync trigger error:', error.message);
         return false;
