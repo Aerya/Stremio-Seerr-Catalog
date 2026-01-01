@@ -295,8 +295,8 @@ function filterStreamsByResolution(streams, minResolution = null) {
         return streams;
     }
 
-    const resolutionOrder = { '2160p': 4, '4K': 4, '1080p': 3, '720p': 2, '480p': 1 };
-    const minLevel = resolutionOrder[minResolution] || 0;
+    const resolutionOrder = { '2160P': 4, '4K': 4, 'UHD': 4, '1080P': 3, '720P': 2, '480P': 1 };
+    const minLevel = resolutionOrder[minResolution.toUpperCase()] || 0;
 
     const filtered = streams.filter(stream => {
         const streamName = (stream.behaviorHints?.filename || stream.description || stream.title || stream.name || '').toUpperCase();
