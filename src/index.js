@@ -260,31 +260,68 @@ app.post('/api/jellyseerr/test', requireAuth, async (req, res) => {
     }
 
     try {
-        const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-        const headers = { 'Content-Type': 'application/json' };
-        // Trim the API key to remove any whitespace, but keep the = padding
+        const https = require('https');
+        const http = require('http');
+        const urlObj = new URL(url);
+
+        const options = {
+            hostname: urlObj.hostname,
+            port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+            path: '/api/v1/status',
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeout: 5000
+        };
+
         if (apiKey) {
-            const cleanKey = apiKey.trim();
-            headers['X-Api-Key'] = cleanKey;
+            options.headers['X-Api-Key'] = apiKey.trim();
         }
 
-        const response = await fetch(`${url}/api/v1/status`, {
-            headers,
-            timeout: 5000
+        const protocol = urlObj.protocol === 'https:' ? https : http;
+
+        const request = protocol.request(options, (response) => {
+            let data = '';
+
+            response.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            response.on('end', () => {
+                if (response.statusCode === 200) {
+                    try {
+                        const jsonData = JSON.parse(data);
+                        res.json({
+                            success: true,
+                            version: jsonData.version || 'unknown',
+                            message: `Connected to Jellyseerr v${jsonData.version || 'unknown'}`
+                        });
+                    } catch (e) {
+                        res.json({
+                            success: true,
+                            message: 'Connected to Jellyseerr'
+                        });
+                    }
+                } else {
+                    res.status(response.statusCode).json({
+                        error: `Connection failed: ${response.statusCode} ${response.statusMessage}`
+                    });
+                }
+            });
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            res.json({
-                success: true,
-                version: data.version || 'unknown',
-                message: `Connected to Jellyseerr v${data.version || 'unknown'}`
-            });
-        } else {
-            res.status(response.status).json({
-                error: `Connection failed: ${response.status} ${response.statusText}`
-            });
-        }
+        request.on('error', (e) => {
+            console.error('[Jellyseerr Test] Error:', e.message);
+            res.status(500).json({ error: `Connection error: ${e.message}` });
+        });
+
+        request.on('timeout', () => {
+            request.destroy();
+            res.status(500).json({ error: 'Connection timeout' });
+        });
+
+        request.end();
     } catch (e) {
         console.error('[Jellyseerr Test] Error:', e.message);
         res.status(500).json({ error: `Connection error: ${e.message}` });
