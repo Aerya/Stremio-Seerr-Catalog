@@ -53,7 +53,20 @@ function handleLogin(req, res) {
     }
 
     const bcrypt = require('bcrypt');
-    const valid = bcrypt.compareSync(password, user.password);
+    let valid = false;
+
+    // Check if password is bcrypt hashed (starts with $2a$, $2b$, or $2y$)
+    if (user.password && user.password.startsWith('$2')) {
+        try {
+            valid = bcrypt.compareSync(password, user.password);
+        } catch (e) {
+            console.error('[Auth] Bcrypt comparison failed:', e.message);
+            valid = false;
+        }
+    } else {
+        // Plain text password (for backward compatibility)
+        valid = (password === user.password);
+    }
 
     if (!valid) {
         return res.status(401).json({ error: 'Invalid credentials' });
