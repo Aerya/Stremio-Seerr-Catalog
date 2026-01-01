@@ -258,6 +258,15 @@ function filterStreamsByLanguage(streams, languageTags = []) {
     // Convert to uppercase for case-insensitive matching
     const allowedTags = languageTags.map(tag => tag.toUpperCase());
 
+    // DEBUG: Log first 3 stream names to see what we're working with
+    if (streams.length > 0) {
+        console.log(`[Stremio] Sample stream names (first 3):`);
+        streams.slice(0, 3).forEach((s, i) => {
+            const name = s.behaviorHints?.filename || s.description || s.title || s.name || 'NO NAME';
+            console.log(`  ${i + 1}. "${name.substring(0, 100)}"`);
+        });
+    }
+
     const filtered = streams.filter(stream => {
         // Get stream name from best available source
         const streamName = (stream.behaviorHints?.filename || stream.description || stream.title || stream.name || '').toUpperCase();
