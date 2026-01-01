@@ -9,20 +9,19 @@ function toMetaPreview(media) {
     // Build name with status indicators
     let name = media.title;
 
+    // Stremio REQUIRES a poster URL - use placeholder if none available
+    const poster = media.poster || 'https://via.placeholder.com/300x450/1a1a2e/ffffff?text=' + encodeURIComponent(media.title);
+
     return {
         id,
         type: media.type,
         name,
-        poster: media.poster,
+        poster,
         posterShape: 'poster',
-        year: media.year,
-        imdbId: media.imdb_id,
-        ...(media.genres && { genres: media.genres }),
-        // Custom properties for UI (may not be used by Stremio but useful)
-        links: [
-            ...(media.streams_available ? [{ name: `${media.stream_count} streams`, category: 'Streams', url: '#' }] : []),
-            ...(media.watched ? [{ name: 'Watched', category: 'Status', url: '#' }] : [])
-        ]
+        ...(media.year && { releaseInfo: String(media.year) }),
+        ...(media.imdb_id && { imdbId: media.imdb_id }),
+        ...(media.genres && Array.isArray(media.genres) && media.genres.length > 0 && { genres: media.genres }),
+        ...(media.overview && { description: media.overview })
     };
 }
 
