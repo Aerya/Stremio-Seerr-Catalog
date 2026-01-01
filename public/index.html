@@ -386,6 +386,25 @@
                 <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/jellyfin</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/jellyfin')">📋</button></div>
                 <div class="config-row-mini"><span>Username:</span><code>${u.username}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${u.username}')">📋</button></div>
               </div>
+
+              <div class="user-config-card">
+                <h5>🎬 Stream Filters</h5>
+                <div class="config-row-mini">
+                  <span>Language Tags (max 2):</span>
+                  <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                  <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                </div>
+                <div class="config-row-mini">
+                  <span>Min Resolution:</span>
+                  <select id="resolution-${u.id}" style="padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    <option value="">All</option>
+                    <option value="720p">720p+</option>
+                    <option value="1080p">1080p+</option>
+                    <option value="2160p">4K/2160p+</option>
+                  </select>
+                  <button class="btn-icon btn-primary" onclick="saveStreamFilters(${u.id})" style="margin-left:8px;">💾</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="user-actions">
@@ -397,6 +416,9 @@
 
       // Load config after users are rendered to populate API keys
       loadConfig();
+
+      // Load stream filters for each user
+      users.forEach(u => loadStreamFilters(u.id));
     }
 
 
@@ -556,6 +578,44 @@
         document.querySelectorAll('[id^="radarr-api-key-"], [id^="sonarr-api-key-"]').forEach(el => {
           el.textContent = cfg.apiKey;
         });
+      }
+    }
+
+    // Load stream filters for a specific user
+    async function loadStreamFilters(userId) {
+      try {
+        const res = await fetch(`/api/users/${userId}/stream-filters`);
+        const data = await res.json();
+
+        document.getElementById(`lang-tag-1-${userId}`).value = data.languageTags[0] || '';
+        document.getElementById(`lang-tag-2-${userId}`).value = data.languageTags[1] || '';
+        document.getElementById(`resolution-${userId}`).value = data.minResolution || '';
+      } catch (e) {
+        console.error('Failed to load stream filters:', e);
+      }
+    }
+
+    // Save stream filters for a specific user
+    async function saveStreamFilters(userId) {
+      const tag1 = document.getElementById(`lang-tag-1-${userId}`).value.trim().toUpperCase();
+      const tag2 = document.getElementById(`lang-tag-2-${userId}`).value.trim().toUpperCase();
+      const resolution = document.getElementById(`resolution-${userId}`).value;
+
+      const languageTags = [tag1, tag2].filter(t => t.length > 0);
+
+      try {
+        await fetch(`/api/users/${userId}/stream-filters`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            languageTags,
+            minResolution: resolution || null
+          })
+        });
+
+        alert('✅ Stream filters saved!');
+      } catch (e) {
+        alert('❌ Failed to save filters: ' + e.message);
       }
     }
 
