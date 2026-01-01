@@ -740,18 +740,19 @@
       document.getElementById('jellyseerr-status').style.color = 'var(--text-secondary)';
 
       try {
-        // Test by fetching Jellyseerr status endpoint
-        const headers = { 'Content-Type': 'application/json' };
-        if (apiKey) headers['X-Api-Key'] = apiKey;
+        const response = await fetch('/api/jellyseerr/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, apiKey })
+        });
 
-        const response = await fetch(`${url}/api/v1/status`, { headers });
+        const data = await response.json();
 
         if (response.ok) {
-          const data = await response.json();
-          document.getElementById('jellyseerr-status').textContent = `✅ Connected to Jellyseerr v${data.version || 'unknown'}`;
+          document.getElementById('jellyseerr-status').textContent = `✅ ${data.message}`;
           document.getElementById('jellyseerr-status').style.color = 'var(--success)';
         } else {
-          document.getElementById('jellyseerr-status').textContent = `❌ Connection failed: ${response.status} ${response.statusText}`;
+          document.getElementById('jellyseerr-status').textContent = `❌ ${data.error}`;
           document.getElementById('jellyseerr-status').style.color = 'var(--error)';
         }
       } catch (e) {

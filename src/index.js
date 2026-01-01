@@ -250,6 +250,43 @@ app.post('/api/auth/create-first-user', (req, res) => {
 
 // WebUI routes with session auth
 app.use('/api/users', requireAuth, usersRoutes);
+
+// Jellyseerr connection test endpoint
+app.post('/api/jellyseerr/test', requireAuth, async (req, res) => {
+    const { url, apiKey } = req.body;
+
+    if (!url) {
+        return res.status(400).json({ error: 'URL required' });
+    }
+
+    try {
+        const fetch = require('node-fetch');
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['X-Api-Key'] = apiKey;
+
+        const response = await fetch(`${url}/api/v1/status`, {
+            headers,
+            timeout: 5000
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            res.json({
+                success: true,
+                version: data.version || 'unknown',
+                message: `Connected to Jellyseerr v${data.version || 'unknown'}`
+            });
+        } else {
+            res.status(response.status).json({
+                error: `Connection failed: ${response.status} ${response.statusText}`
+            });
+        }
+    } catch (e) {
+        console.error('[Jellyseerr Test] Error:', e.message);
+        res.status(500).json({ error: `Connection error: ${e.message}` });
+    }
+});
+
 app.use('/api', (req, res, next) => {
     // Skip auth for auth endpoints
     if (req.path.startsWith('/auth/')) {
