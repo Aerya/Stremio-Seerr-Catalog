@@ -241,10 +241,8 @@ app.post('/api/auth/create-first-user', (req, res) => {
         return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const bcrypt = require('bcrypt');
-    const hashedPassword = bcrypt.hashSync(password, 10);
-
-    const user = db.createUser(username, hashedPassword, display_name || username, true);
+    // createUser will hash the password internally
+    const user = db.createUser(username, password, display_name || username, true);
 
     console.log(`[Auth] First user created: ${username} (ID: ${user.id})`);
     res.json({ success: true, userId: user.id });
