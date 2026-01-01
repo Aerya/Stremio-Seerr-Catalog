@@ -244,15 +244,10 @@ app.post('/api/auth/create-first-user', (req, res) => {
     const bcrypt = require('bcrypt');
     const hashedPassword = bcrypt.hashSync(password, 10);
 
-    const userId = db.createUser({
-        username,
-        password: hashedPassword,
-        display_name: display_name || username,
-        is_admin: 1
-    });
+    const user = db.createUser(username, hashedPassword, display_name || username, true);
 
-    console.log(`[Auth] First user created: ${username} (ID: ${userId})`);
-    res.json({ success: true, userId });
+    console.log(`[Auth] First user created: ${username} (ID: ${user.id})`);
+    res.json({ success: true, userId: user.id });
 });
 
 // WebUI routes with session auth
