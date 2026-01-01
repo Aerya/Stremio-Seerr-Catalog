@@ -262,7 +262,11 @@ app.post('/api/jellyseerr/test', requireAuth, async (req, res) => {
     try {
         const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
         const headers = { 'Content-Type': 'application/json' };
-        if (apiKey) headers['X-Api-Key'] = apiKey;
+        // Trim the API key to remove any whitespace, but keep the = padding
+        if (apiKey) {
+            const cleanKey = apiKey.trim();
+            headers['X-Api-Key'] = cleanKey;
+        }
 
         const response = await fetch(`${url}/api/v1/status`, {
             headers,

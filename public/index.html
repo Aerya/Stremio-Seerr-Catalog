@@ -703,8 +703,8 @@
 
     async function saveJellyseerrSettings() {
       const url = document.getElementById('jellyseerr-url').value.trim();
-      // Remove all whitespace characters including newlines, tabs, etc.
-      const apiKey = document.getElementById('jellyseerr-key').value.replace(/\s/g, '');
+      // Only trim whitespace, keep the = padding
+      const apiKey = document.getElementById('jellyseerr-key').value.trim();
 
       try {
         await fetch('/api/settings/jellyseerr_url', {
@@ -730,8 +730,8 @@
 
     async function testJellyseerrConnection() {
       const url = document.getElementById('jellyseerr-url').value.trim();
-      // Remove all whitespace characters including newlines, tabs, etc.
-      const apiKey = document.getElementById('jellyseerr-key').value.replace(/\s/g, '');
+      // Only trim whitespace, keep the = padding
+      const apiKey = document.getElementById('jellyseerr-key').value.trim();
 
       if (!url) {
         alert('Please enter Jellyseerr URL first');
