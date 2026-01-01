@@ -265,7 +265,7 @@ app.use('/api', (req, res, next) => {
     requireAuth(req, res, next);
 });
 app.use('/', (req, res, next) => {
-    // Skip auth for Stremio-related endpoints and login page
+    // Skip auth for Stremio-related endpoints, login page, and static files
     if (req.path.startsWith('/manifest') ||
         req.path.startsWith('/catalog') ||
         req.path.startsWith('/meta') ||
@@ -273,7 +273,19 @@ app.use('/', (req, res, next) => {
         req.path === '/health' ||
         req.path === '/login' ||
         req.path === '/login.html' ||
-        req.path.startsWith('/api/auth/')) {
+        req.path.startsWith('/api/auth/') ||
+        req.path.endsWith('.css') ||
+        req.path.endsWith('.js') ||
+        req.path.endsWith('.png') ||
+        req.path.endsWith('.jpg') ||
+        req.path.endsWith('.jpeg') ||
+        req.path.endsWith('.gif') ||
+        req.path.endsWith('.svg') ||
+        req.path.endsWith('.ico') ||
+        req.path.endsWith('.woff') ||
+        req.path.endsWith('.woff2') ||
+        req.path.endsWith('.ttf') ||
+        req.path.endsWith('.webp')) {
         return next();
     }
     requireAuth(req, res, next);
