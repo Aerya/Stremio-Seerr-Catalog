@@ -103,21 +103,10 @@ try {
   db.exec(`ALTER TABLE media ADD COLUMN streams_detail TEXT`);
 } catch (e) { /* Column already exists */ }
 
-// Create default admin user if none exists
+// Password hashing function (used by user management)
 const crypto = require('crypto');
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
-}
-
-const defaultUsername = process.env.ADDON_USER || 'admin';
-const defaultUser = db.prepare('SELECT * FROM users WHERE username = ?').get(defaultUsername);
-if (!defaultUser) {
-  const adminPass = process.env.ADDON_PASSWORD || 'changeme';
-  db.prepare(`
-    INSERT INTO users (username, password_hash, display_name, is_admin)
-    VALUES (?, ?, ?, 1)
-  `).run(defaultUsername, hashPassword(adminPass), 'Administrator');
-  console.log(`[DB] Created default admin user: ${defaultUsername}`);
 }
 
 // Prepared statements
