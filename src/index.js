@@ -228,6 +228,34 @@ app.get('/user/:userId/meta/:type/:id.json', async (req, res) => {
 app.post('/api/auth/login', handleLogin);
 app.post('/api/auth/logout', handleLogout);
 app.get('/api/auth/me', getCurrentUser);
+app.get('/api/auth/has-users', (req, res) => {
+    const users = db.getAllUsers();
+    res.json({ hasUsers: users && users.length > 0 });
+});
+app.post('/api/auth/create-first-user', (req, res) => {
+    const users = db.getAllUsers();
+    if (users && users.length > 0) {
+        return res.status(403).json({ error: 'Users already exist' });
+    }
+
+    const { username, password, display_name } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    const bcrypt = require('bcrypt');
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    const userId = db.createUser({
+        username,
+        password: hashedPassword,
+        display_name: display_name || username,
+        is_admin: 1
+    });
+
+    console.log(`[Auth] First user created: ${username} (ID: ${userId})`);
+    res.json({ success: true, userId });
+});
 
 // WebUI routes with session auth
 app.use('/api/users', requireAuth, usersRoutes);

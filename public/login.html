@@ -156,11 +156,12 @@
                     </svg>
                     <h1>SeerrCatalog</h1>
                 </div>
-                <p class="login-subtitle">Sign in to your account</p>
+                <p class="login-subtitle" id="subtitle">Sign in to your account</p>
             </div>
 
             <div id="error-message" class="error-message"></div>
 
+            <!-- Login Form -->
             <form id="login-form" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -177,6 +178,28 @@
                 </button>
             </form>
 
+            <!-- First User Creation Form -->
+            <form id="signup-form" class="login-form" style="display:none;">
+                <div class="form-group">
+                    <label for="signup-username">Username</label>
+                    <input type="text" id="signup-username" name="username" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-display-name">Display Name (optional)</label>
+                    <input type="text" id="signup-display-name" name="display_name" placeholder="Administrator">
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" name="password" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="login-btn" id="signup-btn">
+                    Create First User
+                </button>
+            </form>
+
             <div class="login-footer">
                 SeerrCatalog v1.4.0
             </div>
@@ -184,21 +207,34 @@
     </div>
 
     <script>
-        const form = document.getElementById('login-form');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
         const errorMsg = document.getElementById('error-message');
         const loginBtn = document.getElementById('login-btn');
+        const signupBtn = document.getElementById('signup-btn');
+        const subtitle = document.getElementById('subtitle');
 
-        form.addEventListener('submit', async (e) => {
+        // Check if users exist
+        fetch('/api/auth/has-users')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.hasUsers) {
+                    // No users - show signup form
+                    loginForm.style.display = 'none';
+                    signupForm.style.display = 'flex';
+                    subtitle.textContent = 'Create your first admin account';
+                }
+            })
+            .catch(() => { });
+
+        // Login form handler
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            // Hide previous errors
             errorMsg.classList.remove('show');
-            errorMsg.textContent = '';
-
-            // Disable button
             loginBtn.disabled = true;
             loginBtn.textContent = 'Signing in...';
 
@@ -212,10 +248,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Login successful - redirect to main app
                     window.location.href = '/';
                 } else {
-                    // Show error
                     errorMsg.textContent = data.error || 'Login failed';
                     errorMsg.classList.add('show');
                     loginBtn.disabled = false;
@@ -226,6 +260,58 @@
                 errorMsg.classList.add('show');
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Sign In';
+            }
+        });
+
+        // Signup form handler
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('signup-username').value;
+            const password = document.getElementById('signup-password').value;
+            const display_name = document.getElementById('signup-display-name').value;
+
+            errorMsg.classList.remove('show');
+            signupBtn.disabled = true;
+            signupBtn.textContent = 'Creating...';
+
+            try {
+                const response = await fetch('/api/auth/create-first-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, display_name })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // User created - now login
+                    const loginRes = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    if (loginRes.ok) {
+                        window.location.href = '/';
+                    } else {
+                        errorMsg.textContent = 'User created but login failed. Please try logging in.';
+                        errorMsg.classList.add('show');
+                        loginForm.style.display = 'flex';
+                        signupForm.style.display = 'none';
+                        subtitle.textContent = 'Sign in to your account';
+                    }
+                } else {
+                    errorMsg.textContent = data.error || 'Failed to create user';
+                    errorMsg.classList.add('show');
+                    signupBtn.disabled = false;
+                    signupBtn.textContent = 'Create First User';
+                }
+            } catch (error) {
+                errorMsg.textContent = 'Connection error. Please try again.';
+                errorMsg.classList.add('show');
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Create First User';
             }
         });
 
