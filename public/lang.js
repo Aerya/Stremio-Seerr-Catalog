@@ -202,7 +202,7 @@ const translations = {
         jellyseerr_api_key: 'Clé API Jellyseerr (optionnelle)',
         jellyseerr_api_key_hint: 'Requis uniquement si votre API Jellyseerr est protégée',
         jellyseerr_test_connection: 'Tester la connexion',
-        jellyseerr_auto_sync_info: 'Jellyseerr vérifie automatiquement Radarr/Sonarr toutes les 5 minutes. Quand SeerrCatalog trouve des sources, Jellyseerr détectera le changement dans les 5 minutes et enverra les notifications.',
+        jellyseerr_auto_sync_info: 'ℹ️ Synchronisation automatique : Jellyseerr vérifie Radarr/Sonarr toutes les 5 minutes. Lorsque SeerrCatalog trouve des sources, Jellyseerr détectera le changement dans les 5 minutes et enverra les notifications.',
 
         // Stream Filters
         stream_filters: 'Filtres de sources',

@@ -166,7 +166,7 @@
             style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
-          <a href="https://github.com/Aerya" target="_blank"
+          <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank"
             style="color: #667eea; text-decoration: none; font-size: 12px; font-weight: 500;">GitHub</a>
           <a href="https://upandclear.org/" target="_blank"
             style="color: #667eea; text-decoration: none; font-size: 12px; font-weight: 500;">Blog</a>
@@ -958,6 +958,11 @@
 
         // Apply translations instantly
         applyTranslations();
+
+        // Reload dynamic content to apply translations
+        loadStats();
+        loadCatalog();
+        loadConfig();
       });
     });
 
