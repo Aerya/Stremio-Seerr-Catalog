@@ -429,6 +429,10 @@ router.post('/api/v3/series', async (req, res) => {
                 db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
                 if (result.available) {
                     console.log(`[Sonarr] ✅ Streams found for: ${media.title} (${result.streamCount} streams)`);
+
+                    // Notify Jellyseerr that content is now available
+                    const { notifyMediaAvailable } = require('../services/jellyseerr');
+                    await notifyMediaAvailable(media);
                 } else {
                     console.log(`[Sonarr] ⚠️ No streams found for: ${media.title}`);
                 }

@@ -50,8 +50,21 @@ async function checkStreamsAvailable(media, db) {
     const selectedAddonsJson = db.getSetting(`stremio_selected_addons_${user.id}`);
     const selectedAddonIds = selectedAddonsJson ? JSON.parse(selectedAddonsJson) : null;
 
-    // Use the Stremio service to check with user's addons
-    return await checkStreamsWithUserAddons(media, user.stremio_auth_key, selectedAddonIds);
+    // Get user's stream filter preferences
+    const languageTagsJson = db.getSetting(`stream_filter_languages_${user.id}`);
+    const minResolution = db.getSetting(`stream_filter_resolution_${user.id}`);
+
+    const filterPrefs = {
+        languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : [],
+        minResolution: minResolution || null
+    };
+
+    if (filterPrefs.languageTags.length > 0 || filterPrefs.minResolution) {
+        console.log(`[StreamChecker] Using filters for ${user.username}:`, filterPrefs);
+    }
+
+    // Use the Stremio service to check with user's addons and filters
+    return await checkStreamsWithUserAddons(media, user.stremio_auth_key, selectedAddonIds, filterPrefs);
 }
 
 /**

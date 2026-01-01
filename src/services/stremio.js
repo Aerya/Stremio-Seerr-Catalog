@@ -72,9 +72,10 @@ async function getInstalledAddons(authKey) {
  * @param {Object} media - Media object with type, imdb_id, tmdb_id
  * @param {string} authKey - User's Stremio authentication key
  * @param {Array} selectedAddonIds - Optional array of addon IDs to check (if empty, checks all)
+ * @param {Object} filterPrefs - User's filter preferences { languageTags: [], minResolution: null }
  * @returns {Promise<Object>} { available: boolean, streamCount: number, addons: Array with detailed streams }
  */
-async function checkStreamsWithUserAddons(media, authKey, selectedAddonIds = null) {
+async function checkStreamsWithUserAddons(media, authKey, selectedAddonIds = null, filterPrefs = null) {
     // Get IMDB ID (required for stream lookups)
     let imdbId = media.imdb_id;
 
@@ -154,9 +155,28 @@ async function checkStreamsWithUserAddons(media, authKey, selectedAddonIds = nul
 
             if (response.ok) {
                 const data = await response.json();
-                const streams = data.streams || [];
+                let streams = data.streams || [];
+                const originalCount = streams.length;
+
+                // Apply user-configured filters
+                if (filterPrefs) {
+                    // Language filter
+                    if (filterPrefs.languageTags && filterPrefs.languageTags.length > 0) {
+                        streams = filterStreamsByLanguage(streams, filterPrefs.languageTags);
+                    }
+
+                    // Resolution filter
+                    if (filterPrefs.minResolution) {
+                        streams = filterStreamsByResolution(streams, filterPrefs.minResolution);
+                    }
+                }
+
                 const streamCount = streams.length;
-                console.log(`[Stremio] ${addon.name} returned ${streamCount} streams`);
+                if (streamCount < originalCount) {
+                    console.log(`[Stremio] ${addon.name}: ${originalCount} streams → ${streamCount} after filters`);
+                } else {
+                    console.log(`[Stremio] ${addon.name}: ${streamCount} streams (no filters applied)`);
+                }
 
                 // Debug: log first stream's fields to understand structure
                 if (streams.length > 0) {
@@ -221,6 +241,73 @@ async function checkStreamsWithUserAddons(media, authKey, selectedAddonIds = nul
         addons: checkedAddons,
         lastChecked: new Date().toISOString()
     };
+}
+
+/**
+ * Filter streams by language tags - configurable per user
+ * @param {Array} streams - Array of stream objects
+ * @param {Array} languageTags - Array of allowed language tags (max 2), e.g. ['FRENCH', 'MULTI']
+ * @returns {Array} Filtered streams
+ */
+function filterStreamsByLanguage(streams, languageTags = []) {
+    // If no language tags configured, return all streams
+    if (!languageTags || languageTags.length === 0) {
+        return streams;
+    }
+
+    // Convert to uppercase for case-insensitive matching
+    const allowedTags = languageTags.map(tag => tag.toUpperCase());
+
+    const filtered = streams.filter(stream => {
+        // Get stream name from best available source
+        const streamName = (stream.behaviorHints?.filename || stream.description || stream.title || stream.name || '').toUpperCase();
+
+        // Check if stream contains ANY of the allowed language tags
+        const hasAllowedTag = allowedTags.some(tag => streamName.includes(tag));
+
+        return hasAllowedTag;
+    });
+
+    if (filtered.length < streams.length) {
+        console.log(`[Stremio] Language filter (${allowedTags.join(' OR ')}): ${streams.length} → ${filtered.length} streams`);
+    }
+
+    return filtered;
+}
+
+/**
+ * Filter streams by minimum resolution
+ * @param {Array} streams - Array of stream objects
+ * @param {string} minResolution - Minimum resolution: '2160p', '1080p', '720p', or null for all
+ * @returns {Array} Filtered streams
+ */
+function filterStreamsByResolution(streams, minResolution = null) {
+    if (!minResolution) {
+        return streams;
+    }
+
+    const resolutionOrder = { '2160p': 4, '4K': 4, '1080p': 3, '720p': 2, '480p': 1 };
+    const minLevel = resolutionOrder[minResolution] || 0;
+
+    const filtered = streams.filter(stream => {
+        const streamName = (stream.behaviorHints?.filename || stream.description || stream.title || stream.name || '').toUpperCase();
+
+        // Check for resolution tags
+        for (const [res, level] of Object.entries(resolutionOrder)) {
+            if (streamName.includes(res) && level >= minLevel) {
+                return true;
+            }
+        }
+
+        // If no resolution detected, exclude (safe approach)
+        return false;
+    });
+
+    if (filtered.length < streams.length) {
+        console.log(`[Stremio] Resolution filter (${minResolution}+): ${streams.length} → ${filtered.length} streams`);
+    }
+
+    return filtered;
 }
 
 // Helper to extract quality from stream name

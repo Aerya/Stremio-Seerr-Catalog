@@ -281,6 +281,50 @@ router.get('/:id/stremio/selected-addons', (req, res) => {
     res.json({ selectedAddons });
 });
 
+// Save stream filter preferences (language tags + resolution)
+router.put('/:id/stream-filters', (req, res) => {
+    const id = parseInt(req.params.id);
+    const { languageTags, minResolution } = req.body;
+
+    const user = db.getUserById(id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Validate language tags (max 2)
+    if (languageTags && (!Array.isArray(languageTags) || languageTags.length > 2)) {
+        return res.status(400).json({ error: 'languageTags must be an array with max 2 items' });
+    }
+
+    // Save preferences
+    if (languageTags) {
+        db.setSetting(`stream_filter_languages_${id}`, JSON.stringify(languageTags));
+    }
+    if (minResolution !== undefined) {
+        db.setSetting(`stream_filter_resolution_${id}`, minResolution || null);
+    }
+
+    res.json({ success: true, languageTags, minResolution });
+});
+
+// Get stream filter preferences
+router.get('/:id/stream-filters', (req, res) => {
+    const id = parseInt(req.params.id);
+
+    const user = db.getUserById(id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const languageTagsJson = db.getSetting(`stream_filter_languages_${id}`);
+    const minResolution = db.getSetting(`stream_filter_resolution_${id}`);
+
+    res.json({
+        languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : [],
+        minResolution: minResolution || null
+    });
+});
+
 module.exports = router;
 
 

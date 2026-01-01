@@ -364,9 +364,10 @@ router.post('/api/v3/movie', async (req, res) => {
             db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
             if (result.available) {
                 console.log(`[Radarr] ✅ Streams found for: ${media.title} (${result.streamCount} streams)`);
-                // Notify Jellyseerr to re-sync and see the updated status
-                const { triggerJellyseerrSync } = require('../services/jellyseerr');
-                await triggerJellyseerrSync();
+
+                // Notify Jellyseerr that content is now available
+                const { notifyMediaAvailable } = require('../services/jellyseerr');
+                await notifyMediaAvailable(media);
             } else {
                 console.log(`[Radarr] ⚠️ No streams found for: ${media.title}`);
             }
