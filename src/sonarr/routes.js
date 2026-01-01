@@ -187,13 +187,22 @@ function toSonarrSeries(media, episodes = []) {
 // Get all series
 router.get('/api/v3/series', (req, res) => {
     const { tvdbId, imdbId } = req.query;
+    console.log('[Sonarr] GET /api/v3/series', { tvdbId, imdbId });
 
     if (tvdbId) {
         const allSeries = db.getMediaByType('series');
         const media = allSeries.find(s => s.tvdb_id === parseInt(tvdbId));
         if (media) {
             const episodes = db.getEpisodes(media.id);
-            return res.json([toSonarrSeries(media, episodes)]);
+            const result = toSonarrSeries(media, episodes);
+            console.log('[Sonarr] Returning series:', {
+                id: result.id,
+                title: result.title,
+                episodeFileCount: result.statistics.episodeFileCount,
+                episodeCount: result.statistics.episodeCount,
+                streams_available: media.streams_available
+            });
+            return res.json([result]);
         }
         return res.json([]);
     }
