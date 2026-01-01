@@ -104,9 +104,9 @@ try {
 } catch (e) { /* Column already exists */ }
 
 // Password hashing function (used by user management)
-const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  return bcrypt.hashSync(password, 10);
 }
 
 // Prepared statements
@@ -370,7 +370,7 @@ function updateUserPassword(id, newPassword) {
 function verifyPassword(userId, password) {
   const user = statements.getUserById.get(userId);
   if (!user) return false;
-  return user.password_hash === hashPassword(password);
+  return bcrypt.compareSync(password, user.password_hash);
 }
 
 function updateUserJellyfinId(id, jellyfinId) {
