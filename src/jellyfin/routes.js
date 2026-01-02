@@ -613,11 +613,7 @@ router.get('/Items/Latest', (req, res) => {
             DateCreated: m.added_at || new Date().toISOString(),
             ProviderIds: {
                 Tmdb: m.tmdb_id?.toString(),
-                tmdb: m.tmdb_id?.toString(),
-                TMDB: m.tmdb_id?.toString(),
-                Imdb: m.imdb_id,
-                imdb: m.imdb_id,
-                IMDB: m.imdb_id
+                Imdb: m.imdb_id
             },
             UserData: {
                 Played: !!m.watched,
@@ -654,14 +650,8 @@ router.get('/Items/Latest', (req, res) => {
             DateCreated: s.added_at || new Date().toISOString(),
             ProviderIds: {
                 Tmdb: s.tmdb_id?.toString(),
-                tmdb: s.tmdb_id?.toString(),
-                TMDB: s.tmdb_id?.toString(),
                 Imdb: s.imdb_id,
-                imdb: s.imdb_id,
-                IMDB: s.imdb_id,
-                Tvdb: s.tvdb_id?.toString(),
-                tvdb: s.tvdb_id?.toString(),
-                TVDB: s.tvdb_id?.toString()
+                Tvdb: s.tvdb_id?.toString()
             },
             UserData: {
                 Played: false,
