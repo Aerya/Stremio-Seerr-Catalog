@@ -467,6 +467,62 @@ router.get('/Users/:userId/Items', (req, res) => {
     });
 });
 
+// Get specific item by ID (for Jellyseerr to fetch item details after seeing it in Latest)
+router.get('/Users/:userId/Items/:itemId', (req, res) => {
+    const { itemId } = req.params;
+    console.log(`[Jellyfin] GET /Users/:userId/Items/${itemId}`);
+
+    // Parse item ID format: "movie-123" or "series-123"
+    const match = itemId.match(/^(movie|series)-(\d+)$/);
+    if (!match) {
+        console.log(`[Jellyfin] Invalid item ID format: ${itemId}`);
+        return res.status(404).json({ message: 'Item not found' });
+    }
+
+    const [, type, id] = match;
+    const media = db.getMediaById(parseInt(id));
+
+    if (!media || (type === 'movie' && media.type !== 'movie') || (type === 'series' && media.type !== 'series')) {
+        return res.status(404).json({ message: 'Item not found' });
+    }
+
+    // Return full item details with ProviderIds
+    const item = {
+        Name: media.title,
+        ServerId: 'seerrcatalog',
+        Id: itemId,
+        Type: type === 'movie' ? 'Movie' : 'Series',
+        MediaType: 'Video',
+        IsFolder: type === 'series',
+        Path: type === 'movie'
+            ? `/media/movies/${media.title} (${media.year})/${media.title}.mkv`
+            : `/media/tv/${media.title} (${media.year})`,
+        DateCreated: media.added_at || new Date().toISOString(),
+        ProviderIds: {
+            tmdb: media.tmdb_id?.toString(),
+            imdb: media.imdb_id,
+            ...(type === 'series' && media.tvdb_id ? { tvdb: media.tvdb_id.toString() } : {})
+        },
+        UserData: {
+            Played: !!media.watched,
+            UnplayedItemCount: media.watched ? 0 : 1,
+            PlaybackPositionTicks: 0,
+            IsFavorite: false,
+            Key: itemId
+        },
+        ImageTags: media.poster ? { Primary: 'poster' } : {},
+        BackdropImageTags: media.backdrop ? ['backdrop'] : [],
+        ProductionYear: media.year,
+        PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
+        Overview: media.overview || '',
+        CommunityRating: null,
+        RunTimeTicks: media.runtime ? media.runtime * 60 * 10000000 : null
+    };
+
+    console.log('[Jellyfin] Returning item details with ProviderIds:', JSON.stringify(item.ProviderIds));
+    res.json(item);
+});
+
 // User views (libraries accessible to user)
 router.get('/Users/:userId/Views', (req, res) => {
     res.json({
