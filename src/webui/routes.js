@@ -5,8 +5,17 @@ const tmdb = require('../services/tmdb');
 
 const router = express.Router();
 
-// Serve static files
-router.use(express.static(path.join(__dirname, '../../public')));
+// Serve static files with no-cache headers to prevent proxy caching
+router.use(express.static(path.join(__dirname, '../../public'), {
+    setHeaders: (res, filePath) => {
+        // Prevent caching of HTML and JS files
+        if (filePath.endsWith('.html') || filePath.endsWith('.js')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 
 // API: Get catalog stats
 router.get('/api/stats', (req, res) => {
