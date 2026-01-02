@@ -125,8 +125,48 @@ async function findByExternalId(externalId, externalSource, db = null) {
     }
 }
 
-function isConfigured(db = null) {
-    return !!getApiKey(db);
+/**
+ * Get TV show seasons and episode counts from TMDB
+ */
+async function getTVShowSeasons(tmdbId, db = null) {
+    const apiKey = getApiKey(db);
+    if (!apiKey) {
+        console.warn('[TMDB] No API key configured');
+        return null;
+    }
+
+    try {
+        const url = `${TMDB_API_URL}/tv/${tmdbId}?api_key=${apiKey}&language=fr-FR`;
+        console.log(`[TMDB] Fetching seasons for TV show ${tmdbId}`);
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`TMDB API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Return simplified seasons array with episode counts
+        const seasons = data.seasons
+            ?.filter(s => s.season_number > 0) // Exclude specials (season 0)
+            .map(s => ({
+                season_number: s.season_number,
+                episode_count: s.episode_count,
+                name: s.name,
+                air_date: s.air_date
+            })) || [];
+
+        console.log(`[TMDB] Found ${seasons.length} seasons for ${data.name}`);
+        return {
+            name: data.name,
+            seasons: seasons,
+            total_seasons: seasons.length,
+            total_episodes: seasons.reduce((sum, s) => sum + s.episode_count, 0)
+        };
+    } catch (e) {
+        console.error('[TMDB] Get TV seasons error:', e.message);
+        return null;
+    }
 }
 
 module.exports = {
@@ -135,5 +175,6 @@ module.exports = {
     formatTMDBResult,
     getApiKey,
     isConfigured,
-    findByExternalId
+    findByExternalId,
+    getTVShowSeasons
 };

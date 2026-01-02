@@ -6,6 +6,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
+const { getTVShowSeasons } = require('../services/tmdb');
 
 const router = express.Router();
 
@@ -711,7 +712,7 @@ router.delete('/Auth/Keys/:key', (req, res) => {
 // ============== TV Shows Endpoints ==============
 
 // Get seasons for a series (required by Jellyseerr for TV show sync)
-router.get('/Shows/:seriesId/Seasons', (req, res) => {
+router.get('/Shows/:seriesId/Seasons', async (req, res) => {
     const { seriesId } = req.params;
     console.log(`[Jellyfin] GET /Shows/${seriesId}/Seasons`);
 
@@ -729,22 +730,48 @@ router.get('/Shows/:seriesId/Seasons', (req, res) => {
         return res.status(404).json({ message: 'Series not found' });
     }
 
-    // Return a mock Season 1 (we don't track individual seasons in SeerrCatalog)
-    // This satisfies Jellyseerr's requirement to find seasons
-    const seasons = [{
-        Name: 'Season 1',
-        ServerId: 'seerrcatalog',
-        Id: `${seriesId}-season-1`,
-        Type: 'Season',
-        SeriesId: seriesId,
-        SeriesName: media.title,
-        IndexNumber: 1,
-        ProductionYear: media.year,
-        PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
-        ImageTags: {},
-        BackdropImageTags: [],
-        LocationType: 'FileSystem'
-    }];
+    // Fetch real seasons from TMDB
+    let seasons = [];
+    if (media.tmdb_id) {
+        const tmdbData = await getTVShowSeasons(media.tmdb_id, db);
+        if (tmdbData && tmdbData.seasons) {
+            seasons = tmdbData.seasons.map(s => ({
+                Name: s.name || `Season ${s.season_number}`,
+                ServerId: 'seerrcatalog',
+                Id: `${seriesId}-season-${s.season_number}`,
+                Type: 'Season',
+                SeriesId: seriesId,
+                SeriesName: media.title,
+                IndexNumber: s.season_number,
+                ProductionYear: s.air_date ? parseInt(s.air_date.substring(0, 4)) : media.year,
+                PremiereDate: s.air_date ? `${s.air_date}T00:00:00.0000000Z` : null,
+                ImageTags: {},
+                BackdropImageTags: [],
+                LocationType: 'FileSystem',
+                // Store episode count for later use
+                _episodeCount: s.episode_count
+            }));
+        }
+    }
+
+    // Fallback to single season if TMDB fails
+    if (seasons.length === 0) {
+        seasons = [{
+            Name: 'Season 1',
+            ServerId: 'seerrcatalog',
+            Id: `${seriesId}-season-1`,
+            Type: 'Season',
+            SeriesId: seriesId,
+            SeriesName: media.title,
+            IndexNumber: 1,
+            ProductionYear: media.year,
+            PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
+            ImageTags: {},
+            BackdropImageTags: [],
+            LocationType: 'FileSystem',
+            _episodeCount: 10
+        }];
+    }
 
     console.log(`[Jellyfin] Returning ${seasons.length} seasons for ${media.title}`);
 
@@ -756,7 +783,7 @@ router.get('/Shows/:seriesId/Seasons', (req, res) => {
 });
 
 // Get episodes for a series/season (required by Jellyseerr for TV show sync)
-router.get('/Shows/:seriesId/Episodes', (req, res) => {
+router.get('/Shows/:seriesId/Episodes', async (req, res) => {
     const { seriesId } = req.params;
     const { seasonId } = req.query;
     console.log(`[Jellyfin] GET /Shows/${seriesId}/Episodes`, { seasonId });
@@ -775,35 +802,53 @@ router.get('/Shows/:seriesId/Episodes', (req, res) => {
         return res.status(404).json({ message: 'Series not found' });
     }
 
-    // Return mock episodes (we mark series as "available" when ANY episode is found)
-    // For simplicity, return 10 mock episodes for Season 1
-    const episodes = [];
-    const episodeCount = 10; // Default episode count
+    // Parse season number from seasonId (e.g., "series-20-season-1" -> 1)
+    let seasonNumber = 1;
+    if (seasonId) {
+        const seasonMatch = seasonId.match(/season-(\d+)$/);
+        if (seasonMatch) {
+            seasonNumber = parseInt(seasonMatch[1]);
+        }
+    }
 
+    // Get episode count from TMDB
+    let episodeCount = 10; // Default
+    if (media.tmdb_id) {
+        const tmdbData = await getTVShowSeasons(media.tmdb_id, db);
+        if (tmdbData && tmdbData.seasons) {
+            const season = tmdbData.seasons.find(s => s.season_number === seasonNumber);
+            if (season) {
+                episodeCount = season.episode_count;
+            }
+        }
+    }
+
+    // Generate episodes for this season
+    const episodes = [];
     for (let i = 1; i <= episodeCount; i++) {
         episodes.push({
             Name: `Episode ${i}`,
             ServerId: 'seerrcatalog',
-            Id: `${seriesId}-s1e${i}`,
+            Id: `${seriesId}-s${seasonNumber}e${i}`,
             Type: 'Episode',
             SeriesId: seriesId,
             SeriesName: media.title,
-            SeasonId: seasonId || `${seriesId}-season-1`,
-            SeasonName: 'Season 1',
+            SeasonId: seasonId || `${seriesId}-season-${seasonNumber}`,
+            SeasonName: `Season ${seasonNumber}`,
             IndexNumber: i,
-            ParentIndexNumber: 1,
+            ParentIndexNumber: seasonNumber,
             ProductionYear: media.year,
             PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
             MediaType: 'Video',
             LocationType: 'FileSystem',
-            Path: `/media/tv/${media.title} (${media.year})/Season 01/S01E${String(i).padStart(2, '0')}.mkv`,
+            Path: `/media/tv/${media.title} (${media.year})/Season ${String(seasonNumber).padStart(2, '0')}/S${String(seasonNumber).padStart(2, '0')}E${String(i).padStart(2, '0')}.mkv`,
             ImageTags: {},
             BackdropImageTags: [],
-            // MediaSources for 4K detection
+            // MediaSources for resolution detection
             MediaSources: [{
                 Protocol: 'File',
-                Id: `${seriesId}-s1e${i}-source`,
-                Path: `/media/tv/${media.title} (${media.year})/Season 01/S01E${String(i).padStart(2, '0')}.mkv`,
+                Id: `${seriesId}-s${seasonNumber}e${i}-source`,
+                Path: `/media/tv/${media.title} (${media.year})/Season ${String(seasonNumber).padStart(2, '0')}/S${String(seasonNumber).padStart(2, '0')}E${String(i).padStart(2, '0')}.mkv`,
                 Type: 'Default',
                 VideoType: 'VideoFile',
                 MediaStreams: [{
@@ -816,7 +861,7 @@ router.get('/Shows/:seriesId/Episodes', (req, res) => {
         });
     }
 
-    console.log(`[Jellyfin] Returning ${episodes.length} episodes for ${media.title}`);
+    console.log(`[Jellyfin] Returning ${episodes.length} episodes for ${media.title} S${seasonNumber}`);
 
     res.json({
         Items: episodes,
