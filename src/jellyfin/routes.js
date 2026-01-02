@@ -413,7 +413,8 @@ router.get('/Items', (req, res) => {
 
 // User items (for library access check)
 router.get('/Users/:userId/Items', (req, res) => {
-    const { ParentId, IncludeItemTypes } = req.query;
+    const { ParentId, IncludeItemTypes, Recursive, Fields } = req.query;
+    console.log(`[Jellyfin] GET /Users/${req.params.userId}/Items`, { ParentId, IncludeItemTypes, Recursive, Fields });
 
     // Delegate to Items endpoint
     req.query.ParentId = ParentId;
@@ -422,24 +423,42 @@ router.get('/Users/:userId/Items', (req, res) => {
     let items = [];
 
     if (ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
-        const movies = db.getMediaByType('movie');
-        items = movies.map(m => ({
+        const movies = db.getMediaByType('movie'); // Returns all movies (requested + available)
+        // Ideally we should filter by streams_available here if we only want to show available content in "Jellyfin"
+        // But for "Requests" status syncing, Jellyseerr checks if the item exists in Jellyfin.
+        // If we return it here, Jellyseerr assumes it exists.
+
+        items = movies.filter(m => m.streams_available).map(m => ({ // ONLY return available ones?
             Name: m.title,
             ServerId: 'seerrcatalog',
             Id: `movie-${m.id}`,
             Type: 'Movie',
-            ProviderIds: { Tmdb: m.tmdb_id?.toString(), Imdb: m.imdb_id }
+            MediaType: 'Video',
+            IsFolder: false,
+            ProviderIds: { Tmdb: m.tmdb_id?.toString(), Imdb: m.imdb_id },
+            UserData: { Played: !!m.watched, UnplayedItemCount: m.watched ? 0 : 1, PlaybackPositionTicks: 0, IsFavorite: false },
+            DateCreated: m.added_at,
+            ProductionYear: m.year
         }));
     } else if (ParentId === TV_LIBRARY_ID || IncludeItemTypes?.includes('Series')) {
         const series = db.getMediaByType('series');
-        items = series.map(s => ({
+        items = series.filter(s => s.streams_available).map(s => ({
             Name: s.title,
             ServerId: 'seerrcatalog',
             Id: `series-${s.id}`,
             Type: 'Series',
-            ProviderIds: { Tmdb: s.tmdb_id?.toString(), Imdb: s.imdb_id, Tvdb: s.tvdb_id?.toString() }
+            MediaType: 'Video',
+            IsFolder: true,
+            ProviderIds: { Tmdb: s.tmdb_id?.toString(), Imdb: s.imdb_id, Tvdb: s.tvdb_id?.toString() },
+            UserData: { Played: false, UnplayedItemCount: 1, PlaybackPositionTicks: 0, IsFavorite: false },
+            DateCreated: s.added_at,
+            ProductionYear: s.year
         }));
     }
+
+    // Apply basic pagination if requested? Jellyseerr usually requests all or huge limit.
+
+    console.log(`[Jellyfin] Returning ${items.length} items for library scan`);
 
     res.json({
         Items: items,
