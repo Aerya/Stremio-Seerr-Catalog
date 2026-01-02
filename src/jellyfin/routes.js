@@ -659,6 +659,9 @@ router.get('/Items/Latest', (req, res) => {
         .slice(0, limit);
 
     console.log(`[Jellyfin] Returning ${items.length} recently added items with streams`);
+    if (items.length > 0) {
+        console.log('[Jellyfin] Sample item:', JSON.stringify(items[0], null, 2));
+    }
 
     res.json(items);
 });
