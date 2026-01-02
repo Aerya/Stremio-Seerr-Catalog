@@ -435,7 +435,7 @@ router.get('/Users/:userId/Items', (req, res) => {
             Type: 'Movie',
             MediaType: 'Video',
             IsFolder: false,
-            ProviderIds: { Tmdb: m.tmdb_id?.toString(), Imdb: m.imdb_id },
+            ProviderIds: { tmdb: m.tmdb_id?.toString(), imdb: m.imdb_id },
             UserData: { Played: !!m.watched, UnplayedItemCount: m.watched ? 0 : 1, PlaybackPositionTicks: 0, IsFavorite: false },
             DateCreated: m.added_at,
             ProductionYear: m.year
@@ -449,7 +449,7 @@ router.get('/Users/:userId/Items', (req, res) => {
             Type: 'Series',
             MediaType: 'Video',
             IsFolder: true,
-            ProviderIds: { Tmdb: s.tmdb_id?.toString(), Imdb: s.imdb_id, Tvdb: s.tvdb_id?.toString() },
+            ProviderIds: { tmdb: s.tmdb_id?.toString(), imdb: s.imdb_id, tvdb: s.tvdb_id?.toString() },
             UserData: { Played: false, UnplayedItemCount: 1, PlaybackPositionTicks: 0, IsFavorite: false },
             DateCreated: s.added_at,
             ProductionYear: s.year
@@ -612,8 +612,8 @@ router.get('/Items/Latest', (req, res) => {
             Path: `/media/movies/${m.title} (${m.year})/${m.title}.mkv`,
             DateCreated: m.added_at || new Date().toISOString(),
             ProviderIds: {
-                Tmdb: m.tmdb_id?.toString(),
-                Imdb: m.imdb_id
+                tmdb: m.tmdb_id?.toString(),
+                imdb: m.imdb_id
             },
             UserData: {
                 Played: !!m.watched,
@@ -649,9 +649,9 @@ router.get('/Items/Latest', (req, res) => {
             Path: `/media/tv/${s.title} (${s.year})`,
             DateCreated: s.added_at || new Date().toISOString(),
             ProviderIds: {
-                Tmdb: s.tmdb_id?.toString(),
-                Imdb: s.imdb_id,
-                Tvdb: s.tvdb_id?.toString()
+                tmdb: s.tmdb_id?.toString(),
+                imdb: s.imdb_id,
+                tvdb: s.tvdb_id?.toString()
             },
             UserData: {
                 Played: false,
