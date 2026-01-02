@@ -169,6 +169,10 @@ async function getTVShowSeasons(tmdbId, db = null) {
     }
 }
 
+function isConfigured(db = null) {
+    return !!getApiKey(db);
+}
+
 module.exports = {
     searchTMDB,
     getTMDBDetails,
