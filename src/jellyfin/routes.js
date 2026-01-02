@@ -708,6 +708,123 @@ router.delete('/Auth/Keys/:key', (req, res) => {
     res.status(204).send();
 });
 
+// ============== TV Shows Endpoints ==============
+
+// Get seasons for a series (required by Jellyseerr for TV show sync)
+router.get('/Shows/:seriesId/Seasons', (req, res) => {
+    const { seriesId } = req.params;
+    console.log(`[Jellyfin] GET /Shows/${seriesId}/Seasons`);
+
+    // Parse series ID format: "series-123"
+    const match = seriesId.match(/^series-(\d+)$/);
+    if (!match) {
+        console.log(`[Jellyfin] Invalid series ID format: ${seriesId}`);
+        return res.status(404).json({ message: 'Series not found' });
+    }
+
+    const id = parseInt(match[1]);
+    const media = db.getMediaById(id);
+
+    if (!media || media.type !== 'series') {
+        return res.status(404).json({ message: 'Series not found' });
+    }
+
+    // Return a mock Season 1 (we don't track individual seasons in SeerrCatalog)
+    // This satisfies Jellyseerr's requirement to find seasons
+    const seasons = [{
+        Name: 'Season 1',
+        ServerId: 'seerrcatalog',
+        Id: `${seriesId}-season-1`,
+        Type: 'Season',
+        SeriesId: seriesId,
+        SeriesName: media.title,
+        IndexNumber: 1,
+        ProductionYear: media.year,
+        PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
+        ImageTags: {},
+        BackdropImageTags: [],
+        LocationType: 'FileSystem'
+    }];
+
+    console.log(`[Jellyfin] Returning ${seasons.length} seasons for ${media.title}`);
+
+    res.json({
+        Items: seasons,
+        TotalRecordCount: seasons.length,
+        StartIndex: 0
+    });
+});
+
+// Get episodes for a series/season (required by Jellyseerr for TV show sync)
+router.get('/Shows/:seriesId/Episodes', (req, res) => {
+    const { seriesId } = req.params;
+    const { seasonId } = req.query;
+    console.log(`[Jellyfin] GET /Shows/${seriesId}/Episodes`, { seasonId });
+
+    // Parse series ID format: "series-123"
+    const match = seriesId.match(/^series-(\d+)$/);
+    if (!match) {
+        console.log(`[Jellyfin] Invalid series ID format: ${seriesId}`);
+        return res.status(404).json({ message: 'Series not found' });
+    }
+
+    const id = parseInt(match[1]);
+    const media = db.getMediaById(id);
+
+    if (!media || media.type !== 'series') {
+        return res.status(404).json({ message: 'Series not found' });
+    }
+
+    // Return mock episodes (we mark series as "available" when ANY episode is found)
+    // For simplicity, return 10 mock episodes for Season 1
+    const episodes = [];
+    const episodeCount = 10; // Default episode count
+
+    for (let i = 1; i <= episodeCount; i++) {
+        episodes.push({
+            Name: `Episode ${i}`,
+            ServerId: 'seerrcatalog',
+            Id: `${seriesId}-s1e${i}`,
+            Type: 'Episode',
+            SeriesId: seriesId,
+            SeriesName: media.title,
+            SeasonId: seasonId || `${seriesId}-season-1`,
+            SeasonName: 'Season 1',
+            IndexNumber: i,
+            ParentIndexNumber: 1,
+            ProductionYear: media.year,
+            PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
+            MediaType: 'Video',
+            LocationType: 'FileSystem',
+            Path: `/media/tv/${media.title} (${media.year})/Season 01/S01E${String(i).padStart(2, '0')}.mkv`,
+            ImageTags: {},
+            BackdropImageTags: [],
+            // MediaSources for 4K detection
+            MediaSources: [{
+                Protocol: 'File',
+                Id: `${seriesId}-s1e${i}-source`,
+                Path: `/media/tv/${media.title} (${media.year})/Season 01/S01E${String(i).padStart(2, '0')}.mkv`,
+                Type: 'Default',
+                VideoType: 'VideoFile',
+                MediaStreams: [{
+                    Codec: 'h264',
+                    Type: 'Video',
+                    Width: 1920,
+                    Height: 1080
+                }]
+            }]
+        });
+    }
+
+    console.log(`[Jellyfin] Returning ${episodes.length} episodes for ${media.title}`);
+
+    res.json({
+        Items: episodes,
+        TotalRecordCount: episodes.length,
+        StartIndex: 0
+    });
+});
+
 // ============== Images (1x1 Transparent PNG) ==============
 
 // Handle all image requests with a transparent 1x1 PNG
