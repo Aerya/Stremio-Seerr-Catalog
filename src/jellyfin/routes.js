@@ -413,8 +413,8 @@ router.get('/Items', (req, res) => {
 
 // User items (for library access check)
 router.get('/Users/:userId/Items', (req, res) => {
-    const { ParentId, IncludeItemTypes, Recursive, Fields } = req.query;
-    console.log(`[Jellyfin] GET /Users/${req.params.userId}/Items`, { ParentId, IncludeItemTypes, Recursive, Fields });
+    const { ParentId, IncludeItemTypes, Recursive, Fields, Ids } = req.query;
+    console.log(`[Jellyfin] GET /Users/${req.params.userId}/Items`, { ParentId, IncludeItemTypes, Recursive, Fields, Ids });
 
     // Delegate to Items endpoint
     req.query.ParentId = ParentId;
