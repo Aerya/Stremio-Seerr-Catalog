@@ -81,6 +81,10 @@ async function triggerJellyseerrSync() {
 /**
  * Notify Jellyseerr that a media item is now available
  * @param {Object} media - Media object with type, tmdb_id, etc.
+ * 
+ * NOTE: Jellyseerr polls Sonarr/Radarr itself to check media availability
+ * via hasFile (movies) and episodeFileCount (TV shows). We don't need to
+ * actively notify it - it will discover the change on its next sync cycle.
  */
 async function notifyMediaAvailable(media) {
     const config = getJellyseerrConfig();
@@ -88,16 +92,10 @@ async function notifyMediaAvailable(media) {
         return false;
     }
 
-    try {
-        // First, try to trigger a sync
-        await triggerJellyseerrSync();
-
-        console.log(`[Jellyseerr] Notified about available: ${media.title}`);
-        return true;
-    } catch (error) {
-        console.error('[Jellyseerr] Notification error:', error.message);
-        return false;
-    }
+    // Just log that streams are available
+    // Jellyseerr will poll our Sonarr/Radarr API and see hasFile=true or episodeFileCount>0
+    console.log(`[Jellyseerr] Media now available (Jellyseerr will detect on next sync): ${media.title}`);
+    return true;
 }
 
 module.exports = {
