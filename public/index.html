@@ -930,7 +930,7 @@
         const keyRes = await fetch('/api/settings/jellyseerr_api_key');
         const keyData = await keyRes.json();
         if (keyData.value) {
-          document.getElementById('jellyseerr-key').value = '••••••••';
+          document.getElementById('jellyseerr-key').value = keyData.value;
         }
       } catch (e) {
         console.log('Could not load Jellyseerr settings');
