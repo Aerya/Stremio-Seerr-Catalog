@@ -564,6 +564,86 @@ router.get(/.*\/Images\/.*/, (req, res) => {
     res.end(png);
 });
 
+// ============== Recently Added Items ==============
+
+// Items/Latest - Returns recently added items with available streams
+// This is what Jellyseerr uses to detect when media becomes available
+router.get('/Items/Latest', (req, res) => {
+    const { ParentId, Limit, IncludeItemTypes } = req.query;
+    const limit = parseInt(Limit) || 16;
+
+    console.log('[Jellyfin] GET /Items/Latest', { ParentId, Limit: limit, IncludeItemTypes });
+
+    let items = [];
+
+    // Get movies with available streams
+    if (!ParentId || ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
+        const movies = db.getMediaByType('movie')
+            .filter(m => m.streams_available) // Only return media with streams
+            .sort((a, b) => new Date(b.added_at) - new Date(a.added_at)) // Most recent first
+            .slice(0, limit);
+
+        items.push(...movies.map(m => ({
+            Name: m.title,
+            ServerId: 'seerrcatalog',
+            Id: `movie-${m.id}`,
+            Type: 'Movie',
+            MediaType: 'Video',
+            IsFolder: false,
+            DateCreated: m.added_at || new Date().toISOString(),
+            ProviderIds: {
+                Tmdb: m.tmdb_id?.toString(),
+                Imdb: m.imdb_id
+            },
+            ImageTags: m.poster ? { Primary: 'poster' } : {},
+            BackdropImageTags: m.backdrop ? ['backdrop'] : [],
+            ProductionYear: m.year,
+            PremiereDate: m.year ? `${m.year}-01-01T00:00:00.0000000Z` : null,
+            Overview: m.overview || '',
+            CommunityRating: null,
+            RunTimeTicks: m.runtime ? m.runtime * 60 * 10000000 : null
+        })));
+    }
+
+    // Get series with available streams
+    if (!ParentId || ParentId === TV_LIBRARY_ID || IncludeItemTypes?.includes('Series')) {
+        const series = db.getMediaByType('series')
+            .filter(s => s.streams_available) // Only return media with streams
+            .sort((a, b) => new Date(b.added_at) - new Date(a.added_at)) // Most recent first
+            .slice(0, limit);
+
+        items.push(...series.map(s => ({
+            Name: s.title,
+            ServerId: 'seerrcatalog',
+            Id: `series-${s.id}`,
+            Type: 'Series',
+            MediaType: 'Video',
+            IsFolder: true,
+            DateCreated: s.added_at || new Date().toISOString(),
+            ProviderIds: {
+                Tmdb: s.tmdb_id?.toString(),
+                Imdb: s.imdb_id,
+                Tvdb: s.tvdb_id?.toString()
+            },
+            ImageTags: s.poster ? { Primary: 'poster' } : {},
+            BackdropImageTags: s.backdrop ? ['backdrop'] : [],
+            ProductionYear: s.year,
+            PremiereDate: s.year ? `${s.year}-01-01T00:00:00.0000000Z` : null,
+            Overview: s.overview || '',
+            CommunityRating: null
+        })));
+    }
+
+    // Sort all items by date and limit
+    items = items
+        .sort((a, b) => new Date(b.DateCreated) - new Date(a.DateCreated))
+        .slice(0, limit);
+
+    console.log(`[Jellyfin] Returning ${items.length} recently added items with streams`);
+
+    res.json(items);
+});
+
 // ============== Catch-all for unsupported endpoints ==============
 
 router.all('*', (req, res) => {
