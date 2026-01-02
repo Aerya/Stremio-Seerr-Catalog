@@ -609,10 +609,22 @@ router.get('/Items/Latest', (req, res) => {
             Type: 'Movie',
             MediaType: 'Video',
             IsFolder: false,
+            Path: `/media/movies/${m.title} (${m.year})/${m.title}.mkv`,
             DateCreated: m.added_at || new Date().toISOString(),
             ProviderIds: {
                 Tmdb: m.tmdb_id?.toString(),
-                Imdb: m.imdb_id
+                tmdb: m.tmdb_id?.toString(),
+                TMDB: m.tmdb_id?.toString(),
+                Imdb: m.imdb_id,
+                imdb: m.imdb_id,
+                IMDB: m.imdb_id
+            },
+            UserData: {
+                Played: !!m.watched,
+                UnplayedItemCount: m.watched ? 0 : 1,
+                PlaybackPositionTicks: 0,
+                IsFavorite: false,
+                Key: `movie-${m.id}`
             },
             ImageTags: m.poster ? { Primary: 'poster' } : {},
             BackdropImageTags: m.backdrop ? ['backdrop'] : [],
@@ -638,11 +650,25 @@ router.get('/Items/Latest', (req, res) => {
             Type: 'Series',
             MediaType: 'Video',
             IsFolder: true,
+            Path: `/media/tv/${s.title} (${s.year})`,
             DateCreated: s.added_at || new Date().toISOString(),
             ProviderIds: {
                 Tmdb: s.tmdb_id?.toString(),
+                tmdb: s.tmdb_id?.toString(),
+                TMDB: s.tmdb_id?.toString(),
                 Imdb: s.imdb_id,
-                Tvdb: s.tvdb_id?.toString()
+                imdb: s.imdb_id,
+                IMDB: s.imdb_id,
+                Tvdb: s.tvdb_id?.toString(),
+                tvdb: s.tvdb_id?.toString(),
+                TVDB: s.tvdb_id?.toString()
+            },
+            UserData: {
+                Played: false,
+                UnplayedItemCount: 1,
+                PlaybackPositionTicks: 0,
+                IsFavorite: false,
+                Key: `series-${s.id}`
             },
             ImageTags: s.poster ? { Primary: 'poster' } : {},
             BackdropImageTags: s.backdrop ? ['backdrop'] : [],
