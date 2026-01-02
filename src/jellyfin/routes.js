@@ -368,9 +368,92 @@ router.get('/Library/VirtualFolders', (req, res) => {
 
 // Items endpoint - returns media items from a library
 router.get('/Items', (req, res) => {
-    const { ParentId, IncludeItemTypes } = req.query;
+    const { ParentId, IncludeItemTypes, ids, fields } = req.query;
 
-    // Get media from database
+    console.log('[Jellyfin] GET /Items', { ParentId, IncludeItemTypes, ids, fields });
+
+    // If specific ID(s) requested (Jellyseerr getItemData calls this)
+    if (ids) {
+        const idList = ids.split(',');
+        const items = [];
+
+        for (const itemId of idList) {
+            const match = itemId.match(/^(movie|series)-(\d+)$/);
+            if (!match) continue;
+
+            const [, type, id] = match;
+            const media = db.getMediaById(parseInt(id));
+
+            if (!media || (type === 'movie' && media.type !== 'movie') || (type === 'series' && media.type !== 'series')) {
+                continue;
+            }
+
+            // Return full item with ProviderIds (PascalCase!)
+            items.push({
+                Name: media.title,
+                ServerId: 'seerrcatalog',
+                Id: itemId,
+                Type: type === 'movie' ? 'Movie' : 'Series',
+                MediaType: 'Video',
+                IsFolder: type === 'series',
+                Path: type === 'movie'
+                    ? `/media/movies/${media.title} (${media.year})/${media.title}.mkv`
+                    : `/media/tv/${media.title} (${media.year})`,
+                DateCreated: media.added_at || new Date().toISOString(),
+                ProviderIds: {
+                    Tmdb: media.tmdb_id?.toString(),
+                    Imdb: media.imdb_id,
+                    ...(type === 'series' && media.tvdb_id ? { Tvdb: media.tvdb_id.toString() } : {})
+                },
+                UserData: {
+                    Played: !!media.watched,
+                    UnplayedItemCount: media.watched ? 0 : 1,
+                    PlaybackPositionTicks: 0,
+                    IsFavorite: false,
+                    Key: itemId
+                },
+                ImageTags: media.poster ? { Primary: 'poster' } : {},
+                BackdropImageTags: media.backdrop ? ['backdrop'] : [],
+                ProductionYear: media.year,
+                PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
+                Overview: media.overview || '',
+                CommunityRating: null,
+                RunTimeTicks: media.runtime ? media.runtime * 60 * 10000000 : null,
+                // Additional fields Jellyseerr may request
+                Width: 1920,
+                Height: 1080,
+                IsHD: true,
+                MediaSources: [{
+                    Protocol: 'File',
+                    Id: itemId,
+                    Path: type === 'movie'
+                        ? `/media/movies/${media.title} (${media.year})/${media.title}.mkv`
+                        : `/media/tv/${media.title} (${media.year})`,
+                    Type: 'Default',
+                    VideoType: 'VideoFile',
+                    MediaStreams: [{
+                        Codec: 'h264',
+                        Type: 'Video',
+                        Width: 1920,
+                        Height: 1080
+                    }]
+                }]
+            });
+        }
+
+        console.log(`[Jellyfin] Returning ${items.length} items for ids=${ids}`);
+        if (items.length > 0) {
+            console.log('[Jellyfin] Item ProviderIds:', JSON.stringify(items[0].ProviderIds));
+        }
+
+        return res.json({
+            Items: items,
+            TotalRecordCount: items.length,
+            StartIndex: 0
+        });
+    }
+
+    // Get media from database (original logic for library browsing)
     let items = [];
 
     if (ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
@@ -411,6 +494,62 @@ router.get('/Items', (req, res) => {
     });
 });
 
+// Get specific item by ID (for Jellyseerr getItemData() calls)
+router.get('/Items/:itemId', (req, res) => {
+    const { itemId } = req.params;
+    console.log(`[Jellyfin] GET /Items/${itemId}`);
+
+    // Parse item ID format: "movie-123" or "series-123"
+    const match = itemId.match(/^(movie|series)-(\d+)$/);
+    if (!match) {
+        console.log(`[Jellyfin] Invalid item ID format: ${itemId}`);
+        return res.status(404).json({ message: 'Item not found' });
+    }
+
+    const [, type, id] = match;
+    const media = db.getMediaById(parseInt(id));
+
+    if (!media || (type === 'movie' && media.type !== 'movie') || (type === 'series' && media.type !== 'series')) {
+        return res.status(404).json({ message: 'Item not found' });
+    }
+
+    // Return full item details with ProviderIds (PascalCase!)
+    const item = {
+        Name: media.title,
+        ServerId: 'seerrcatalog',
+        Id: itemId,
+        Type: type === 'movie' ? 'Movie' : 'Series',
+        MediaType: 'Video',
+        IsFolder: type === 'series',
+        Path: type === 'movie'
+            ? `/media/movies/${media.title} (${media.year})/${media.title}.mkv`
+            : `/media/tv/${media.title} (${media.year})`,
+        DateCreated: media.added_at || new Date().toISOString(),
+        ProviderIds: {
+            Tmdb: media.tmdb_id?.toString(),
+            Imdb: media.imdb_id,
+            ...(type === 'series' && media.tvdb_id ? { Tvdb: media.tvdb_id.toString() } : {})
+        },
+        UserData: {
+            Played: !!media.watched,
+            UnplayedItemCount: media.watched ? 0 : 1,
+            PlaybackPositionTicks: 0,
+            IsFavorite: false,
+            Key: itemId
+        },
+        ImageTags: media.poster ? { Primary: 'poster' } : {},
+        BackdropImageTags: media.backdrop ? ['backdrop'] : [],
+        ProductionYear: media.year,
+        PremiereDate: media.year ? `${media.year}-01-01T00:00:00.0000000Z` : null,
+        Overview: media.overview || '',
+        CommunityRating: null,
+        RunTimeTicks: media.runtime ? media.runtime * 60 * 10000000 : null
+    };
+
+    console.log('[Jellyfin] Returning item details via /Items/:itemId with ProviderIds:', JSON.stringify(item.ProviderIds));
+    res.json(item);
+});
+
 // User items (for library access check)
 router.get('/Users/:userId/Items', (req, res) => {
     const { ParentId, IncludeItemTypes, Recursive, Fields, Ids } = req.query;
@@ -435,7 +574,7 @@ router.get('/Users/:userId/Items', (req, res) => {
             Type: 'Movie',
             MediaType: 'Video',
             IsFolder: false,
-            ProviderIds: { tmdb: m.tmdb_id?.toString(), imdb: m.imdb_id },
+            ProviderIds: { Tmdb: m.tmdb_id?.toString(), Imdb: m.imdb_id },
             UserData: { Played: !!m.watched, UnplayedItemCount: m.watched ? 0 : 1, PlaybackPositionTicks: 0, IsFavorite: false },
             DateCreated: m.added_at,
             ProductionYear: m.year
@@ -449,7 +588,7 @@ router.get('/Users/:userId/Items', (req, res) => {
             Type: 'Series',
             MediaType: 'Video',
             IsFolder: true,
-            ProviderIds: { tmdb: s.tmdb_id?.toString(), imdb: s.imdb_id, tvdb: s.tvdb_id?.toString() },
+            ProviderIds: { Tmdb: s.tmdb_id?.toString(), Imdb: s.imdb_id, Tvdb: s.tvdb_id?.toString() },
             UserData: { Played: false, UnplayedItemCount: 1, PlaybackPositionTicks: 0, IsFavorite: false },
             DateCreated: s.added_at,
             ProductionYear: s.year
@@ -499,9 +638,9 @@ router.get('/Users/:userId/Items/:itemId', (req, res) => {
             : `/media/tv/${media.title} (${media.year})`,
         DateCreated: media.added_at || new Date().toISOString(),
         ProviderIds: {
-            tmdb: media.tmdb_id?.toString(),
-            imdb: media.imdb_id,
-            ...(type === 'series' && media.tvdb_id ? { tvdb: media.tvdb_id.toString() } : {})
+            Tmdb: media.tmdb_id?.toString(),
+            Imdb: media.imdb_id,
+            ...(type === 'series' && media.tvdb_id ? { Tvdb: media.tvdb_id.toString() } : {})
         },
         UserData: {
             Played: !!media.watched,
@@ -668,8 +807,8 @@ router.get('/Items/Latest', (req, res) => {
             Path: `/media/movies/${m.title} (${m.year})/${m.title}.mkv`,
             DateCreated: m.added_at || new Date().toISOString(),
             ProviderIds: {
-                tmdb: m.tmdb_id?.toString(),
-                imdb: m.imdb_id
+                Tmdb: m.tmdb_id?.toString(),
+                Imdb: m.imdb_id
             },
             UserData: {
                 Played: !!m.watched,
@@ -705,9 +844,9 @@ router.get('/Items/Latest', (req, res) => {
             Path: `/media/tv/${s.title} (${s.year})`,
             DateCreated: s.added_at || new Date().toISOString(),
             ProviderIds: {
-                tmdb: s.tmdb_id?.toString(),
-                imdb: s.imdb_id,
-                tvdb: s.tvdb_id?.toString()
+                Tmdb: s.tmdb_id?.toString(),
+                Imdb: s.imdb_id,
+                Tvdb: s.tvdb_id?.toString()
             },
             UserData: {
                 Played: false,
