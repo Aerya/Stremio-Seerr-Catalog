@@ -7,7 +7,7 @@
 
 🇫🇷 **[Version Française](#-seerrcatalog-français)**
 
-📖 **[Article lié](https://upandclear.org/2025/01/03/seerrcatalog)**
+📖 **[Screen is this French written article / Article lié](https://upandclear.org/2025/01/03/seerrcatalog)**
 
 ---
 
@@ -38,6 +38,26 @@ cp .env.example .env
 docker-compose up -d
 ```
 
+Or just fill this compose with your data:
+```bash
+services:
+  seerr-catalog:
+    image: ghcr.io/aerya/stremio-seerr-catalog:latest
+    container_name: seerr-catalog
+    ports:
+      - "7000:7000"
+    environment:
+    # set your URKL if using a reverse proxy
+      - BASE_URL=http://localhost:7000
+      - API_KEY=
+      - PORT=7000
+      - HOST=0.0.0.0
+      - TMDB_API_KEY=
+    volumes:
+      - /mnt/Docker/stremio/seerrcatalog:/app/data
+    restart: always
+```
+
 Then:
 1. Open `http://localhost:7000` and create your admin account
 2. Add your Stremio auth key in Settings
@@ -53,11 +73,6 @@ Then:
 | `TMDB_API_KEY` | TMDB API key for metadata | - |
 | `BASE_URL` | Public URL (for reverse proxy) | auto-detected |
 
-## Screenshots
-
-| Dashboard | Catalog | Settings |
-|-----------|---------|----------|
-| ![Dashboard](screens/dashboard.png) | ![Catalog](screens/catalog.png) | ![Settings](screens/settings.png) |
 
 ---
 
@@ -90,6 +105,25 @@ git clone https://github.com/Aerya/SeerrCatalog.git
 cd SeerrCatalog
 cp .env.example .env
 docker-compose up -d
+```
+Ou utilisez ce compose avec vos données :
+```bash
+services:
+  seerr-catalog:
+    image: ghcr.io/aerya/stremio-seerr-catalog:latest
+    container_name: seerr-catalog
+    ports:
+      - "7000:7000"
+    environment:
+    # mettre l'URL si vous utilisez un reverse proxy
+      - BASE_URL=http://localhost:7000
+      - API_KEY=
+      - PORT=7000
+      - HOST=0.0.0.0
+      - TMDB_API_KEY=
+    volumes:
+      - /mnt/Docker/stremio/seerrcatalog:/app/data
+    restart: always
 ```
 
 Ensuite :
