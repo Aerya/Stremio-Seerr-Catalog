@@ -7,9 +7,9 @@
 
 🇫🇷 **[Version Française](#-seerrcatalog-français)**
 
-**[Article lié + screens](https://upandclear.org/2025/01/03/seerrcatalog)**
+**[Article lié + screens](https://upandclear.org/2026/01/03/seerrcatalog-laddon-over-jelly-seerr-pour-stremio/)**
 
-**[Screen is this French written article](https://upandclear.org/2025/01/03/seerrcatalog)**
+**[Screen is this French written article](https://upandclear.org/2026/01/03/seerrcatalog-laddon-over-jelly-seerr-pour-stremio/)**
 
 ---
 
