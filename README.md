@@ -7,7 +7,9 @@
 
 🇫🇷 **[Version Française](#-seerrcatalog-français)**
 
-📖 **[Screen is this French written article / Article lié](https://upandclear.org/2025/01/03/seerrcatalog)**
+**[Article lié + screens](https://upandclear.org/2025/01/03/seerrcatalog)**
+
+**[Screen is this French written article](https://upandclear.org/2025/01/03/seerrcatalog)**
 
 ---
 
@@ -47,7 +49,7 @@ services:
     ports:
       - "7000:7000"
     environment:
-    # set your URKL if using a reverse proxy
+    # set your URL if using a reverse proxy
       - BASE_URL=http://localhost:7000
       - API_KEY=
       - PORT=7000
