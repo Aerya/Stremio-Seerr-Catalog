@@ -7,7 +7,7 @@
 
 🇫🇷 **[Version Française](#-seerrcatalog-français)**
 
-📖 **[Read the full guide on UpAndClear](https://upandclear.org/2025/01/03/seerrcatalog)**
+📖 **[Article lié](https://upandclear.org/2025/01/03/seerrcatalog)**
 
 ---
 
@@ -17,20 +17,17 @@ SeerrCatalog acts as a **virtual media server** that connects Jellyseerr to Stre
 
 **No downloads, no storage needed** - just request and stream!
 
-![Dashboard](screens/dashboard.png)
-
 ## Features
 
 - 🔗 **Jellyfin/Radarr/Sonarr API Emulation** - Seamless Jellyseerr integration
 - 📺 **Personal Stremio Catalog** - Access your requested content in Stremio
+- 🔍 **Smart Stream Search** - Searches for releases matching your tags in addons linked to your Stremio account
 - 🌍 **Language & Resolution Filters** - Only mark content as available if it matches your preferences (FRENCH, MULTI, 4K, 1080p...)
+- 🔄 **24h Auto-Retry** - If no source matches your criteria, retries automatically every 24 hours
+- 🗑️ **Auto-Cleanup** - Fully watched content is automatically removed from catalogs
 - 👥 **Multi-User Support** - Each user has their own addons, filters, and catalog
-- 🔄 **Auto-Sync with Jellyseerr** - Media status updates automatically to "Available"
-- 🔔 **Discord Notifications** - Get notified when content becomes available
+- 🔔 **Auto-Sync with Jellyseerr** - Media status updates automatically to "Available"
 - 🎨 **Modern WebUI** - Dark mode, responsive design, FR/EN localization
-- 🐳 **Docker Ready** - Easy deployment with docker-compose
-
-![Catalog](screens/catalog.png)
 
 ## Quick Start
 
@@ -66,7 +63,7 @@ Then:
 
 # 🇫🇷 SeerrCatalog (Français)
 
-> 🎬 Passerelle entre Jellyseerr et Stremio - Transformez vos requêtes en catalogue de streaming personnel
+> 🎬 Passerelle entre Jellyseerr et Stremio - Transformez vos requêtes (Disponibles) en catalogue de streaming personnel
 
 ## Qu'est-ce que SeerrCatalog ?
 
@@ -78,12 +75,13 @@ SeerrCatalog agit comme un **serveur multimédia virtuel** qui connecte Jellysee
 
 - 🔗 **Émulation API Jellyfin/Radarr/Sonarr** - Intégration transparente avec Jellyseerr
 - 📺 **Catalogue Stremio Personnel** - Accédez à vos contenus demandés dans Stremio
+- 🔍 **Recherche Intelligente** - Recherche les releases avec vos tags dans les addons liés à votre compte Stremio
 - 🌍 **Filtres Langue & Résolution** - Ne marque comme disponible que si ça correspond à vos préférences (FRENCH, MULTI, 4K, 1080p...)
+- 🔄 **Retry Auto 24h** - Si aucune source ne correspond à vos critères, relance automatiquement toutes les 24 heures
+- 🗑️ **Nettoyage Auto** - Les contenus entièrement visionnés sont automatiquement retirés des catalogues
 - 👥 **Multi-Utilisateurs** - Chaque utilisateur a ses propres addons, filtres et catalogue
-- 🔄 **Sync Auto avec Jellyseerr** - Le statut passe automatiquement à "Disponible"
-- 🔔 **Notifications Discord** - Soyez notifié quand le contenu devient disponible
+- 🔔 **Sync Auto avec Jellyseerr** - Le statut passe automatiquement à "Disponible"
 - 🎨 **WebUI Moderne** - Mode sombre, responsive, localisation FR/EN
-- 🐳 **Docker Ready** - Déploiement facile avec docker-compose
 
 ## Démarrage Rapide
 
