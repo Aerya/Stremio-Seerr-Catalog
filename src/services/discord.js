@@ -204,9 +204,7 @@ async function sendNoSourceNotification(media, filterPrefs = null) {
         : null;
 
     // Build description with IDs and links
-    let description = `**${lang.type}:** ${typeName}\n\n`;
-
-    description += `**IMDB ID:** \`${imdbId}\`\n`;
+    let description = `**IMDB ID:** \`${imdbId}\`\n`;
     if (imdbLink) {
         description += `${imdbLink}\n`;
     }
