@@ -155,6 +155,45 @@
               </p>
             </div>
           </div>
+
+          <div class="settings-section">
+            <h3><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/discord.webp" alt="Discord"
+                class="section-icon"> <span data-i18n="discord_notifications">Discord Notifications</span></h3>
+            <div class="settings-item">
+              <h4 data-i18n="discord_webhooks">Discord Webhooks</h4>
+              <p class="hint" data-i18n="discord_webhooks_hint">Get notified on Discord when no source is found for a
+                media.</p>
+
+              <div id="discord-webhooks-list" style="margin: 12px 0;"></div>
+
+              <div class="input-group">
+                <input type="url" id="discord-webhook-url" placeholder="https://discord.com/api/webhooks/...">
+                <button class="btn btn-primary btn-small" onclick="addDiscordWebhook()" data-i18n="add">Add</button>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <h4 data-i18n="discord_settings">Notification Settings</h4>
+              <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                  <input type="checkbox" id="discord-enabled" onchange="saveDiscordSettings()" style="cursor:pointer;">
+                  <span data-i18n="discord_enabled">Enabled</span>
+                </label>
+
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span data-i18n="discord_language">Language:</span>
+                  <select id="discord-language" onchange="saveDiscordSettings()"
+                    style="padding:4px 8px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                  </select>
+                </div>
+
+                <button class="btn btn-secondary btn-small" onclick="testDiscordWebhook()">🔔 Test</button>
+              </div>
+              <p class="hint" id="discord-status" style="margin-top:8px;"></p>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -975,9 +1014,119 @@
       });
     });
 
+    // ============== Discord Notifications ==============
+
+    async function loadDiscordSettings() {
+      try {
+        // Load webhooks
+        const webhooksRes = await fetch('/api/discord/webhooks');
+        const webhooks = await webhooksRes.json();
+
+        const list = document.getElementById('discord-webhooks-list');
+        if (webhooks.length === 0) {
+          list.innerHTML = '<p class="hint" style="margin:0;">No webhooks configured</p>';
+        } else {
+          list.innerHTML = webhooks.map(w => `
+            <div style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:#2a2a3e; border-radius:4px; margin-bottom:6px;">
+              <code style="flex:1;">Webhook ${w.masked}</code>
+              <button class="btn-icon" onclick="removeDiscordWebhook('${w.full}')" title="Remove">🗑️</button>
+            </div>
+          `).join('');
+        }
+
+        // Load settings
+        const settingsRes = await fetch('/api/discord/settings');
+        const settings = await settingsRes.json();
+
+        document.getElementById('discord-enabled').checked = settings.enabled;
+        document.getElementById('discord-language').value = settings.language;
+      } catch (e) {
+        console.error('Failed to load Discord settings:', e);
+      }
+    }
+
+    async function addDiscordWebhook() {
+      const url = document.getElementById('discord-webhook-url').value.trim();
+      if (!url) return;
+
+      try {
+        const res = await fetch('/api/discord/webhooks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        if (res.ok) {
+          document.getElementById('discord-webhook-url').value = '';
+          document.getElementById('discord-status').textContent = '✅ Webhook added!';
+          document.getElementById('discord-status').style.color = 'var(--success)';
+          loadDiscordSettings();
+        } else {
+          const data = await res.json();
+          document.getElementById('discord-status').textContent = '❌ ' + data.error;
+          document.getElementById('discord-status').style.color = 'var(--error)';
+        }
+        setTimeout(() => document.getElementById('discord-status').textContent = '', 3000);
+      } catch (e) {
+        document.getElementById('discord-status').textContent = '❌ Error: ' + e.message;
+      }
+    }
+
+    async function removeDiscordWebhook(url) {
+      try {
+        await fetch('/api/discord/webhooks', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        loadDiscordSettings();
+      } catch (e) {
+        console.error('Failed to remove webhook:', e);
+      }
+    }
+
+    async function saveDiscordSettings() {
+      const enabled = document.getElementById('discord-enabled').checked;
+      const language = document.getElementById('discord-language').value;
+
+      try {
+        await fetch('/api/discord/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled, language })
+        });
+        document.getElementById('discord-status').textContent = '✅ Settings saved!';
+        document.getElementById('discord-status').style.color = 'var(--success)';
+        setTimeout(() => document.getElementById('discord-status').textContent = '', 2000);
+      } catch (e) {
+        document.getElementById('discord-status').textContent = '❌ Error: ' + e.message;
+      }
+    }
+
+    async function testDiscordWebhook() {
+      document.getElementById('discord-status').textContent = '⏳ Sending test...';
+      document.getElementById('discord-status').style.color = 'var(--text-secondary)';
+
+      try {
+        const res = await fetch('/api/discord/test', { method: 'POST' });
+        if (res.ok) {
+          document.getElementById('discord-status').textContent = '✅ Test notification sent!';
+          document.getElementById('discord-status').style.color = 'var(--success)';
+        } else {
+          const data = await res.json();
+          document.getElementById('discord-status').textContent = '❌ ' + (data.error || 'Failed');
+          document.getElementById('discord-status').style.color = 'var(--error)';
+        }
+      } catch (e) {
+        document.getElementById('discord-status').textContent = '❌ Error: ' + e.message;
+        document.getElementById('discord-status').style.color = 'var(--error)';
+      }
+      setTimeout(() => document.getElementById('discord-status').textContent = '', 4000);
+    }
+
     // Init
     applyTranslations();
-    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings();
+    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings(); loadDiscordSettings();
     setInterval(() => { loadStats(); loadCatalog(); }, 30000);
   </script>
 </body>

@@ -103,6 +103,15 @@ const translations = {
         min_resolution: 'Min Resolution:',
         auto_cleanup: 'Auto-cleanup watched content',
 
+        // Discord Notifications
+        discord_notifications: 'Discord Notifications',
+        discord_webhooks: 'Discord Webhooks',
+        discord_webhooks_hint: 'Get notified on Discord when no source is found for a media.',
+        discord_settings: 'Notification Settings',
+        discord_enabled: 'Enabled',
+        discord_language: 'Language:',
+        add: 'Add',
+
         // Modal
         sources_found: 'Sources found:',
         no_sources_found: 'No sources found during last check',
@@ -209,6 +218,15 @@ const translations = {
         language_tags: 'Tags de langue (max 2) :',
         min_resolution: 'Résolution minimale :',
         auto_cleanup: 'Nettoyage auto du contenu regardé',
+
+        // Discord Notifications
+        discord_notifications: 'Notifications Discord',
+        discord_webhooks: 'Webhooks Discord',
+        discord_webhooks_hint: 'Recevez une notification Discord quand aucune source n\'est trouvée pour un média.',
+        discord_settings: 'Paramètres de notification',
+        discord_enabled: 'Activé',
+        discord_language: 'Langue :',
+        add: 'Ajouter',
 
         // Modal
         sources_found: 'Sources trouvées :',
