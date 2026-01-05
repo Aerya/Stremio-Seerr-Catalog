@@ -93,6 +93,7 @@ async function recheckUnavailableMedia(db) {
         if (result.available) {
             console.log(`[StreamChecker] ✅ Streams now available for: ${media.title} (${result.streamCount} streams)`);
         }
+        // No Discord notification on recheck - only on initial add via Radarr/Sonarr
 
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));

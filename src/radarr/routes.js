@@ -148,7 +148,7 @@ function toRadarrMovie(media, idx = 0) {
         qualityProfileId: 1,
         monitored: !!media.monitored,
         minimumAvailability: 'announced',
-        isAvailable: true,
+        isAvailable: hasFile,
         folderName: `${media.title} (${media.year || 'Unknown'})`,
         runtime: media.runtime || 0,
         cleanTitle: media.title.toLowerCase().replace(/[^a-z0-9]/g, ''),
@@ -226,7 +226,7 @@ router.get('/api/v3/movie/lookup', async (req, res) => {
                     qualityProfileId: 1,
                     monitored: true,
                     minimumAvailability: 'announced',
-                    isAvailable: true,
+                    isAvailable: false,
                     runtime: details.runtime || 0,
                     cleanTitle: details.title.toLowerCase().replace(/[^a-z0-9]/g, ''),
                     imdbId: details.imdb_id || '',
@@ -257,7 +257,7 @@ router.get('/api/v3/movie/lookup', async (req, res) => {
                     qualityProfileId: 1,
                     monitored: true,
                     minimumAvailability: 'announced',
-                    isAvailable: true,
+                    isAvailable: false,
                     runtime: 0,
                     cleanTitle: `movie${tmdbId}`,
                     imdbId: '',
@@ -370,6 +370,22 @@ router.post('/api/v3/movie', async (req, res) => {
                 await notifyMediaAvailable(media);
             } else {
                 console.log(`[Radarr] ⚠️ No streams found for: ${media.title}`);
+
+                // Get user's filter preferences for the notification
+                const user = media.user_id ? db.getUserById(media.user_id) : null;
+                let filterPrefs = null;
+                if (user) {
+                    const languageTagsJson = db.getSetting(`stream_filter_languages_${user.id}`);
+                    const minResolution = db.getSetting(`stream_filter_resolution_${user.id}`);
+                    filterPrefs = {
+                        languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : [],
+                        minResolution: minResolution || null
+                    };
+                }
+
+                // Send Discord notification with filters
+                const { sendNoSourceNotification } = require('../services/discord');
+                await sendNoSourceNotification(media, filterPrefs);
             }
         } catch (e) {
             console.error('[Radarr] Stream check error:', e.message);

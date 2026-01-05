@@ -120,6 +120,76 @@ router.get('/api/settings', (req, res) => {
     res.json(db.getAllSettings());
 });
 
+// ============== Discord Webhook API ==============
+
+const discord = require('../services/discord');
+
+// Get all webhooks (masked for security)
+router.get('/api/discord/webhooks', (req, res) => {
+    const webhooks = discord.getWebhookUrls();
+    // Mask webhook URLs for security (show only last 8 chars)
+    const masked = webhooks.map(url => {
+        const lastPart = url.split('/').pop();
+        return {
+            id: lastPart.substring(0, 8),
+            masked: `...${lastPart.substring(lastPart.length - 8)}`,
+            full: url // Only for deletion reference
+        };
+    });
+    res.json(masked);
+});
+
+// Add webhook
+router.post('/api/discord/webhooks', (req, res) => {
+    const { url } = req.body;
+    try {
+        discord.addWebhookUrl(url);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// Remove webhook
+router.delete('/api/discord/webhooks', (req, res) => {
+    const { url } = req.body;
+    try {
+        discord.removeWebhookUrl(url);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(400).json({ error: e.message });
+    }
+});
+
+// Test webhook
+router.post('/api/discord/test', async (req, res) => {
+    try {
+        await discord.sendTestNotification();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get/Set notification settings
+router.get('/api/discord/settings', (req, res) => {
+    res.json({
+        enabled: discord.isNotificationsEnabled(),
+        language: discord.getNotificationLanguage()
+    });
+});
+
+router.put('/api/discord/settings', (req, res) => {
+    const { enabled, language } = req.body;
+    if (enabled !== undefined) {
+        discord.setNotificationsEnabled(enabled);
+    }
+    if (language !== undefined) {
+        discord.setNotificationLanguage(language);
+    }
+    res.json({ success: true });
+});
+
 // API: Config status
 router.get('/api/config', (req, res) => {
     const tmdbKey = tmdb.getApiKey(db);

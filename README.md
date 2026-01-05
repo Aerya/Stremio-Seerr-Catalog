@@ -25,6 +25,7 @@ SeerrCatalog acts as a **virtual media server** that connects Jellyseerr to Stre
 - 📺 **Personal Stremio Catalog** - Access your requested content in Stremio
 - 🔍 **Smart Stream Search** - Searches for releases matching your tags in addons linked to your Stremio account
 - 🌍 **Language & Resolution Filters** - Only mark content as available if it matches your preferences (FRENCH, MULTI, 4K, 1080p...)
+- 🔔 **Discord Notifications** - Get notified when no source is found (multi-webhook, FR/EN)
 - 🔄 **24h Auto-Retry** - If no source matches your criteria, retries automatically every 24 hours
 - 🗑️ **Auto-Cleanup** - Fully watched content is automatically removed from catalogs
 - 👥 **Multi-User Support** - Each user has their own addons, filters, and catalog
@@ -94,6 +95,7 @@ SeerrCatalog agit comme un **serveur multimédia virtuel** qui connecte Jellysee
 - 📺 **Catalogue Stremio Personnel** - Accédez à vos contenus demandés dans Stremio
 - 🔍 **Recherche Intelligente** - Recherche les releases avec vos tags dans les addons liés à votre compte Stremio
 - 🌍 **Filtres Langue & Résolution** - Ne marque comme disponible que si ça correspond à vos préférences (FRENCH, MULTI, 4K, 1080p...)
+- 🔔 **Notifications Discord** - Soyez notifié quand aucune source n'est trouvée (multi-webhook, FR/EN)
 - 🔄 **Retry Auto 24h** - Si aucune source ne correspond à vos critères, relance automatiquement toutes les 24 heures
 - 🗑️ **Nettoyage Auto** - Les contenus entièrement visionnés sont automatiquement retirés des catalogues
 - 👥 **Multi-Utilisateurs** - Chaque utilisateur a ses propres addons, filtres et catalogue

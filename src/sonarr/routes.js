@@ -444,6 +444,22 @@ router.post('/api/v3/series', async (req, res) => {
                     await notifyMediaAvailable(media);
                 } else {
                     console.log(`[Sonarr] ⚠️ No streams found for: ${media.title}`);
+
+                    // Get user's filter preferences for the notification
+                    const user = media.user_id ? db.getUserById(media.user_id) : null;
+                    let filterPrefs = null;
+                    if (user) {
+                        const languageTagsJson = db.getSetting(`stream_filter_languages_${user.id}`);
+                        const minResolution = db.getSetting(`stream_filter_resolution_${user.id}`);
+                        filterPrefs = {
+                            languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : [],
+                            minResolution: minResolution || null
+                        };
+                    }
+
+                    // Send Discord notification with filters
+                    const { sendNoSourceNotification } = require('../services/discord');
+                    await sendNoSourceNotification(media, filterPrefs);
                 }
             } catch (e) {
                 console.error('[Sonarr] Stream check error:', e.message);
