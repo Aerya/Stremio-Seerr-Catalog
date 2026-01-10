@@ -393,6 +393,13 @@ router.get('/Items', (req, res) => {
                 continue;
             }
 
+            // IMPORTANT: Only return media that has streams available
+            // This prevents Jellyseerr from marking unavailable media as "Available"
+            if (!media.streams_available) {
+                console.log(`[Jellyfin] Skipping ${media.title} - no streams available`);
+                continue;
+            }
+
             // Return full item with ProviderIds (PascalCase!)
             items.push({
                 Name: media.title,
@@ -462,7 +469,9 @@ router.get('/Items', (req, res) => {
     let items = [];
 
     if (ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
-        const movies = db.getMediaByType('movie');
+        // IMPORTANT: Only return movies with streams available
+        // Otherwise Jellyseerr will mark them as "Available" during Full Library Scan
+        const movies = db.getMediaByType('movie').filter(m => m.streams_available);
         items = movies.map(m => ({
             Name: m.title,
             ServerId: 'seerrcatalog',
@@ -476,7 +485,9 @@ router.get('/Items', (req, res) => {
             }
         }));
     } else if (ParentId === TV_LIBRARY_ID || IncludeItemTypes?.includes('Series')) {
-        const series = db.getMediaByType('series');
+        // IMPORTANT: Only return series with streams available
+        // Otherwise Jellyseerr will mark them as "Available" during Full Library Scan
+        const series = db.getMediaByType('series').filter(s => s.streams_available);
         items = series.map(s => ({
             Name: s.title,
             ServerId: 'seerrcatalog',
@@ -571,6 +582,13 @@ router.get('/Users/:userId/Items/:itemId', (req, res) => {
     const media = db.getMediaById(parseInt(id));
 
     if (!media || (type === 'movie' && media.type !== 'movie') || (type === 'series' && media.type !== 'series')) {
+        return res.status(404).json({ message: 'Item not found' });
+    }
+
+    // IMPORTANT: Only return media that has streams available
+    // This prevents Jellyseerr from marking unavailable media as "Available"
+    if (!media.streams_available) {
+        console.log(`[Jellyfin] Item ${media.title} not available - no streams found`);
         return res.status(404).json({ message: 'Item not found' });
     }
 
@@ -734,6 +752,12 @@ router.get('/Shows/:seriesId/Seasons', async (req, res) => {
         return res.status(404).json({ message: 'Series not found' });
     }
 
+    // Only return seasons if streams are available
+    if (!media.streams_available) {
+        console.log(`[Jellyfin] Series ${media.title} not available - no streams found`);
+        return res.status(404).json({ message: 'Series not found' });
+    }
+
     // Fetch real seasons from TMDB
     let seasons = [];
     if (media.tmdb_id) {
@@ -803,6 +827,12 @@ router.get('/Shows/:seriesId/Episodes', async (req, res) => {
     const media = db.getMediaById(id);
 
     if (!media || media.type !== 'series') {
+        return res.status(404).json({ message: 'Series not found' });
+    }
+
+    // Only return episodes if streams are available
+    if (!media.streams_available) {
+        console.log(`[Jellyfin] Series ${media.title} not available - no streams found`);
         return res.status(404).json({ message: 'Series not found' });
     }
 
