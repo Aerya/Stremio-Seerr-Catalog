@@ -11,6 +11,7 @@ const webuiRoutes = require('./webui/routes');
 const usersRoutes = require('./api/users');
 const db = require('./db');
 const { startBackgroundChecker } = require('./services/streamChecker');
+const { startTelemetry } = require('./services/telemetry');
 const { configureSession, requireAuth, handleLogin, handleLogout, getCurrentUser } = require('./auth/session');
 
 // Environment configuration
@@ -375,6 +376,9 @@ app.listen(PORT, HOST, () => {
 
     // Start background stream checker (checks every 24h)
     startBackgroundChecker(db);
+
+    // Start anonymous telemetry (respects DO_NOT_TRACK)
+    startTelemetry();
 });
 
 module.exports = app;
