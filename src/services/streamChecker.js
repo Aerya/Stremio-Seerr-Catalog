@@ -3,7 +3,7 @@
  * Checks if streams are available for media items using user's Stremio addons
  */
 
-const { checkStreamsWithUserAddons, getImdbIdFromTmdb } = require('./stremio');
+const { checkStreamsWithUserAddons, getImdbIdFromTmdb, getLibraryItems } = require('./stremio');
 
 // Check interval: 24 hours in milliseconds
 const RECHECK_INTERVAL = 24 * 60 * 60 * 1000;
@@ -143,6 +143,59 @@ async function cleanupWatchedContent(db) {
 }
 
 /**
+ * Sync watched state from Stremio for all users (90% threshold)
+ * Marks media as watched if Stremio reports >= 90% progress
+ * @param {Object} db - Database instance
+ */
+async function syncWatchedState(db) {
+    const WATCHED_THRESHOLD = 0.9;
+    const users = db.getAllUsers();
+
+    for (const user of users) {
+        if (!user.stremio_auth_key) continue;
+
+        // Get all unwatched media for this user that have an IMDB ID
+        const media = db.getFilteredMedia({ userId: user.id, watched: false });
+        const mediaWithImdb = media.filter(m => m.imdb_id);
+
+        if (mediaWithImdb.length === 0) continue;
+
+        const imdbIds = mediaWithImdb.map(m => m.imdb_id);
+        console.log(`[StreamChecker] Syncing watched state for ${user.username} (${imdbIds.length} items)`);
+
+        const libraryItems = await getLibraryItems(user.stremio_auth_key, imdbIds);
+
+        for (const m of mediaWithImdb) {
+            const state = libraryItems[m.imdb_id];
+            if (!state) continue;
+
+            let isWatched = false;
+
+            if (state.duration > 0) {
+                // Use progress percentage
+                const progress = state.timeWatched / state.duration;
+                if (progress >= WATCHED_THRESHOLD) {
+                    isWatched = true;
+                    console.log(`[StreamChecker] ✅ ${m.title} watched at ${Math.round(progress * 100)}% by ${user.username}`);
+                }
+            } else if (state.watched) {
+                // Stremio already marked it as watched
+                isWatched = true;
+                console.log(`[StreamChecker] ✅ ${m.title} marked as watched by Stremio for ${user.username}`);
+            }
+
+            if (isWatched) {
+                const autoCleanup = db.getSetting(`auto_cleanup_${user.id}`);
+                db.markAsWatched(m.id, autoCleanup === 'true');
+                if (autoCleanup === 'true') {
+                    console.log(`[StreamChecker] 🗑️ Auto-deleted watched content: ${m.title} (user ${user.username})`);
+                }
+            }
+        }
+    }
+}
+
+/**
  * Start the background checker (runs every 24 hours)
  * @param {Object} db - Database instance
  */
@@ -150,12 +203,14 @@ function startBackgroundChecker(db) {
     // Initial check after 1 minute
     setTimeout(() => {
         recheckUnavailableMedia(db);
+        syncWatchedState(db).catch(console.error);
         cleanupWatchedContent(db);
     }, 60 * 1000);
 
     // Then every 24 hours
     setInterval(() => {
         recheckUnavailableMedia(db);
+        syncWatchedState(db).catch(console.error);
         cleanupWatchedContent(db);
     }, RECHECK_INTERVAL);
 
@@ -166,6 +221,7 @@ module.exports = {
     checkStreamsAvailable,
     recheckUnavailableMedia,
     cleanupWatchedContent,
+    syncWatchedState,
     startBackgroundChecker,
     RECHECK_INTERVAL
 };

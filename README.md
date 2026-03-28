@@ -19,6 +19,20 @@ SeerrCatalog acts as a **virtual media server** that connects Jellyseerr to Stre
 
 **No downloads, no storage needed** - just request and stream!
 
+## ✨ What's New
+
+### 🗑️ Automatic Watched Sync & Cleanup
+SeerrCatalog now syncs your watch progress directly from your Stremio account. Once you've watched **90% or more** of a movie or series, it is automatically marked as watched — and deleted from your catalog if **Auto-Cleanup** is enabled.
+
+- Sync runs automatically every 24 hours
+- Can be triggered manually from the WebUI
+- Configurable per user — enable Auto-Cleanup in your user settings
+- Works across all your devices (Stremio syncs progress to the cloud)
+
+No more opening the WebUI to manually remove content you've already watched!
+
+---
+
 ## Features
 
 - 🔗 **Jellyfin/Radarr/Sonarr API Emulation** - Seamless Jellyseerr integration
@@ -27,7 +41,7 @@ SeerrCatalog acts as a **virtual media server** that connects Jellyseerr to Stre
 - 🌍 **Language & Resolution Filters** - Only mark content as available if it matches your preferences (FRENCH, MULTI, 4K, 1080p...)
 - 🔔 **Discord Notifications** - Get notified when no source is found (multi-webhook, FR/EN)
 - 🔄 **24h Auto-Retry** - If no source matches your criteria, retries automatically every 24 hours
-- 🗑️ **Auto-Cleanup** - Fully watched content is automatically removed from catalogs
+- 🗑️ **Auto-Cleanup** - Watched content (≥90%) is synced from Stremio and automatically removed from catalogs
 - 👥 **Multi-User Support** - Each user has their own addons, filters, and catalog
 - 🔔 **Auto-Sync with Jellyseerr** - Media status updates automatically to "Available"
 - 🎨 **Modern WebUI** - Dark mode, responsive design, FR/EN localization
@@ -66,6 +80,7 @@ Then:
 2. Add your Stremio auth key in Settings
 3. Configure Jellyseerr to use SeerrCatalog as its Jellyfin server
 4. Install the Stremio addon from the WebUI
+5. Enable **Auto-Cleanup** in your user settings to automatically remove watched content
 
 ## Configuration
 
@@ -89,6 +104,20 @@ SeerrCatalog agit comme un **serveur multimédia virtuel** qui connecte Jellysee
 
 **Pas de téléchargement, pas de stockage** - demandez et streamez !
 
+## ✨ Nouveauté
+
+### 🗑️ Synchronisation automatique de l'historique de visionnage
+SeerrCatalog synchronise désormais votre progression de visionnage directement depuis votre compte Stremio. Dès que vous avez regardé **90% ou plus** d'un film ou d'une série, il est automatiquement marqué comme visionné — et supprimé de votre catalogue si le **Nettoyage Auto** est activé.
+
+- La synchronisation s'exécute automatiquement toutes les 24 heures
+- Peut être déclenchée manuellement depuis la WebUI
+- Configurable par utilisateur — activez le Nettoyage Auto dans vos paramètres utilisateur
+- Fonctionne sur tous vos appareils (Stremio synchronise la progression dans le cloud)
+
+Plus besoin d'ouvrir la WebUI pour supprimer manuellement les contenus déjà visionnés !
+
+---
+
 ## Fonctionnalités
 
 - 🔗 **Émulation API Jellyfin/Radarr/Sonarr** - Intégration transparente avec Jellyseerr
@@ -97,7 +126,7 @@ SeerrCatalog agit comme un **serveur multimédia virtuel** qui connecte Jellysee
 - 🌍 **Filtres Langue & Résolution** - Ne marque comme disponible que si ça correspond à vos préférences (FRENCH, MULTI, 4K, 1080p...)
 - 🔔 **Notifications Discord** - Soyez notifié quand aucune source n'est trouvée (multi-webhook, FR/EN)
 - 🔄 **Retry Auto 24h** - Si aucune source ne correspond à vos critères, relance automatiquement toutes les 24 heures
-- 🗑️ **Nettoyage Auto** - Les contenus entièrement visionnés sont automatiquement retirés des catalogues
+- 🗑️ **Nettoyage Auto** - Les contenus visionnés (≥90%) sont synchronisés depuis Stremio et automatiquement retirés des catalogues
 - 👥 **Multi-Utilisateurs** - Chaque utilisateur a ses propres addons, filtres et catalogue
 - 🔔 **Sync Auto avec Jellyseerr** - Le statut passe automatiquement à "Disponible"
 - 🎨 **WebUI Moderne** - Mode sombre, responsive, localisation FR/EN
@@ -135,6 +164,7 @@ Ensuite :
 2. Ajoutez votre clé Stremio dans les Paramètres
 3. Configurez Jellyseerr pour utiliser SeerrCatalog comme serveur Jellyfin
 4. Installez l'addon Stremio depuis la WebUI
+5. Activez le **Nettoyage Auto** dans vos paramètres utilisateur pour supprimer automatiquement les contenus visionnés
 
 ## Configuration
 

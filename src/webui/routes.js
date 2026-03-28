@@ -190,6 +190,31 @@ router.put('/api/discord/settings', (req, res) => {
     res.json({ success: true });
 });
 
+// API: Get/Set auto_cleanup per user
+router.get('/api/users/:userId/auto-cleanup', (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const value = db.getSetting(`auto_cleanup_${userId}`);
+    res.json({ enabled: value === 'true' });
+});
+
+router.put('/api/users/:userId/auto-cleanup', (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const { enabled } = req.body;
+    db.setSetting(`auto_cleanup_${userId}`, enabled ? 'true' : 'false');
+    res.json({ success: true });
+});
+
+// API: Trigger manual watched sync from Stremio
+router.post('/api/sync-watched', async (req, res) => {
+    try {
+        const { syncWatchedState } = require('../services/streamChecker');
+        syncWatchedState(db).catch(console.error);
+        res.json({ message: 'Sync started' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // API: Config status
 router.get('/api/config', (req, res) => {
     const tmdbKey = tmdb.getApiKey(db);

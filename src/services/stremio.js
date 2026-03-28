@@ -437,11 +437,59 @@ async function loginWithCredentials(email, password) {
     }
 }
 
+/**
+ * Get library items (watch state) from Stremio for given IMDB IDs
+ * @param {string} authKey - User's Stremio authentication key
+ * @param {string[]} imdbIds - List of IMDB IDs to check
+ * @returns {Promise<Object>} Map of imdbId -> { watched, timeWatched, duration }
+ */
+async function getLibraryItems(authKey, imdbIds) {
+    if (!authKey || !imdbIds || imdbIds.length === 0) return {};
+
+    try {
+        const response = await fetch(`${STREMIO_API_URL}/datastoreGet`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'DatastoreGet',
+                authKey,
+                collection: 'libraryItem',
+                ids: imdbIds
+            })
+        });
+
+        if (!response.ok) {
+            console.error(`[Stremio] datastoreGet error: ${response.status}`);
+            return {};
+        }
+
+        const data = await response.json();
+        const items = data.result || [];
+
+        const result = {};
+        for (const item of items) {
+            if (!item._id) continue;
+            const state = item.state || {};
+            result[item._id] = {
+                watched: !!state.watched,
+                timeWatched: state.timeWatched || 0,
+                duration: state.duration || 0
+            };
+        }
+
+        return result;
+    } catch (error) {
+        console.error('[Stremio] Failed to get library items:', error.message);
+        return {};
+    }
+}
+
 module.exports = {
     getInstalledAddons,
     checkStreamsWithUserAddons,
     getImdbIdFromTmdb,
     testAuthKey,
-    loginWithCredentials
+    loginWithCredentials,
+    getLibraryItems
 };
 
