@@ -10,7 +10,6 @@ Bridge between Jellyseerr and Stremio. Your Jellyseerr requests become a persona
 [![i18n](https://img.shields.io/badge/i18n-FR%20%7C%20EN-blue)](#)
 [![Stremio addon](https://img.shields.io/badge/Stremio-addon-8A5AAB?logo=stremio&logoColor=white)](https://www.stremio.com/)
 [![Jellyseerr](https://img.shields.io/badge/Jellyseerr-compatible-6366f1)](https://github.com/Fallenbagel/jellyseerr)
-[![Latest release](https://img.shields.io/github/v/release/Aerya/Stremio-Seerr-Catalog?display_name=tag&sort=semver)](https://github.com/Aerya/Stremio-Seerr-Catalog/releases)
 
 > **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Stremio-Seerr-Catalog/stargazers)** — takes two seconds.
 
