@@ -40,7 +40,7 @@ jobs:
 
       - name: Upload filesystem results
         if: always() && hashFiles('trivy-fs.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v3.37.3
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-filesystem
@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload image results
         if: always() && hashFiles('trivy-image.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v3.37.3
         with:
           sarif_file: trivy-image.sarif
           category: trivy-root-image
