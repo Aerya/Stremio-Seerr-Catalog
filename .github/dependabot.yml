@@ -1,47 +1,56 @@
 version: 2
 updates:
-  - package-ecosystem: docker
-    directory: /
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: weekly
-      day: monday
+      interval: "weekly"
+      day: "monday"
       time: "06:00"
-      timezone: Europe/Paris
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: docker
-    labels: [dependencies, docker]
-    ignore:
-      - dependency-name: "*"
-        update-types: [version-update:semver-major]
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:10"
-      timezone: Europe/Paris
+      timezone: "Europe/Paris"
     open-pull-requests-limit: 10
-    commit-message:
-      prefix: npm
-    labels: [dependencies, javascript]
+    rebase-strategy: "auto"
     groups:
-      npm-minor-and-patch:
-        update-types: [minor, patch]
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "*"
-        update-types: [version-update:semver-major]
-  - package-ecosystem: github-actions
-    directory: /
+        update-types:
+          - "version-update:semver-major"
+  - package-ecosystem: "docker"
+    directory: "/"
     schedule:
-      interval: weekly
-      day: monday
-      time: "06:30"
-      timezone: Europe/Paris
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: ci
-    labels: [dependencies, github-actions]
+      interval: "weekly"
+      day: "monday"
+      time: "06:05"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "*"
-        update-types: [version-update:semver-major]
+        update-types:
+          - "version-update:semver-major"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:10"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
