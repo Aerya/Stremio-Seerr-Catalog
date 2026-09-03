@@ -444,37 +444,57 @@
               </div>
 
               <div class="user-config-card">
-                <h5>🎬 <span data-i18n="stream_filters">Stream Filters</span></h5>
-                <div class="config-row-mini">
-                  <span data-i18n="language_tags">Language Tags (max 2):</span>
-                  <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
-                  <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                <h5>🎬 <span data-i18n="stream_sources_filters">Sources & filters</span></h5>
+
+                <div style="margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                  <div style="font-weight:600; margin-bottom:7px;" data-i18n="search_sources">Search sources</div>
+                  <p style="margin:0 0 10px; font-size:12px; line-height:1.5; color:var(--text-secondary);" data-i18n="account_addons_auto">
+                    Addons from the connected Stremio account are used automatically.
+                  </p>
+
+                  <div class="config-row-mini" style="align-items:flex-start;">
+                    <span data-i18n="additional_addons">Additional addons:</span>
+                    <textarea id="direct-manifests-${u.id}" rows="4" data-i18n-placeholder="additional_addons_placeholder" placeholder="One manifest.json URL per line" style="flex:1; min-width:260px; padding:6px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px; resize:vertical;"></textarea>
+                  </div>
+                  <p style="margin:7px 0 0; font-size:12px; line-height:1.5; color:var(--text-secondary);" data-i18n="additional_addons_help">
+                    These addons are added to those from the connected Stremio account. Without a Stremio account, they can also be used on their own.
+                  </p>
                 </div>
-                <div class="config-row-mini">
-                  <span data-i18n="min_resolution">Min Resolution:</span>
-                  <select id="resolution-${u.id}" style="padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
-                    <option value="">All</option>
-                    <option value="720p">720p+</option>
-                    <option value="1080p">1080p+</option>
-                    <option value="2160p">4K/2160p+</option>
-                  </select>
+
+                <div style="margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                  <div style="font-weight:600; margin-bottom:7px;" data-i18n="stream_filters">Stream filters</div>
+                  <div class="config-row-mini">
+                    <span data-i18n="language_tags">Language Tags (max 2):</span>
+                    <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                  </div>
+                  <div class="config-row-mini">
+                    <span data-i18n="min_resolution">Min Resolution:</span>
+                    <select id="resolution-${u.id}" style="padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                      <option value="">All</option>
+                      <option value="720p">720p+</option>
+                      <option value="1080p">1080p+</option>
+                      <option value="2160p">4K/2160p+</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="config-row-mini" style="align-items:flex-start;">
-                  <span data-i18n="direct_addons">Direct addon manifests:</span>
-                  <textarea id="direct-manifests-${u.id}" rows="4" data-i18n-placeholder="direct_addons_hint" placeholder="One manifest.json URL per line" style="flex:1; min-width:260px; padding:6px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px; resize:vertical;"></textarea>
+
+                <div style="margin-bottom:12px;">
+                  <div style="font-weight:600; margin-bottom:7px;" data-i18n="availability_criteria">Availability criteria</div>
+                  <div class="config-row-mini">
+                    <label style="display:flex; align-items:center; gap:5px;">
+                      <span data-i18n="min_releases">Min releases</span>
+                      <input type="number" id="min-stream-count-${u.id}" min="1" max="100" value="1" oninput="updateAvailabilitySummary(${u.id})" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    </label>
+                    <label style="display:flex; align-items:center; gap:5px;">
+                      <span data-i18n="min_addons">Min distinct addons</span>
+                      <input type="number" id="min-addon-count-${u.id}" min="1" max="20" value="1" oninput="updateAvailabilitySummary(${u.id})" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    </label>
+                    <button class="btn btn-primary btn-small" onclick="saveStreamFilters(${u.id})" data-i18n="save_search_settings">Save</button>
+                  </div>
+                  <p id="availability-summary-${u.id}" style="margin:8px 0 0; font-size:12px; line-height:1.5; color:var(--text-secondary);"></p>
                 </div>
-                <div class="config-row-mini">
-                  <span data-i18n="availability_rule">Availability rule:</span>
-                  <label style="display:flex; align-items:center; gap:5px;">
-                    <span data-i18n="min_releases">Min releases</span>
-                    <input type="number" id="min-stream-count-${u.id}" min="1" max="100" value="1" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
-                  </label>
-                  <label style="display:flex; align-items:center; gap:5px;">
-                    <span data-i18n="min_addons">Min distinct addons</span>
-                    <input type="number" id="min-addon-count-${u.id}" min="1" max="20" value="1" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
-                  </label>
-                  <button class="btn-icon btn-primary" onclick="saveStreamFilters(${u.id})" style="margin-left:8px;">💾</button>
-                </div>
+
                 <div class="config-row-mini">
                   <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                     <input type="checkbox" id="auto-cleanup-${u.id}" onchange="saveAutoCleanup(${u.id})" style="cursor:pointer;">
@@ -673,9 +693,24 @@
         document.getElementById(`direct-manifests-${userId}`).value = (data.directManifestUrls || []).join('\n');
         document.getElementById(`min-stream-count-${userId}`).value = data.minStreamCount || 1;
         document.getElementById(`min-addon-count-${userId}`).value = data.minAddonCount || 1;
+        updateAvailabilitySummary(userId);
       } catch (e) {
         console.error('Failed to load stream filters:', e);
       }
+    }
+
+    function updateAvailabilitySummary(userId) {
+      const streamInput = document.getElementById(`min-stream-count-${userId}`);
+      const addonInput = document.getElementById(`min-addon-count-${userId}`);
+      const summary = document.getElementById(`availability-summary-${userId}`);
+      if (!streamInput || !addonInput || !summary) return;
+
+      const releases = Math.max(1, parseInt(streamInput.value, 10) || 1);
+      const addons = Math.max(1, parseInt(addonInput.value, 10) || 1);
+
+      summary.textContent = t('availability_summary')
+        .replace('{releases}', releases)
+        .replace('{addons}', addons);
     }
 
     // Save stream filters for a specific user

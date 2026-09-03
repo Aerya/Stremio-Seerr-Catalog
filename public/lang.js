@@ -97,15 +97,21 @@ const translations = {
         jellyseerr_test_connection: 'Test Connection',
         jellyseerr_auto_sync_info: 'Jellyseerr automatically checks Radarr/Sonarr every 5 minutes. When SeerrCatalog finds streams, Jellyseerr will detect the change within 5 minutes and send notifications.',
 
-        // Stream Filters
-        stream_filters: 'Stream Filters',
+        // Stream sources, filters and availability
+        stream_sources_filters: 'Sources & filters',
+        search_sources: 'Search sources',
+        account_addons_auto: 'Addons from the connected Stremio account are used automatically.',
+        additional_addons: 'Additional addons:',
+        additional_addons_placeholder: 'One manifest.json URL per line',
+        additional_addons_help: 'These addons are added to those from the connected Stremio account. Without a Stremio account, they can also be used on their own.',
+        stream_filters: 'Stream filters',
         language_tags: 'Language Tags (max 2):',
         min_resolution: 'Min Resolution:',
-        direct_addons: 'Direct addon manifests:',
-        direct_addons_hint: 'One manifest.json URL per line',
-        availability_rule: 'Availability rule:',
+        availability_criteria: 'Availability criteria',
         min_releases: 'Min releases',
         min_addons: 'Min distinct addons',
+        availability_summary: 'Media is available when at least {releases} release(s) from at least {addons} distinct addon(s) are found.',
+        save_search_settings: 'Save',
         auto_cleanup: 'Auto-cleanup watched content',
 
         // Discord Notifications
@@ -218,15 +224,21 @@ const translations = {
         jellyseerr_test_connection: 'Tester la connexion',
         jellyseerr_auto_sync_info: 'ℹ️ Synchronisation automatique : Jellyseerr vérifie Radarr/Sonarr toutes les 5 minutes. Lorsque SeerrCatalog trouve des sources, Jellyseerr détectera le changement dans les 5 minutes et enverra les notifications.',
 
-        // Stream Filters
+        // Sources, filtres et disponibilité
+        stream_sources_filters: 'Sources et filtres',
+        search_sources: 'Sources de recherche',
+        account_addons_auto: 'Les addons du compte Stremio connecté sont utilisés automatiquement.',
+        additional_addons: 'Addons supplémentaires :',
+        additional_addons_placeholder: 'Une URL manifest.json par ligne',
+        additional_addons_help: 'Ces addons s\'ajoutent à ceux du compte Stremio connecté. Sans compte Stremio, ils peuvent aussi être utilisés seuls.',
         stream_filters: 'Filtres de sources',
         language_tags: 'Tags de langue (max 2) :',
         min_resolution: 'Résolution minimale :',
-        direct_addons: 'Manifests d\'addons directs :',
-        direct_addons_hint: 'Une URL manifest.json par ligne',
-        availability_rule: 'Règle de disponibilité :',
+        availability_criteria: 'Critères de disponibilité',
         min_releases: 'Releases minimum',
         min_addons: 'Addons distincts minimum',
+        availability_summary: 'Le média est disponible si au moins {releases} release(s) provenant d\'au moins {addons} addon(s) distinct(s) sont trouvées.',
+        save_search_settings: 'Enregistrer',
         auto_cleanup: 'Nettoyage auto du contenu regardé',
 
         // Discord Notifications
