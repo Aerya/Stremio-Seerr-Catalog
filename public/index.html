@@ -458,6 +458,21 @@
                     <option value="1080p">1080p+</option>
                     <option value="2160p">4K/2160p+</option>
                   </select>
+                </div>
+                <div class="config-row-mini" style="align-items:flex-start;">
+                  <span data-i18n="direct_addons">Direct addon manifests:</span>
+                  <textarea id="direct-manifests-${u.id}" rows="4" data-i18n-placeholder="direct_addons_hint" placeholder="One manifest.json URL per line" style="flex:1; min-width:260px; padding:6px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px; resize:vertical;"></textarea>
+                </div>
+                <div class="config-row-mini">
+                  <span data-i18n="availability_rule">Availability rule:</span>
+                  <label style="display:flex; align-items:center; gap:5px;">
+                    <span data-i18n="min_releases">Min releases</span>
+                    <input type="number" id="min-stream-count-${u.id}" min="1" max="100" value="1" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                  </label>
+                  <label style="display:flex; align-items:center; gap:5px;">
+                    <span data-i18n="min_addons">Min distinct addons</span>
+                    <input type="number" id="min-addon-count-${u.id}" min="1" max="20" value="1" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                  </label>
                   <button class="btn-icon btn-primary" onclick="saveStreamFilters(${u.id})" style="margin-left:8px;">💾</button>
                 </div>
                 <div class="config-row-mini">
@@ -655,6 +670,9 @@
         document.getElementById(`lang-tag-1-${userId}`).value = data.languageTags[0] || '';
         document.getElementById(`lang-tag-2-${userId}`).value = data.languageTags[1] || '';
         document.getElementById(`resolution-${userId}`).value = data.minResolution || '';
+        document.getElementById(`direct-manifests-${userId}`).value = (data.directManifestUrls || []).join('\n');
+        document.getElementById(`min-stream-count-${userId}`).value = data.minStreamCount || 1;
+        document.getElementById(`min-addon-count-${userId}`).value = data.minAddonCount || 1;
       } catch (e) {
         console.error('Failed to load stream filters:', e);
       }
@@ -665,18 +683,32 @@
       const tag1 = document.getElementById(`lang-tag-1-${userId}`).value.trim().toUpperCase();
       const tag2 = document.getElementById(`lang-tag-2-${userId}`).value.trim().toUpperCase();
       const resolution = document.getElementById(`resolution-${userId}`).value;
+      const directManifestUrls = document.getElementById(`direct-manifests-${userId}`).value
+        .split(/\r?\n/)
+        .map(url => url.trim())
+        .filter(Boolean);
+      const minStreamCount = parseInt(document.getElementById(`min-stream-count-${userId}`).value, 10) || 1;
+      const minAddonCount = parseInt(document.getElementById(`min-addon-count-${userId}`).value, 10) || 1;
 
       const languageTags = [tag1, tag2].filter(t => t.length > 0);
 
       try {
-        await fetch(`/api/users/${userId}/stream-filters`, {
+        const res = await fetch(`/api/users/${userId}/stream-filters`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             languageTags,
-            minResolution: resolution || null
+            minResolution: resolution || null,
+            directManifestUrls,
+            minStreamCount,
+            minAddonCount
           })
         });
+
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.error || `HTTP ${res.status}`);
+        }
 
         alert('✅ Stream filters saved!');
       } catch (e) {

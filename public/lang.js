@@ -101,6 +101,11 @@ const translations = {
         stream_filters: 'Stream Filters',
         language_tags: 'Language Tags (max 2):',
         min_resolution: 'Min Resolution:',
+        direct_addons: 'Direct addon manifests:',
+        direct_addons_hint: 'One manifest.json URL per line',
+        availability_rule: 'Availability rule:',
+        min_releases: 'Min releases',
+        min_addons: 'Min distinct addons',
         auto_cleanup: 'Auto-cleanup watched content',
 
         // Discord Notifications
@@ -217,6 +222,11 @@ const translations = {
         stream_filters: 'Filtres de sources',
         language_tags: 'Tags de langue (max 2) :',
         min_resolution: 'Résolution minimale :',
+        direct_addons: 'Manifests d\'addons directs :',
+        direct_addons_hint: 'Une URL manifest.json par ligne',
+        availability_rule: 'Règle de disponibilité :',
+        min_releases: 'Releases minimum',
+        min_addons: 'Addons distincts minimum',
         auto_cleanup: 'Nettoyage auto du contenu regardé',
 
         // Discord Notifications
