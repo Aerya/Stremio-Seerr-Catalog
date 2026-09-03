@@ -321,13 +321,20 @@
       } else {
         btn.classList.remove('active');
       }
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentLang = btn.dataset.lang;
         localStorage.setItem('lang', currentLang);
+
+        // Static content
         applyTranslations();
-        loadStats(); // Refresh stats labels
+
+        // User cards are generated dynamically and contain both data-i18n
+        // elements and strings rendered through t(). Re-render them so the
+        // whole Users page immediately follows the selected language.
+        await loadUsers();
+        await loadStats();
       });
     });
 
@@ -385,6 +392,7 @@
       const select = document.getElementById('user-filter');
       select.innerHTML = `<option value="">${t('all_users')}</option>` +
         users.map(u => `<option value="${u.id}">${u.display_name || u.username}</option>`).join('');
+      select.value = currentUserId;
 
       // Load Stremio status for each user
       const usersWithStremio = await Promise.all(users.map(async u => {
@@ -427,7 +435,7 @@
                   </div>
                 </div>
                 <div class="config-row-mini">
-                  <span>Manifest URL:</span>
+                  <span data-i18n="manifest_url">Manifest URL:</span>
                   <code>${baseUrl}/user/${u.id}/manifest.json</code>
                   <button class="btn-icon btn-copy" onclick="copyToClipboard('${baseUrl}/user/${u.id}/manifest.json')">📋</button>
                 </div>
@@ -437,27 +445,27 @@
                 <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" alt="" class="config-icon"> Radarr (${t('config_movies')})</h5>
                 <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? 'Yes' : 'No'}</code></div>
+                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? t('yes') : t('no')}</code></div>
                 <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/radarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/radarr')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="radarr-api-key-${u.id}">Loading...</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('radarr-api-key-${u.id}').textContent)">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="radarr-api-key-${u.id}">${t('loading')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('radarr-api-key-${u.id}').textContent)">📋</button></div>
               </div>
 
               <div class="user-config-card">
                 <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" alt="" class="config-icon"> Sonarr (${t('config_series')})</h5>
                 <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? 'Yes' : 'No'}</code></div>
+                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? t('yes') : t('no')}</code></div>
                 <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/sonarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/sonarr')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="sonarr-api-key-${u.id}">Loading...</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('sonarr-api-key-${u.id}').textContent)">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="sonarr-api-key-${u.id}">${t('loading')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('sonarr-api-key-${u.id}').textContent)">📋</button></div>
               </div>
 
               <div class="user-config-card">
                 <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" alt="" class="config-icon"> Jellyfin (${t('jellyfin_auth')})</h5>
                 <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? 'Yes' : 'No'}</code></div>
+                <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? t('yes') : t('no')}</code></div>
                 <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/jellyfin</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/jellyfin')">📋</button></div>
-                <div class="config-row-mini"><span>Username:</span><code>${u.username}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${u.username}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('username')}:</span><code>${u.username}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${u.username}')">📋</button></div>
               </div>
 
               <div class="user-config-card">
@@ -488,7 +496,7 @@
                   <div class="config-row-mini">
                     <span data-i18n="min_resolution">Min Resolution:</span>
                     <select id="resolution-${u.id}" style="padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
-                      <option value="">All</option>
+                      <option value="" data-i18n="filter_all">All</option>
                       <option value="720p">720p+</option>
                       <option value="1080p">1080p+</option>
                       <option value="2160p">4K/2160p+</option>
@@ -523,6 +531,10 @@
           </div>
         </div>
       `).join('') || `<div class="empty-state"><p>${t('no_users')}</p></div>`;
+
+      // The Users page is generated dynamically, so translate the newly
+      // inserted data-i18n/data-i18n-placeholder nodes after each render.
+      applyTranslations();
 
       // Load config after users are rendered to populate API keys
       loadConfig();
