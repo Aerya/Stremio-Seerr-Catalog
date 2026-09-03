@@ -200,7 +200,7 @@
 
     <footer class="footer">
       <div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
-        <span>SeerrCatalog v1.4.0</span>
+        <span>SeerrCatalog</span>
         <div style="display: flex; align-items: center; gap: 8px;">
           <strong style="color: #667eea;">Aerya</strong>
           <img src="https://upandclear.org/wp-content/uploads/2024/06/Logo.detoure1.png.webp" alt="Aerya"
@@ -401,14 +401,31 @@
         <div class="user-card">
           <div class="user-info">
             <div class="user-header">
-              <strong>${u.display_name || u.username}</strong>
-              <span class="user-meta">@${u.username} ${u.is_admin ? '👑' : ''}</span>
-              <span class="user-stremio ${u.stremioConfigured ? 'stremio-connected' : 'stremio-disconnected'}">Stremio ${u.stremioConfigured ? t('connected') : t('stremio_not_configured')}</span>
+              <div class="user-identity">
+                <div class="user-name-row">
+                  <strong>${u.display_name || u.username}</strong>
+                  <span class="user-meta">@${u.username} ${u.is_admin ? '👑' : ''}</span>
+                </div>
+                <span class="user-stremio ${u.stremioConfigured ? 'stremio-connected' : 'stremio-disconnected'}">Stremio ${u.stremioConfigured ? t('connected') : t('stremio_not_configured')}</span>
+              </div>
+              <button class="btn-icon user-delete-btn" onclick="deleteUserConfirm(${u.id})" title="${t('delete')}">🗑️</button>
             </div>
             
             <div class="user-config-section">
               <div class="user-config-card">
-                <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="config-icon"> Stremio Addon</h5>
+                <div class="user-config-card-header">
+                  <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="config-icon"> Stremio</h5>
+                </div>
+                <div class="config-row-mini">
+                  <span>${t('stremio_account')}</span>
+                  <div class="stremio-account-controls">
+                    <span class="user-stremio ${u.stremioConfigured ? 'stremio-connected' : 'stremio-disconnected'}">${u.stremioConfigured ? t('connected') : t('stremio_not_configured')}</span>
+                    <button class="btn btn-secondary btn-small" onclick="showStremioModal(${u.id}, '${u.username}')">
+                      <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="btn-icon-img">
+                      ${u.stremioConfigured ? t('stremio_config') : t('connect')}
+                    </button>
+                  </div>
+                </div>
                 <div class="config-row-mini">
                   <span>Manifest URL:</span>
                   <code>${baseUrl}/user/${u.id}/manifest.json</code>
@@ -503,10 +520,6 @@
                 </div>
               </div>
             </div>
-          </div>
-          <div class="user-actions">
-            <button class="btn-icon" onclick="showStremioModal(${u.id}, '${u.username}')" title="${t('stremio_config')}"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="Stremio" class="btn-icon-img"></button>
-            <button class="btn-icon" onclick="deleteUserConfirm(${u.id})">🗑️</button>
           </div>
         </div>
       `).join('') || `<div class="empty-state"><p>${t('no_users')}</p></div>`;

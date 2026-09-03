@@ -64,6 +64,7 @@ const translations = {
 
         // Stremio
         stremio_config: 'Stremio Configuration',
+        stremio_account: 'Stremio account:',
         stremio_email: 'Stremio Email',
         stremio_password: 'Stremio Password',
         stremio_not_configured: 'Not configured',
@@ -191,6 +192,7 @@ const translations = {
 
         // Stremio
         stremio_config: 'Configuration Stremio',
+        stremio_account: 'Compte Stremio :',
         stremio_email: 'Email Stremio',
         stremio_password: 'Mot de passe Stremio',
         stremio_not_configured: 'Non configuré',
