@@ -1,34 +1,82 @@
 # SeerrCatalog
 
-Bridge between Jellyseerr and Stremio. Your Jellyseerr requests become a personal streaming catalog — no downloads, no storage.
+**A bridge between Jellyseerr and Stremio that turns media requests into a personal catalog, without SeerrCatalog downloading or storing media files.**
 
-> 🇫🇷 [Version française](README.md)
+[Français](README.md)
 
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
 [![Build](https://github.com/Aerya/Stremio-Seerr-Catalog/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/Aerya/Stremio-Seerr-Catalog/actions/workflows/docker-publish.yml)
-[![Multi-arch](https://img.shields.io/badge/multi--arch-amd64%20%7C%20arm64-success?logo=docker&logoColor=white)](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
-[![i18n](https://img.shields.io/badge/i18n-FR%20%7C%20EN-blue)](#)
-[![Stremio addon](https://img.shields.io/badge/Stremio-addon-8A5AAB?logo=stremio&logoColor=white)](https://www.stremio.com/)
-[![Jellyseerr](https://img.shields.io/badge/Jellyseerr-compatible-6366f1)](https://github.com/Fallenbagel/jellyseerr)
+[![GHCR](https://img.shields.io/badge/GHCR-latest-24292f)](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
+[![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-555)](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
+[![Languages](https://img.shields.io/badge/WebUI-FR%20%7C%20EN-555)](README.md)
+[![License](https://img.shields.io/github/license/Aerya/Stremio-Seerr-Catalog)](LICENSE)
 
-> **Using it? Liking it? [⭐ Drop a star!](https://github.com/Aerya/Stremio-Seerr-Catalog/stargazers)** — takes two seconds.
+SeerrCatalog sits between Jellyseerr, Stremio and your streaming sources. It exposes Jellyseerr requests through Jellyfin / Radarr / Sonarr compatible APIs, builds a personal Stremio catalog and checks actual stream availability before marking media as available.
+
+## How it works
+
+```text
+Jellyseerr
+    |
+    v
+SeerrCatalog
+    |
+    +-- Personal Stremio catalog
+    |
+    +-- Release availability check
+            |
+            +-- Stremio account addons
+            +-- Additional addons (manifest.json)
+                    |
+                    v
+            Language / resolution filters
+                    |
+                    v
+            Release threshold + distinct addon threshold
+                    |
+                    v
+            Available / No source
+```
+
+Additional addons do not replace the addons from the connected Stremio account: **they are added to them**.
+
+For example, if the Stremio account uses AIOStreams and Lumio, StreamFusion and StreamNZB are added manually, SeerrCatalog queries all of those sources.
+
+Without a connected Stremio account, manually configured manifests can also be used on their own for availability checks. A Stremio account is still required for account-dependent features such as watched-state synchronization.
 
 ## Features
 
-- 🆕 NEW 🗑️ **Auto-Cleanup (watched 90% sync)** — syncs watch progress from your Stremio account. Anything watched at ≥90% is marked as seen and removed from your catalog. Runs every 24h or on demand, per-user toggle.
-- 🔗 **Jellyfin / Radarr / Sonarr API emulation** — seamless Jellyseerr integration.
-- 📺 **Personal Stremio catalog** — access requested content directly in Stremio.
-- 🔍 **Smart stream search** — matches releases to your tags via addons linked to your Stremio account **and/or directly configured manifests** (AIOStreams, Lumio, StreamFusion, StreamNZB, LooStream, WaStream…).
-- 🔌 **Direct addons** — paste one or more `manifest.json` URLs per user; availability checks can work without a Stremio account.
-- ✅ **Availability threshold** — choose the minimum number of releases and distinct addons required before media is marked available.
-- 🌍 **Language & resolution filters** — only mark content as available if it matches your prefs (FRENCH, MULTI, 4K, 1080p…).
-- 🔔 **Discord notifications** — alerts when no source is found (multi-webhook, FR/EN).
-- 🔄 **24h auto-retry** — re-searches daily if nothing matched.
-- 👥 **Multi-user** — each user has their own addons, filters, and catalog.
-- 🔔 **Jellyseerr auto-sync** — request status flips to "Available" automatically.
-- 🎨 **Modern WebUI** — dark mode, responsive, FR/EN.
+| Feature | Description |
+|---|---|
+| Stremio catalog | Jellyseerr requests become a personal catalog available in Stremio. |
+| Jellyseerr compatibility | Emulates the Jellyfin, Radarr and Sonarr APIs used by Jellyseerr. |
+| Stremio account addons | Addons exposing a `stream` resource are automatically loaded from the connected account. |
+| Additional addons | Add compatible Stremio `manifest.json` URLs manually. |
+| Addon compatibility | Works with addons such as AIOStreams, Lumio, StreamFusion, StreamNZB, LooStream and WaStream. |
+| Filters | Filter releases by language tags and minimum resolution. |
+| Configurable availability | Set the minimum release count and minimum distinct addon count per user. |
+| Multi-user | Catalog, sources, filters and availability rules are isolated per user. |
+| Automatic retry | Media without sources is checked again daily. |
+| Watched synchronization | Content watched at 90% or more can be automatically removed from the catalog. |
+| Discord notifications | Notify when no matching source is found. |
+| WebUI | Responsive French and English interface. |
 
-## Quick start
+## Availability rules
+
+Two independent values determine when media is considered available:
+
+- **Min releases**: total number of releases matching the filters.
+- **Min distinct addons**: number of different sources that must return at least one release.
+
+| Min releases | Min addons | Example |
+|---:|---:|---|
+| 1 | 1 | At least one release from one source. |
+| 2 | 1 | At least two releases, even from a single addon. |
+| 1 | 2 | At least two different addons must return a release. |
+| 3 | 2 | At least three releases in total from at least two addons. |
+
+Both values default to `1`, preserving the previous behavior.
+
+## Installation
 
 ```yaml
 services:
@@ -38,7 +86,7 @@ services:
     ports:
       - "7000:7000"
     environment:
-      - BASE_URL=http://localhost:7000   # public URL if behind a reverse proxy
+      - BASE_URL=http://localhost:7000
       - API_KEY=
       - PORT=7000
       - HOST=0.0.0.0
@@ -48,37 +96,79 @@ services:
     restart: always
 ```
 
+Start:
+
 ```bash
 docker compose up -d
 ```
 
-Then:
-1. Open `http://localhost:7000` and create your admin account.
-2. Add your Stremio auth key in Settings **or** configure direct addon manifests in the user stream filters. The Stremio key is still required for watched-state sync.
-3. Configure Jellyseerr to use SeerrCatalog as its Jellyfin server.
-4. Install the Stremio addon from the WebUI.
-5. Enable **Auto-Cleanup** in your user settings.
+## Configuration
 
-### Variables
+1. Open `http://localhost:7000`.
+2. Create the administrator account.
+3. Configure the TMDB key.
+4. Connect a Stremio account if you want to automatically use its addons and watched synchronization.
+5. Under **Users > Sources & filters**, configure additional addons, filters and availability thresholds when needed.
+6. Configure Jellyseerr with the Radarr / Sonarr information displayed by SeerrCatalog.
+7. Install the SeerrCatalog manifest in Stremio.
+
+### Search sources
+
+For each user:
+
+- addons from the connected Stremio account are loaded automatically;
+- manifests entered under **Additional addons** are added to the same pool;
+- the same Stremio transport is queried only once if it appears in both lists;
+- filters are applied to returned releases;
+- availability thresholds are evaluated against the combined result.
+
+Manifest URLs are stored per user.
+
+## Environment variables
 
 | Variable | Description | Default |
 |---|---|---|
-| `PORT` | Server port | `7000` |
-| `HOST` | Server host | `0.0.0.0` |
-| `TMDB_API_KEY` | TMDB API key for metadata | — |
-| `BASE_URL` | Public URL (reverse proxy) | auto-detected |
-| `API_KEY` | API key exposed to clients | — |
+| `PORT` | SeerrCatalog HTTP port | `7000` |
+| `HOST` | Listening interface | `0.0.0.0` |
+| `TMDB_API_KEY` | TMDB API key used for metadata | — |
+| `BASE_URL` | Public URL, especially behind a reverse proxy | auto-detected |
+| `API_KEY` | API key exposed to compatible clients | — |
 
-## Notes
+## Updating
 
-- **First run**: the initial Stremio sync can take a few minutes while it scans your library.
-- **Manifest URLs**: some contain configuration tokens or credentials. Keep them private; SeerrCatalog stores them in its settings database.
-- **Reverse proxy**: set `BASE_URL` to your public URL, otherwise generated addon links will point to localhost.
+With Docker Compose:
 
-## Credits
+```bash
+docker compose pull
+docker compose up -d --force-recreate
+```
 
-Built by [Aerya](https://github.com/Aerya) — [UpAndClear](https://upandclear.org).
-[Article + screenshots](https://upandclear.org/2026/01/03/seerrcatalog-laddon-over-jelly-seerr-pour-stremio/).
+A plain `docker compose restart` is not enough after a `pull`: it restarts the existing container with the image it was created from.
+
+With Dockge / Dockge-Enhanced, use **Pull & Recreate** to apply a newly downloaded image.
+
+## Security
+
+Some `manifest.json` URLs may contain private tokens, keys or configuration parameters.
+
+- Do not publish these URLs.
+- Protect the `/app/data` volume, which contains application settings.
+- Use HTTPS when the instance is exposed through a reverse proxy.
+- Set `BASE_URL` to the public URL when SeerrCatalog runs behind a proxy.
+
+## Documentation
+
+Article and screenshots: [UpAndClear — SeerrCatalog, the Over/Jelly/Seerr addon for Stremio](https://upandclear.org/2026/01/03/seerrcatalog-laddon-over-jelly-seerr-pour-stremio/)
+
+Docker image: [ghcr.io/aerya/stremio-seerr-catalog](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
+
+## Project
+
+Developed and maintained by [Aerya](https://github.com/Aerya).
+
+Website: [UpAndClear](https://upandclear.org/)
+
+If SeerrCatalog is useful to you, you can support the project by starring the repository.
 
 ## License
 
