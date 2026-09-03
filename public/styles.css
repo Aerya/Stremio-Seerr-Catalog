@@ -493,13 +493,17 @@ body {
 }
 
 .user-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: block;
+  width: 100%;
   padding: 1rem;
   background: var(--bg-input);
   border-radius: var(--radius);
   border: 1px solid var(--border);
+}
+
+.user-info {
+  width: 100%;
+  min-width: 0;
 }
 
 .user-info strong {
@@ -519,10 +523,6 @@ body {
   color: var(--text-muted);
 }
 
-.user-actions {
-  display: flex;
-  gap: 0.5rem;
-}
 
 /* Stremio Modal Styles */
 .modal-subtitle {
@@ -839,6 +839,29 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .user-header {
+    align-items: center;
+  }
+
+  .config-row-mini {
+    flex-wrap: wrap;
+  }
+
+  .config-row-mini > span {
+    flex: 0 0 100%;
+    min-width: 100%;
+  }
+
+  .config-row-mini textarea {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .stremio-account-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
   .header-content {
     flex-wrap: wrap;
     gap: 1rem;
@@ -1166,22 +1189,61 @@ h4 .section-icon {
 
 .user-header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
+.user-identity {
+  min-width: 0;
+}
+
+.user-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.user-delete-btn {
+  flex: 0 0 auto;
+}
+
 .user-config-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+  width: 100%;
 }
 
 .user-config-card {
+  width: 100%;
+  box-sizing: border-box;
   background: rgba(0, 0, 0, 0.2);
   border-radius: var(--radius-sm);
-  padding: 0.75rem;
+  padding: 1rem;
+}
+
+.user-config-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.stremio-account-controls {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.stremio-account-controls .user-stremio {
+  margin-top: 0;
 }
 
 .user-config-card h5 {
@@ -1206,17 +1268,19 @@ h4 .section-icon {
   font-size: 0.75rem;
 }
 
-.config-row-mini span {
+.config-row-mini > span {
   color: var(--text-secondary);
-  min-width: 90px;
+  min-width: 150px;
+  flex: 0 0 150px;
 }
 
 .config-row-mini code {
   flex: 1;
+  min-width: 0;
   background: rgba(0, 0, 0, 0.3);
-  padding: 0.15rem 0.4rem;
+  padding: 0.3rem 0.5rem;
   border-radius: 3px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   word-break: break-all;
 }
 
