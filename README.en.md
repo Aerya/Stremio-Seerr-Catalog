@@ -18,7 +18,9 @@ Bridge between Jellyseerr and Stremio. Your Jellyseerr requests become a persona
 - 🆕 NEW 🗑️ **Auto-Cleanup (watched 90% sync)** — syncs watch progress from your Stremio account. Anything watched at ≥90% is marked as seen and removed from your catalog. Runs every 24h or on demand, per-user toggle.
 - 🔗 **Jellyfin / Radarr / Sonarr API emulation** — seamless Jellyseerr integration.
 - 📺 **Personal Stremio catalog** — access requested content directly in Stremio.
-- 🔍 **Smart stream search** — matches releases to your tags via addons linked to your Stremio account.
+- 🔍 **Smart stream search** — matches releases to your tags via addons linked to your Stremio account **and/or directly configured manifests** (AIOStreams, Lumio, StreamFusion, StreamNZB, LooStream, WaStream…).
+- 🔌 **Direct addons** — paste one or more `manifest.json` URLs per user; availability checks can work without a Stremio account.
+- ✅ **Availability threshold** — choose the minimum number of releases and distinct addons required before media is marked available.
 - 🌍 **Language & resolution filters** — only mark content as available if it matches your prefs (FRENCH, MULTI, 4K, 1080p…).
 - 🔔 **Discord notifications** — alerts when no source is found (multi-webhook, FR/EN).
 - 🔄 **24h auto-retry** — re-searches daily if nothing matched.
@@ -52,7 +54,7 @@ docker compose up -d
 
 Then:
 1. Open `http://localhost:7000` and create your admin account.
-2. Add your Stremio auth key in Settings.
+2. Add your Stremio auth key in Settings **or** configure direct addon manifests in the user stream filters. The Stremio key is still required for watched-state sync.
 3. Configure Jellyseerr to use SeerrCatalog as its Jellyfin server.
 4. Install the Stremio addon from the WebUI.
 5. Enable **Auto-Cleanup** in your user settings.
@@ -70,6 +72,7 @@ Then:
 ## Notes
 
 - **First run**: the initial Stremio sync can take a few minutes while it scans your library.
+- **Manifest URLs**: some contain configuration tokens or credentials. Keep them private; SeerrCatalog stores them in its settings database.
 - **Reverse proxy**: set `BASE_URL` to your public URL, otherwise generated addon links will point to localhost.
 
 ## Credits

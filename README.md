@@ -18,7 +18,9 @@ Passerelle entre Jellyseerr et Stremio. Tes requêtes Jellyseerr deviennent un c
 - 🆕 NEW 🗑️ **Nettoyage Auto (sync watched 90%)** — synchronise la progression depuis ton compte Stremio. Tout contenu visionné à ≥90% est marqué comme vu et retiré du catalogue. Sync toutes les 24h ou à la demande, activable par utilisateur.
 - 🔗 **Émulation API Jellyfin / Radarr / Sonarr** — intégration transparente avec Jellyseerr.
 - 📺 **Catalogue Stremio personnel** — accède à tes contenus demandés directement dans Stremio.
-- 🔍 **Recherche intelligente** — releases avec tes tags, via les addons liés à ton compte Stremio.
+- 🔍 **Recherche intelligente** — releases avec tes tags, via les addons liés à ton compte Stremio **et/ou des manifests ajoutés directement** (AIOStreams, Lumio, StreamFusion, StreamNZB, LooStream, WaStream…).
+- 🔌 **Addons directs** — colle une ou plusieurs URLs `manifest.json` par utilisateur ; la détection de disponibilité peut fonctionner sans compte Stremio.
+- ✅ **Seuil de disponibilité** — choisis le nombre minimum de releases et d'addons distincts requis avant de déclarer un média disponible.
 - 🌍 **Filtres langue & résolution** — ne marque comme dispo que ce qui colle à tes préférences (FRENCH, MULTI, 4K, 1080p…).
 - 🔔 **Notifications Discord** — alerte quand aucune source n'est trouvée (multi-webhook, FR/EN).
 - 🔄 **Retry auto 24h** — relance la recherche quotidiennement si rien ne matche.
@@ -52,7 +54,7 @@ docker compose up -d
 
 Ensuite :
 1. Ouvre `http://localhost:7000` et crée ton compte admin.
-2. Ajoute ta clé d'auth Stremio dans les Paramètres.
+2. Ajoute ta clé d'auth Stremio dans les Paramètres **ou** renseigne des manifests d'addons directs dans les filtres utilisateur. La clé Stremio reste nécessaire pour la synchro du statut regardé.
 3. Configure Jellyseerr pour utiliser SeerrCatalog comme serveur Jellyfin.
 4. Installe l'addon Stremio depuis la WebUI.
 5. Active le **Nettoyage Auto** dans tes paramètres utilisateur.
@@ -70,6 +72,7 @@ Ensuite :
 ## Notes
 
 - **Premier lancement** : la première synchro Stremio peut prendre quelques minutes le temps de scanner ta bibliothèque.
+- **URLs de manifests** : certaines contiennent des jetons ou des identifiants de configuration. Garde-les privées ; SeerrCatalog les stocke dans sa base de paramètres.
 - **Reverse proxy** : pense à fixer `BASE_URL` à ton URL publique, sinon les liens d'addon générés pointeront vers localhost.
 
 ## Crédits

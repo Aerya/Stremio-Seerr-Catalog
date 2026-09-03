@@ -281,30 +281,71 @@ router.get('/:id/stremio/selected-addons', (req, res) => {
     res.json({ selectedAddons });
 });
 
-// Save stream filter preferences (language tags + resolution)
+// Save stream filter preferences + direct addon manifests + availability thresholds
 router.put('/:id/stream-filters', (req, res) => {
     const id = parseInt(req.params.id);
-    const { languageTags, minResolution } = req.body;
+    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount } = req.body;
 
     const user = db.getUserById(id);
     if (!user) {
         return res.status(404).json({ error: 'User not found' });
     }
 
-    // Validate language tags (max 2)
     if (languageTags && (!Array.isArray(languageTags) || languageTags.length > 2)) {
         return res.status(400).json({ error: 'languageTags must be an array with max 2 items' });
     }
 
-    // Save preferences
+    let cleanedDirectManifestUrls;
+    if (directManifestUrls !== undefined) {
+        if (!Array.isArray(directManifestUrls) || directManifestUrls.length > 20) {
+            return res.status(400).json({ error: 'directManifestUrls must be an array with max 20 items' });
+        }
+
+        cleanedDirectManifestUrls = [...new Set(directManifestUrls.map(url => String(url).trim()).filter(Boolean))];
+        try {
+            for (const manifestUrl of cleanedDirectManifestUrls) {
+                const parsed = new URL(manifestUrl);
+                if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+            }
+        } catch (e) {
+            return res.status(400).json({ error: 'Each direct manifest must be a valid http(s) URL' });
+        }
+    }
+
+    const parsedMinStreamCount = minStreamCount === undefined ? undefined : Number.parseInt(minStreamCount, 10);
+    const parsedMinAddonCount = minAddonCount === undefined ? undefined : Number.parseInt(minAddonCount, 10);
+
+    if (parsedMinStreamCount !== undefined && (!Number.isInteger(parsedMinStreamCount) || parsedMinStreamCount < 1 || parsedMinStreamCount > 100)) {
+        return res.status(400).json({ error: 'minStreamCount must be an integer between 1 and 100' });
+    }
+    if (parsedMinAddonCount !== undefined && (!Number.isInteger(parsedMinAddonCount) || parsedMinAddonCount < 1 || parsedMinAddonCount > 20)) {
+        return res.status(400).json({ error: 'minAddonCount must be an integer between 1 and 20' });
+    }
+
     if (languageTags) {
         db.setSetting(`stream_filter_languages_${id}`, JSON.stringify(languageTags));
     }
     if (minResolution !== undefined) {
         db.setSetting(`stream_filter_resolution_${id}`, minResolution || null);
     }
+    if (directManifestUrls !== undefined) {
+        db.setSetting(`stremio_direct_manifests_${id}`, JSON.stringify(cleanedDirectManifestUrls));
+    }
+    if (parsedMinStreamCount !== undefined) {
+        db.setSetting(`stream_min_count_${id}`, String(parsedMinStreamCount));
+    }
+    if (parsedMinAddonCount !== undefined) {
+        db.setSetting(`stream_min_addons_${id}`, String(parsedMinAddonCount));
+    }
 
-    res.json({ success: true, languageTags, minResolution });
+    res.json({
+        success: true,
+        languageTags,
+        minResolution,
+        directManifestUrls: cleanedDirectManifestUrls,
+        minStreamCount: parsedMinStreamCount,
+        minAddonCount: parsedMinAddonCount
+    });
 });
 
 // Get stream filter preferences
@@ -318,10 +359,14 @@ router.get('/:id/stream-filters', (req, res) => {
 
     const languageTagsJson = db.getSetting(`stream_filter_languages_${id}`);
     const minResolution = db.getSetting(`stream_filter_resolution_${id}`);
+    const directManifestsJson = db.getSetting(`stremio_direct_manifests_${id}`);
 
     res.json({
         languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : [],
-        minResolution: minResolution || null
+        minResolution: minResolution || null,
+        directManifestUrls: directManifestsJson ? JSON.parse(directManifestsJson) : [],
+        minStreamCount: Number.parseInt(db.getSetting(`stream_min_count_${id}`) || '1', 10),
+        minAddonCount: Number.parseInt(db.getSetting(`stream_min_addons_${id}`) || '1', 10)
     });
 });
 

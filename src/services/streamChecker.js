@@ -18,12 +18,32 @@ async function checkStreamsAvailable(media, db) {
     // Get the user who owns this media
     const user = media.user_id ? db.getUserById(media.user_id) : null;
 
-    if (!user || !user.stremio_auth_key) {
-        console.log(`[StreamChecker] No Stremio auth key for media owner: ${media.title}`);
+    if (!user) {
+        console.log(`[StreamChecker] No media owner found for: ${media.title}`);
         return {
             available: false,
             streamCount: 0,
-            reason: 'Owner has no Stremio auth key configured',
+            reason: 'Media owner not found',
+            lastChecked: new Date().toISOString()
+        };
+    }
+
+    const directManifestsJson = db.getSetting(`stremio_direct_manifests_${user.id}`);
+    let directManifestUrls = [];
+    if (directManifestsJson) {
+        try {
+            directManifestUrls = JSON.parse(directManifestsJson);
+        } catch (e) {
+            console.error(`[StreamChecker] Invalid direct addon setting for user ${user.id}:`, e.message);
+        }
+    }
+
+    if (!user.stremio_auth_key && directManifestUrls.length === 0) {
+        console.log(`[StreamChecker] No Stremio account or direct addons for media owner: ${media.title}`);
+        return {
+            available: false,
+            streamCount: 0,
+            reason: 'Owner has no Stremio account or direct addons configured',
             lastChecked: new Date().toISOString()
         };
     }
@@ -59,12 +79,29 @@ async function checkStreamsAvailable(media, db) {
         minResolution: minResolution || null
     };
 
+    const availabilityPrefs = {
+        minStreamCount: parseInt(db.getSetting(`stream_min_count_${user.id}`) || '1', 10),
+        minAddonCount: parseInt(db.getSetting(`stream_min_addons_${user.id}`) || '1', 10)
+    };
+
     if (filterPrefs.languageTags.length > 0 || filterPrefs.minResolution) {
         console.log(`[StreamChecker] Using filters for ${user.username}:`, filterPrefs);
     }
 
-    // Use the Stremio service to check with user's addons and filters
-    return await checkStreamsWithUserAddons(media, user.stremio_auth_key, selectedAddonIds, filterPrefs);
+    console.log(
+        `[StreamChecker] Availability rule for ${user.username}: ` +
+        `${availabilityPrefs.minStreamCount} stream(s), ${availabilityPrefs.minAddonCount} addon(s)`
+    );
+
+    // Use account addons + optional direct manifest URLs. Direct-only mode is supported.
+    return await checkStreamsWithUserAddons(
+        media,
+        user.stremio_auth_key,
+        selectedAddonIds,
+        filterPrefs,
+        directManifestUrls,
+        availabilityPrefs
+    );
 }
 
 /**
