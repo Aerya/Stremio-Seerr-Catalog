@@ -127,7 +127,7 @@ Vue synthétique des addons ayant retourné des releases et du nombre de résult
 Détail des releases retournées : addon, qualité, taille et nom de release.
 </sub></p>
 
-### Utilisation dans Nuvio
+### Utilisation dans Stremio/Nuvio/whatever
 
 <p align="center">
   <img src="screens/nuvio-catalog.webp" alt="Catalogue SeerrCatalog affiché dans Nuvio" width="900">
