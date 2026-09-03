@@ -160,16 +160,6 @@ Certaines URLs `manifest.json` peuvent contenir des jetons, clés ou paramètres
 
 Article et captures d'écran : [UpAndClear — SeerrCatalog, l'addon Over/Jelly/Seerr pour Stremio](https://upandclear.org/2026/01/03/seerrcatalog-laddon-over-jelly-seerr-pour-stremio/)
 
-Image Docker : [ghcr.io/aerya/stremio-seerr-catalog](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
-
-## Projet
-
-Développé et maintenu par [Aerya](https://github.com/Aerya).
-
-Site : [UpAndClear](https://upandclear.org/)
-
-Si SeerrCatalog t'est utile, tu peux soutenir le projet en laissant une étoile sur GitHub.
-
 ## Licence
 
 MIT — voir [LICENSE](LICENSE).
