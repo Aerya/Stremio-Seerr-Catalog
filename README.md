@@ -60,6 +60,83 @@ Sans compte Stremio lié, les manifests ajoutés manuellement peuvent également
 | Notifications Discord | Notification lorsqu'aucune source correspondante n'est trouvée. |
 | WebUI | Interface responsive en français et en anglais. |
 
+<!-- screenshots:start -->
+## Captures d'écran
+
+### WebUI SeerrCatalog
+
+<p align="center">
+  <img src="screens/user-configuration.png" alt="Configuration utilisateur SeerrCatalog" width="900">
+</p>
+<p align="center"><sub>
+Configuration complète d'un utilisateur : compte Stremio, endpoints Radarr / Sonarr / Jellyfin, addons supplémentaires, filtres et critères de disponibilité.
+</sub></p>
+
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Paramètres SeerrCatalog</strong></td>
+    <td width="50%" align="center"><strong>Catalogue</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screens/settings.webp" alt="Paramètres TMDB et Jellyseerr de SeerrCatalog"></td>
+    <td><img src="screens/catalog.webp" alt="Catalogue SeerrCatalog"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Configuration TMDB et intégration Jellyseerr.</sub></td>
+    <td align="center"><sub>Catalogue personnel avec filtres par disponibilité, type et utilisateur.</sub></td>
+  </tr>
+</table>
+
+### Intégration Jellyseerr
+
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Services Radarr / Sonarr</strong></td>
+    <td width="50%" align="center"><strong>Création d'une demande</strong></td>
+  </tr>
+  <tr>
+    <td><img src="screens/jellyseerr-services.webp" alt="Configuration Radarr et Sonarr dans Jellyseerr"></td>
+    <td><img src="screens/jellyseerr-request.webp" alt="Création d'une demande Jellyseerr"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Jellyseerr pointe vers les endpoints Radarr et Sonarr émulés par SeerrCatalog.</sub></td>
+    <td align="center"><sub>La demande reste effectuée normalement depuis Jellyseerr.</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="screens/jellyseerr-requests.webp" alt="Demandes Jellyseerr et statuts de disponibilité" width="900">
+</p>
+<p align="center"><sub>
+Les demandes passent automatiquement à l'état disponible lorsque SeerrCatalog valide les critères de sources configurés.
+</sub></p>
+
+### Détection des sources
+
+<p align="center">
+  <img src="screens/sources-summary.webp" alt="Résumé des sources trouvées par addon" width="850">
+</p>
+<p align="center"><sub>
+Vue synthétique des addons ayant retourné des releases et du nombre de résultats trouvés.
+</sub></p>
+
+<p align="center">
+  <img src="screens/sources-details.webp" alt="Détail des releases trouvées dans SeerrCatalog" width="430">
+</p>
+<p align="center"><sub>
+Détail des releases retournées : addon, qualité, taille et nom de release.
+</sub></p>
+
+### Utilisation dans Nuvio
+
+<p align="center">
+  <img src="screens/nuvio-catalog.webp" alt="Catalogue SeerrCatalog affiché dans Nuvio" width="900">
+</p>
+<p align="center"><sub>
+Les catalogues générés par SeerrCatalog peuvent être consommés par les clients compatibles avec les addons Stremio, ici Nuvio.
+</sub></p>
+<!-- screenshots:end -->
+
 ## Règles de disponibilité
 
 Deux valeurs indépendantes déterminent quand un média est considéré comme disponible :
