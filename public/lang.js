@@ -37,6 +37,10 @@ const translations = {
         create: 'Create',
         delete_user_confirm: 'Delete this user?',
         no_users: 'No users',
+        manifest_url: 'Manifest URL:',
+        yes: 'Yes',
+        no: 'No',
+        loading: 'Loading...',
 
         // Settings
         settings_title: 'Settings',
@@ -165,6 +169,10 @@ const translations = {
         create: 'Créer',
         delete_user_confirm: 'Supprimer cet utilisateur ?',
         no_users: 'Aucun utilisateur',
+        manifest_url: 'URL du manifest :',
+        yes: 'Oui',
+        no: 'Non',
+        loading: 'Chargement...',
 
         // Settings
         settings_title: 'Paramètres',
