@@ -131,7 +131,11 @@ const translations = {
         // Modal
         sources_found: 'Sources found:',
         no_sources_found: 'No sources found during last check',
-        files: 'files'
+        files: 'files',
+        copy: 'Copy',
+        copy_failed: 'Copy failed',
+        stream_check_pending: 'Source verification pending',
+        stream_check_incomplete: 'Source verification incomplete — please retry'
     },
 
     fr: {
@@ -263,7 +267,11 @@ const translations = {
         // Modal
         sources_found: 'Sources trouvées :',
         no_sources_found: 'Aucune source trouvée lors de la dernière vérification',
-        files: 'fichiers'
+        files: 'fichiers',
+        copy: 'Copier',
+        copy_failed: 'Échec de la copie',
+        stream_check_pending: 'Vérification des sources en attente',
+        stream_check_incomplete: 'Vérification des sources incomplète — veuillez réessayer'
     }
 };
 

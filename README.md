@@ -111,6 +111,15 @@ Configuration complète d'un utilisateur : compte Stremio, endpoints Radarr / So
 Les demandes passent automatiquement à l'état disponible lorsque SeerrCatalog valide les critères de sources configurés.
 </sub></p>
 
+### Fiabilité des vérifications et notifications
+
+- Lors d'un ajout Radarr/Sonarr, SeerrCatalog vérifie les sources en arrière-plan puis effectue **une seconde tentative après 60 secondes** si la disponibilité n'est pas confirmée. L'ajout Jellyseerr reste immédiat.
+- Les erreurs réseau, délais d'attente, addons indisponibles ou identifiants IMDB manquants sont considérés comme des **vérifications incomplètes**, pas comme une preuve d'absence de sources. Le résultat précédemment enregistré est conservé en cas de vérification incomplète.
+- Une notification Discord **« Aucune source trouvée »** est envoyée uniquement si deux vérifications concluantes ne trouvent **aucune release correspondant aux filtres**. Si des releases existent mais n'atteignent pas les seuils minimum définis, le média reste indisponible **sans fausse alerte « Aucune source »**.
+- Pour les séries, la recherche teste prioritairement les saisons suivies (jusqu'à deux saisons récentes) puis `S01E01` comme solution de repli, au lieu de se limiter à `S01E01`.
+- Les manifests directs et les addons du compte Stremio sont mémorisés brièvement (60 secondes) pour réduire les requêtes lors des ajouts groupés. Les vérifications de sources sont limitées à 4 requêtes simultanées, sans changer la configuration.
+- Les boutons de copie affichent simplement une coche, sans popup. Une vérification manuelle incomplète s'affiche dans la fiche du média et ne remplace pas les résultats antérieurs.
+
 ### Détection des sources
 
 <p align="center">

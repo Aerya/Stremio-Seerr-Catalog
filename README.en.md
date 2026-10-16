@@ -111,6 +111,15 @@ Complete per-user configuration: Stremio account, Radarr / Sonarr / Jellyfin end
 Requests automatically become available once SeerrCatalog validates the configured source criteria.
 </sub></p>
 
+### Check reliability and notifications
+
+- Following a Radarr/Sonarr addition, SeerrCatalog checks streams in the background and makes **one confirmation attempt after 60 seconds** if availability is not confirmed. The Jellyseerr creation response remains immediate.
+- Network errors, timeouts, unavailable addons and missing IMDB IDs are **incomplete checks**, not evidence of missing streams. A failed check does not overwrite previously saved results.
+- A Discord **“No Source Found”** alert is sent only after two conclusive checks find **zero releases matching the filters**. Releases that fail the configured minimum thresholds keep the media unavailable **without a misleading “No Source” alert**.
+- Series checks try monitored seasons (up to two recent seasons) before falling back to `S01E01`, instead of always using `S01E01`.
+- Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
+- Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
+
 ### Source detection
 
 <p align="center">
