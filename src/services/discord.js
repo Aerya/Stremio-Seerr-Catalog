@@ -1,6 +1,6 @@
 /**
  * Discord Notification Service
- * Sends notifications via Discord webhooks when media has no sources available
+ * Sends lifecycle notifications via Discord webhooks
  */
 
 const db = require('../db');
@@ -14,6 +14,14 @@ const NOTIFICATIONS_LANGUAGE_KEY = 'discord_notifications_language';
 const translations = {
     en: {
         noSourceTitle: '⚠️ No Source Found',
+        sourcesFoundTitle: '✅ Sources Found',
+        removedTitle: '🗑️ Content Removed',
+        streams: 'Streams',
+        addons: 'Addons',
+        removalReason: 'Reason',
+        removedWatched: 'Watched (automatic cleanup)',
+        removedManual: 'Manual deletion',
+        removedExternal: 'Removal requested via Radarr/Sonarr',
         testTitle: '✅ Test Notification',
         testDescription: 'Discord webhook is working correctly!',
         type: 'Type',
@@ -27,6 +35,14 @@ const translations = {
     },
     fr: {
         noSourceTitle: '⚠️ Aucune Source Trouvée',
+        sourcesFoundTitle: '✅ Sources trouvées',
+        removedTitle: '🗑️ Contenu retiré',
+        streams: 'Sources',
+        addons: 'Addons',
+        removalReason: 'Motif',
+        removedWatched: 'Visionné (nettoyage automatique)',
+        removedManual: 'Suppression manuelle',
+        removedExternal: 'Retrait demandé via Radarr/Sonarr',
         testTitle: '✅ Notification de Test',
         testDescription: 'Le webhook Discord fonctionne correctement !',
         type: 'Type',
@@ -148,7 +164,8 @@ async function sendToAllWebhooks(embed) {
     }
 
     const payload = {
-        embeds: [embed]
+        embeds: [embed],
+        allowed_mentions: { parse: [] }
     };
 
     for (const webhookUrl of webhooks) {
@@ -258,6 +275,67 @@ async function sendNoSourceNotification(media, filterPrefs = null) {
     await sendToAllWebhooks(embed);
 }
 
+/** Media links are for informational purposes and do not expose instance URLs. */
+function mediaReferences(media) {
+    const imdb = /^tt\d+$/.test(String(media.imdb_id || ''))
+        ? `https://www.imdb.com/title/${media.imdb_id}` : null;
+    const tmdb = /^\d+$/.test(String(media.tmdb_id || ''))
+        ? `https://www.themoviedb.org/${media.type === 'movie' ? 'movie' : 'tv'}/${media.tmdb_id}` : null;
+    return [imdb, tmdb].filter(Boolean).join('\n');
+}
+
+function mediaLifecycleEmbed(media, title, color, extraFields = []) {
+    const lang = t();
+    const value = `**${String(media.title || '').slice(0, 850)}** (${media.year || 'N/A'})`;
+    const icon = media.type === 'movie' ? 'radarr' : 'sonarr';
+    const poster = typeof media.poster === 'string' && /^https:\/\//.test(media.poster)
+        ? { url: media.poster } : undefined;
+    return {
+        title,
+        color,
+        author: {
+            name: media.type === 'movie' ? lang.movie : lang.series,
+            icon_url: `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/${icon}.webp`
+        },
+        fields: [{ name: lang.media, value, inline: false }, ...extraFields],
+        ...(poster ? { thumbnail: poster } : {}),
+        description: mediaReferences(media) || undefined,
+        timestamp: new Date().toISOString()
+    };
+}
+
+/** Send only for a confirmed transition from unavailable to available. */
+async function sendSourcesFoundNotification(media, result) {
+    if (!isNotificationsEnabled()) return;
+    const lang = t();
+    const addons = (Array.isArray(result.addons) ? result.addons : [])
+        .filter(addon => Array.isArray(addon.streams) && addon.streams.length > 0)
+        .map(addon => String(addon.name || addon.id || '').slice(0, 80))
+        .filter(Boolean).slice(0, 8);
+    const fields = [
+        { name: lang.streams, value: String(result.streamCount || 0), inline: true }
+    ];
+    if (addons.length) {
+        fields.push({ name: lang.addons, value: addons.join(', ').slice(0, 1000), inline: false });
+    }
+    await sendToAllWebhooks(mediaLifecycleEmbed(media, lang.sourcesFoundTitle, 0x24B47E, fields));
+}
+
+/** Reasons are explicit; a watched mark without removal does not generate an alert. */
+async function sendMediaRemovedNotification(media, reason) {
+    if (!isNotificationsEnabled()) return;
+    const lang = t();
+    const reasonNames = {
+        watched: lang.removedWatched,
+        manual: lang.removedManual,
+        external: lang.removedExternal
+    };
+    const embed = mediaLifecycleEmbed(media, lang.removedTitle, 0xE85D61, [
+        { name: lang.removalReason, value: reasonNames[reason] || lang.removedManual, inline: false }
+    ]);
+    await sendToAllWebhooks(embed);
+}
+
 /**
  * Send a test notification
  */
@@ -283,5 +361,7 @@ module.exports = {
     getNotificationLanguage,
     setNotificationLanguage,
     sendNoSourceNotification,
+    sendSourcesFoundNotification,
+    sendMediaRemovedNotification,
     sendTestNotification
 };

@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const db = require('../db');
 const tmdb = require('../services/tmdb');
+const { recordStreamCheck, deleteMediaWithNotification, notifyRemoval } = require('../services/mediaEvents');
 
 const router = express.Router();
 
@@ -49,6 +50,7 @@ router.post('/api/media/:id/watched', (req, res) => {
     if (!media) return res.status(404).json({ error: 'Not found' });
 
     const result = db.markAsWatched(id, deleteAfter);
+    if (deleteAfter) notifyRemoval(media, result, 'watched');
     res.json(result || { success: true, deleted: deleteAfter });
 });
 
@@ -70,9 +72,7 @@ router.post('/api/media/:id/check-streams', async (req, res) => {
     try {
         const { checkStreamsAvailable } = require('../services/streamChecker');
         const result = await checkStreamsAvailable(media, db);
-        if (result.conclusive) {
-            db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
-        }
+        await recordStreamCheck(db, media, result);
         res.json({ ...result, title: media.title });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -85,7 +85,7 @@ router.delete('/api/media/:id', (req, res) => {
     const media = db.getMediaById(id);
     if (!media) return res.status(404).json({ error: 'Not found' });
 
-    db.deleteMedia(id);
+    deleteMediaWithNotification(db, media, 'manual');
     console.log(`[WebUI] Media deleted: ${id} - ${media.title}`);
     res.json({ success: true, deleted: id });
 });

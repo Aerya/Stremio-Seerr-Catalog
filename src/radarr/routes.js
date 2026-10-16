@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { handleInitialStreamCheck } = require('../services/streamChecker');
+const { deleteMediaWithNotification } = require('../services/mediaEvents');
 const { getTMDBDetails } = require('../services/tmdb');
 
 const router = express.Router();
@@ -386,7 +387,7 @@ router.delete('/api/v3/movie/:id', (req, res) => {
         return res.status(404).json({ message: 'Movie not found' });
     }
 
-    db.deleteMedia(id);
+    deleteMediaWithNotification(db, media, 'external');
     console.log('[Radarr] Movie deleted:', id, media.title);
 
     res.status(200).json({});

@@ -111,6 +111,10 @@ Configuration complète d'un utilisateur : compte Stremio, endpoints Radarr / So
 Les demandes passent automatiquement à l'état disponible lorsque SeerrCatalog valide les critères de sources configurés.
 </sub></p>
 
+### Notifications Discord — événements du catalogue
+
+Les webhooks Discord existants sont utilisés pour les **sources trouvées** (ajout, vérification manuelle ou automatique), les **sources absentes confirmées** à l'ajout et les **retraits de contenus** (visionné, suppression WebUI, retrait Radarr/Sonarr). Les recherches répétées sans changement d'état n'envoient pas de doublon. Un média simplement marqué visionné mais conservé n'est pas considéré comme retiré. L'activation globale et la langue FR/EN existantes restent inchangées.
+
 ### Fiabilité des vérifications et notifications
 
 - Lors d'un ajout Radarr/Sonarr, SeerrCatalog vérifie les sources en arrière-plan puis effectue **une seconde tentative après 60 secondes** si la disponibilité n'est pas confirmée. L'ajout Jellyseerr reste immédiat.
