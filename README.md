@@ -120,6 +120,14 @@ Les demandes passent automatiquement à l'état disponible lorsque SeerrCatalog 
 - Les manifests directs et les addons du compte Stremio sont mémorisés brièvement (60 secondes) pour réduire les requêtes lors des ajouts groupés. Les vérifications de sources sont limitées à 4 requêtes simultanées, sans changer la configuration.
 - Les boutons de copie affichent simplement une coche, sans popup. Une vérification manuelle incomplète s'affiche dans la fiche du média et ne remplace pas les résultats antérieurs.
 
+### Interface WebUI revue
+
+- Catalogue : filtres regroupés et identifiés, compteur de résultats, statuts de disponibilité directement visibles sur les affiches sans les masquer.
+- Utilisateurs : configuration Stremio/Radarr/Sonarr/Jellyfin présentée en panneaux compacts et champs cohérents.
+- Paramètres : intégrations TMDB, Jellyseerr et Discord réorganisées en panneaux adaptatifs ; interface et connexion harmonisées pour mobile.
+- Détail des sources : liste dépliable accessible au clavier, actions de confirmation/suppression mieux différenciées ; traductions FR/EN complétées.
+- Aucun changement de paramètres, endpoints, structure de stockage, Compose ou dépendances.
+
 ### Détection des sources
 
 <p align="center">

@@ -45,7 +45,7 @@
         </div>
 
         <button class="btn btn-secondary btn-small" onclick="handleLogout()" style="margin-left:1rem;" title="Logout">
-          🚪 Logout
+          🚪 <span data-i18n="logout">Logout</span>
         </button>
       </div>
     </header>
@@ -53,17 +53,30 @@
     <main class="main">
       <!-- Catalog Page -->
       <section class="page active" id="page-catalog">
+        <div class="page-heading">
+          <div>
+            <span class="page-eyebrow" data-i18n="catalog_eyebrow">MEDIA LIBRARY</span>
+            <h2 data-i18n="catalog_heading">Your library</h2>
+            <p data-i18n="catalog_description">Movies and series from your Jellyseerr requests, all in one place.</p>
+          </div>
+          <span class="page-count" id="catalog-count" aria-live="polite"></span>
+        </div>
 
-        <div class="card">
+        <div class="card catalog-toolbar">
           <div class="filter-row">
-            <div class="filter-pills">
+            <div class="filter-group">
+              <span class="filter-label" data-i18n="catalog_filter_availability">Availability</span>
+              <div class="filter-pills">
               <button class="filter-pill active" data-filter="all" data-i18n="filter_all">All</button>
               <button class="filter-pill" data-filter="available"><span
                   data-i18n="filter_available">Available</span></button>
               <button class="filter-pill" data-filter="unavailable"><span data-i18n="filter_unavailable">No
                   Sources</span></button>
+              </div>
             </div>
-            <div class="filter-pills type-filters">
+            <div class="filter-group">
+              <span class="filter-label" data-i18n="catalog_filter_type">Media type</span>
+              <div class="filter-pills type-filters">
               <button class="type-pill active" data-type="all" data-i18n="filter_all">All</button>
               <button class="type-pill" data-type="movie"><img
                   src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" alt=""
@@ -71,8 +84,10 @@
               <button class="type-pill" data-type="series"><img
                   src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" alt=""
                   class="filter-icon"> <span data-i18n="series">Series</span></button>
+              </div>
             </div>
-            <div class="user-select-container">
+            <div class="filter-group user-select-container">
+              <label class="filter-label" for="user-filter" data-i18n="catalog_filter_user">User</label>
               <select class="user-select" id="user-filter">
                 <option value="" data-i18n="all_users">All Users</option>
               </select>
@@ -80,6 +95,10 @@
           </div>
         </div>
 
+        <div class="catalog-section-title">
+          <h3 data-i18n="catalog_results">Your titles</h3>
+          <span class="catalog-section-rule" aria-hidden="true"></span>
+        </div>
         <div class="catalog-grid" id="catalog-grid">
           <div class="empty-state">
             <p data-i18n="empty_catalog">No media in catalog</p>
@@ -90,9 +109,16 @@
 
       <!-- Users Page -->
       <section class="page" id="page-users">
-        <div class="card">
-          <div class="card-header">
+        <div class="page-heading">
+          <div>
+            <span class="page-eyebrow" data-i18n="users_eyebrow">PERSONAL SPACES</span>
             <h2 data-i18n="user_management">User Management</h2>
+            <p data-i18n="users_description">Stremio accounts, integration URLs and individual source filters.</p>
+          </div>
+        </div>
+        <div class="card users-panel">
+          <div class="card-header">
+            <h2 data-i18n="users_section_title">Configured users</h2>
             <button class="btn btn-primary" onclick="showUserModal()">➕ <span data-i18n="add_user">Add
                 User</span></button>
           </div>
@@ -102,7 +128,14 @@
 
       <!-- Settings Page -->
       <section class="page" id="page-settings">
-        <div class="card">
+        <div class="page-heading">
+          <div>
+            <span class="page-eyebrow" data-i18n="settings_eyebrow">CONFIGURATION</span>
+            <h2 data-i18n="settings_title">Settings</h2>
+            <p data-i18n="settings_description">Manage your integrations and notifications.</p>
+          </div>
+        </div>
+        <div class="card settings-panel-grid">
 
           <div class="settings-section">
             <h3><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tmdb.webp" alt="TMDB"
@@ -110,7 +143,7 @@
             <div class="settings-item">
               <h4 data-i18n="tmdb_key">TMDB API Key</h4>
               <div class="input-group">
-                <input type="password" id="tmdb-key" placeholder="Enter your TMDB API key">
+                <input type="password" id="tmdb-key" data-i18n-placeholder="tmdb_key_placeholder" placeholder="Enter your TMDB API key">
                 <button class="btn btn-primary btn-small" onclick="saveTmdbKey()" data-i18n="tmdb_save">Save</button>
               </div>
               <p class="hint"><span data-i18n="tmdb_key_hint">Get your free key at</span> <a
@@ -136,7 +169,7 @@
             <div class="settings-item">
               <h4 data-i18n="jellyseerr_api_key">Jellyseerr API Key (optional)</h4>
               <div class="input-group">
-                <input type="text" id="jellyseerr-key" placeholder="API Key from Jellyseerr Settings">
+                <input type="text" id="jellyseerr-key" data-i18n-placeholder="jellyseerr_key_placeholder" placeholder="API Key from Jellyseerr Settings">
               </div>
               <p class="hint" data-i18n="jellyseerr_api_key_hint">Required only if your Jellyseerr API is protected</p>
               <p class="hint" id="jellyseerr-status"></p>
@@ -182,8 +215,7 @@
 
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span data-i18n="discord_language">Language:</span>
-                  <select id="discord-language" onchange="saveDiscordSettings()"
-                    style="padding:4px 8px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                  <select id="discord-language" onchange="saveDiscordSettings()">
                     <option value="en">English</option>
                     <option value="fr">Français</option>
                   </select>
@@ -335,6 +367,8 @@
         // whole Users page immediately follows the selected language.
         await loadUsers();
         await loadStats();
+        await loadCatalog();
+        await loadDiscordSettings();
       });
     });
 
@@ -479,7 +513,7 @@
 
                   <div class="config-row-mini" style="align-items:flex-start;">
                     <span data-i18n="additional_addons">Additional addons:</span>
-                    <textarea id="direct-manifests-${u.id}" rows="4" data-i18n-placeholder="additional_addons_placeholder" placeholder="One manifest.json URL per line" style="flex:1; min-width:260px; padding:6px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px; resize:vertical;"></textarea>
+                    <textarea id="direct-manifests-${u.id}" class="addon-manifest-editor" rows="4" data-i18n-placeholder="additional_addons_placeholder" placeholder="One manifest.json URL per line"></textarea>
                   </div>
                   <p style="margin:7px 0 0; font-size:12px; line-height:1.5; color:var(--text-secondary);" data-i18n="additional_addons_help">
                     These addons are added to those from the connected Stremio account. Without a Stremio account, they can also be used on their own.
@@ -490,12 +524,12 @@
                   <div style="font-weight:600; margin-bottom:7px;" data-i18n="stream_filters">Stream filters</div>
                   <div class="config-row-mini">
                     <span data-i18n="language_tags">Language Tags (max 2):</span>
-                    <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
-                    <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" style="width:90px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" class="filter-language-input">
+                    <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" class="filter-language-input">
                   </div>
                   <div class="config-row-mini">
                     <span data-i18n="min_resolution">Min Resolution:</span>
-                    <select id="resolution-${u.id}" style="padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                    <select id="resolution-${u.id}" class="filter-resolution">
                       <option value="" data-i18n="filter_all">All</option>
                       <option value="720p">720p+</option>
                       <option value="1080p">1080p+</option>
@@ -509,11 +543,11 @@
                   <div class="config-row-mini">
                     <label style="display:flex; align-items:center; gap:5px;">
                       <span data-i18n="min_releases">Min releases</span>
-                      <input type="number" id="min-stream-count-${u.id}" min="1" max="100" value="1" oninput="updateAvailabilitySummary(${u.id})" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                      <input type="number" id="min-stream-count-${u.id}" min="1" max="100" value="1" oninput="updateAvailabilitySummary(${u.id})" class="filter-count-input">
                     </label>
                     <label style="display:flex; align-items:center; gap:5px;">
                       <span data-i18n="min_addons">Min distinct addons</span>
-                      <input type="number" id="min-addon-count-${u.id}" min="1" max="20" value="1" oninput="updateAvailabilitySummary(${u.id})" style="width:58px; padding:4px; border:1px solid #444; background:#2a2a3e; color:#fff; border-radius:4px;">
+                      <input type="number" id="min-addon-count-${u.id}" min="1" max="20" value="1" oninput="updateAvailabilitySummary(${u.id})" class="filter-count-input">
                     </label>
                     <button class="btn btn-primary btn-small" onclick="saveStreamFilters(${u.id})" data-i18n="save_search_settings">Save</button>
                   </div>
@@ -562,25 +596,35 @@
 
     function renderCatalog(media) {
       const grid = document.getElementById('catalog-grid');
+      const count = document.getElementById('catalog-count');
+      count.textContent = `${media.length} ${t(media.length === 1 ? 'catalog_item' : 'catalog_items')}`;
       if (!media.length) {
         grid.innerHTML = `<div class="empty-state"><p>${t('empty_catalog')}</p><p class="hint">${t('empty_hint')}</p></div>`;
         return;
       }
       grid.innerHTML = media.map(item => `
-        <div class="media-card ${item.watched ? 'watched' : ''} ${item.streams_available ? '' : 'unavailable'}" onclick="showMediaActions(${item.id})">
+        <div class="media-card ${item.watched ? 'watched' : ''} ${item.streams_available ? '' : 'unavailable'}" onclick="showMediaActions(${item.id})" role="button" tabindex="0" aria-label="${escapeHtml(item.title)}">
           <div class="media-poster">
-            ${item.poster ? `<img src="${item.poster}" alt="${item.title}" loading="lazy">` : `<div class="no-poster">${item.title[0]}</div>`}
+            ${item.poster ? `<img src="${escapeHtml(item.poster)}" alt="${escapeHtml(item.title)}" loading="lazy">` : `<div class="no-poster">${escapeHtml(item.title[0] || '?')}</div>`}
             <div class="media-badges">
               <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/${item.type === 'movie' ? 'radarr' : 'sonarr'}.webp" alt="${item.type}" class="badge-icon">
-              <span class="badge ${item.streams_available ? 'badge-status' : 'badge-unavailable'}">${item.streams_available ? '✓' : '!'}</span>
+              <span class="badge ${item.streams_available ? 'badge-status' : 'badge-unavailable'}" title="${item.streams_available ? t('filter_available') : t('filter_unavailable')}">${item.streams_available ? '✓' : '!'}</span>
             </div>
             ${item.watched ? '<span class="badge badge-watched" style="position:absolute;bottom:0.5rem;right:0.5rem">👁️</span>' : ''}
           </div>
-          <div class="media-info"><h4>${item.title}</h4><span>${item.year || ''}</span></div>
+          <div class="media-info"><h4 title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h4><div class="media-meta"><span>${escapeHtml(item.year || '')}</span><span class="media-availability ${item.streams_available ? 'is-available' : 'is-unavailable'}">${item.streams_available ? t('available_singular') : t('filter_unavailable')}</span></div></div>
         </div>
       `).join('');
     }
 
+
+    // Cards are also operable from the keyboard without changing the click behaviour.
+    document.getElementById('catalog-grid').addEventListener('keydown', event => {
+      if (event.target.classList.contains('media-card') && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        event.target.click();
+      }
+    });
 
     // Media actions
     function escapeHtml(value) {
@@ -620,13 +664,13 @@
             }).join('')
             : '';
           return `
-            <div class="addon-source">
-              <div class="addon-header" onclick="this.parentElement.classList.toggle('expanded')">
+            <details class="addon-source">
+              <summary class="addon-header">
                 <span class="addon-name">${escapeHtml(addon.name)}</span>
-                <span class="addon-count">${addon.streamCount} ${t('files')}</span>
-              </div>
+                <span class="addon-count">${Number(addon.streamCount) || 0} ${t('files')}</span>
+              </summary>
               <div class="addon-streams">${streamsHtml}</div>
-            </div>`;
+            </details>`;
         }).join('');
         document.getElementById('modal-actions').insertAdjacentHTML('beforebegin', `
           <div class="sources-list">
@@ -634,7 +678,7 @@
             <div class="sources-addons">${sourcesHtml}</div>
           </div>
         `);
-      } else if (selectedMedia.last_stream_check) {
+      } else if (selectedMedia.last_stream_check && checkResult?.conclusive !== false) {
         // Already checked but no sources
         document.getElementById('modal-actions').insertAdjacentHTML('beforebegin', `
           <div class="sources-list" style="color: var(--warning);">
@@ -1135,7 +1179,7 @@
 
         const list = document.getElementById('discord-webhooks-list');
         if (webhooks.length === 0) {
-          list.innerHTML = '<p class="hint" style="margin:0;">No webhooks configured</p>';
+          list.innerHTML = `<p class="hint" style="margin:0;">${t('discord_no_webhooks')}</p>`;
         } else {
           list.innerHTML = webhooks.map(w => `
             <div style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:#2a2a3e; border-radius:4px; margin-bottom:6px;">

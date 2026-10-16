@@ -3,11 +3,29 @@
  */
 const translations = {
     en: {
+        logout: 'Log out',
+        tmdb_key_placeholder: 'Enter your TMDB API key',
+        jellyseerr_key_placeholder: 'API key from Jellyseerr settings',
+        discord_no_webhooks: 'No webhooks configured yet',
         // Navigation
         nav_catalog: 'Catalog',
         nav_users: 'Users',
         nav_settings: 'Settings',
 
+        catalog_eyebrow: 'MEDIA LIBRARY',
+        catalog_heading: 'Your library',
+        catalog_description: 'Movies and series from your Jellyseerr requests, all in one place.',
+        catalog_filter_availability: 'Availability',
+        catalog_filter_type: 'Media type',
+        catalog_filter_user: 'User',
+        catalog_results: 'Your titles',
+        catalog_item: 'title',
+        catalog_items: 'titles',
+        users_eyebrow: 'PERSONAL SPACES',
+        users_description: 'Stremio accounts, integration URLs and individual source filters.',
+        users_section_title: 'Configured users',
+        settings_eyebrow: 'CONFIGURATION',
+        settings_description: 'Manage your integrations and notifications.',
         // Catalog
         search_placeholder: 'Search movies & series...',
         search_type_all: 'All',
@@ -139,11 +157,29 @@ const translations = {
     },
 
     fr: {
+        logout: 'Déconnexion',
+        tmdb_key_placeholder: 'Saisissez votre clé API TMDB',
+        jellyseerr_key_placeholder: 'Clé API des paramètres Jellyseerr',
+        discord_no_webhooks: 'Aucun webhook configuré',
         // Navigation
         nav_catalog: 'Catalogue',
         nav_users: 'Utilisateurs',
         nav_settings: 'Paramètres',
 
+        catalog_eyebrow: 'MÉDIATHÈQUE',
+        catalog_heading: 'Votre catalogue',
+        catalog_description: 'Films et séries issus de vos demandes Jellyseerr, réunis au même endroit.',
+        catalog_filter_availability: 'Disponibilité',
+        catalog_filter_type: 'Type de média',
+        catalog_filter_user: 'Utilisateur',
+        catalog_results: 'Vos contenus',
+        catalog_item: 'contenu',
+        catalog_items: 'contenus',
+        users_eyebrow: 'ESPACES PERSONNELS',
+        users_description: 'Comptes Stremio, adresses d’intégration et filtres de sources individuels.',
+        users_section_title: 'Utilisateurs configurés',
+        settings_eyebrow: 'CONFIGURATION',
+        settings_description: 'Gérez les intégrations et les notifications.',
         // Catalog
         search_placeholder: 'Rechercher films et séries...',
         search_type_all: 'Tout',
