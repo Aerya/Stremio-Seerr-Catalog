@@ -140,7 +140,7 @@ const translations = {
         // Discord Notifications
         discord_notifications: 'Discord Notifications',
         discord_webhooks: 'Discord Webhooks',
-        discord_webhooks_hint: 'Get notified on Discord when no source is found for a media.',
+        discord_webhooks_hint: 'Receive notifications when sources are found, no sources are confirmed, or content is removed (watched or deleted).',
         discord_settings: 'Notification Settings',
         discord_enabled: 'Enabled',
         discord_language: 'Language:',
@@ -294,7 +294,7 @@ const translations = {
         // Discord Notifications
         discord_notifications: 'Notifications Discord',
         discord_webhooks: 'Webhooks Discord',
-        discord_webhooks_hint: 'Recevez une notification Discord quand aucune source n\'est trouvée pour un média.',
+        discord_webhooks_hint: 'Notifications lors de la découverte de sources, de leur absence confirmée ou du retrait d’un contenu (visionné ou supprimé).',
         discord_settings: 'Paramètres de notification',
         discord_enabled: 'Activé',
         discord_language: 'Langue :',

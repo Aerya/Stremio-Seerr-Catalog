@@ -111,6 +111,10 @@ Complete per-user configuration: Stremio account, Radarr / Sonarr / Jellyfin end
 Requests automatically become available once SeerrCatalog validates the configured source criteria.
 </sub></p>
 
+### Discord notifications — catalogue events
+
+Existing Discord webhooks now report **sources found** (initial, manual or automatic checks), **confirmed missing sources** on addition, and **content removals** (watched cleanup, WebUI deletion, Radarr/Sonarr removal). Repeated checks without a status transition do not trigger duplicates. Marking an item as watched without removing it is not a removal. Existing enable/disable and EN/FR settings are unchanged.
+
 ### Check reliability and notifications
 
 - Following a Radarr/Sonarr addition, SeerrCatalog checks streams in the background and makes **one confirmation attempt after 60 seconds** if availability is not confirmed. The Jellyseerr creation response remains immediate.

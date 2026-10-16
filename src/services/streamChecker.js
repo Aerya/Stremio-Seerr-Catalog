@@ -4,6 +4,7 @@
  */
 
 const { checkStreamsWithUserAddons, getLibraryItems } = require('./stremio');
+const { recordStreamCheck, deleteMediaWithNotification, notifyRemoval } = require('./mediaEvents');
 
 // Check interval: 24 hours in milliseconds
 const RECHECK_INTERVAL = 24 * 60 * 60 * 1000;
@@ -161,12 +162,10 @@ async function handleInitialStreamCheck(media, db, origin = 'Catalog') {
         console.warn(`[${origin}] Verification incomplete for ${media.title}; suppressing no-source notification`);
         return;
     }
-    db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+    await recordStreamCheck(db, media, result);
 
     if (result.available) {
         console.log(`[${origin}] Streams found for ${media.title} (${result.streamCount})`);
-        const { notifyMediaAvailable } = require('./jellyseerr');
-        await notifyMediaAvailable(media);
     } else if (attempts.length === 2 && attempts.every(shouldNotifyNoSources)) {
         const { sendNoSourceNotification } = require('./discord');
         await sendNoSourceNotification(media, getFilterPrefs(db, media.user_id));
@@ -201,16 +200,13 @@ async function recheckUnavailableMedia(db) {
                 console.warn(`[StreamChecker] Incomplete recheck for ${media.title}; keeping previous status`);
                 continue;
             }
-            db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
-            if (result.available) {
+            const update = await recordStreamCheck(db, media, result);
+            if (update.newlyAvailable) {
                 console.log(`[StreamChecker] ✅ Streams now available for: ${media.title} (${result.streamCount} streams)`);
-                const { notifyMediaAvailable } = require('./jellyseerr');
-                await notifyMediaAvailable(media);
             }
         } catch (error) {
             console.error(`[StreamChecker] Recheck failed for ${media.title}:`, error.message);
         }
-        // No Discord notification on recheck - only on initial add via Radarr/Sonarr
 
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -235,8 +231,8 @@ async function cleanupWatchedContent(db) {
         // Check if user has auto-cleanup enabled
         const autoCleanup = db.getSetting(`auto_cleanup_${movie.user_id}`);
         if (autoCleanup === 'true') {
-            db.deleteMedia(movie.id);
-            console.log(`[Cleanup] 🗑️ Removed watched movie: ${movie.title} (user ${movie.user_id})`);
+            const deleted = deleteMediaWithNotification(db, movie, 'watched');
+            if (deleted.changes) console.log(`[Cleanup] 🗑️ Removed watched movie: ${movie.title} (user ${movie.user_id})`);
         }
     }
 
@@ -250,8 +246,8 @@ async function cleanupWatchedContent(db) {
             // Check if user has auto-cleanup enabled
             const autoCleanup = db.getSetting(`auto_cleanup_${series.user_id}`);
             if (autoCleanup === 'true') {
-                db.deleteMedia(series.id);
-                console.log(`[Cleanup] 🗑️ Removed fully watched series: ${series.title} (${status.total} episodes, user ${series.user_id})`);
+                const deleted = deleteMediaWithNotification(db, series, 'watched');
+                if (deleted.changes) console.log(`[Cleanup] 🗑️ Removed fully watched series: ${series.title} (${status.total} episodes, user ${series.user_id})`);
             }
         }
     }
@@ -303,8 +299,9 @@ async function syncWatchedState(db) {
 
             if (isWatched) {
                 const autoCleanup = db.getSetting(`auto_cleanup_${user.id}`);
-                db.markAsWatched(m.id, autoCleanup === 'true');
+                const marked = db.markAsWatched(m.id, autoCleanup === 'true');
                 if (autoCleanup === 'true') {
+                    notifyRemoval(m, marked, 'watched');
                     console.log(`[StreamChecker] 🗑️ Auto-deleted watched content: ${m.title} (user ${user.username})`);
                 }
             }

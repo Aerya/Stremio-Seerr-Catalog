@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const { getTVShowSeasons } = require('../services/tmdb');
 const { checkStreamsAvailable } = require('../services/streamChecker');
+const { recordStreamCheck } = require('../services/mediaEvents');
 
 const router = express.Router();
 
@@ -1043,7 +1044,11 @@ router.get('/Items/Latest', (req, res) => {
                 try {
                     console.log(`[Jellyfin] Re-verifying streams for: ${media.title}`);
                     const result = await checkStreamsAvailable(media, db);
-                    db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+                    if (!result.conclusive) {
+                        console.warn(`[Jellyfin] Verification incomplete for ${media.title}; preserving previous status`);
+                        continue;
+                    }
+                    await recordStreamCheck(db, media, result);
 
                     if (result.available) {
                         console.log(`[Jellyfin] ✅ Re-check passed for: ${media.title} (${result.streamCount} streams)`);
