@@ -31,7 +31,9 @@ const translations = {
         filters: 'Search Filters',
         languages: 'Languages',
         resolution: 'Min Resolution',
-        noFilters: 'None'
+        noFilters: 'None',
+        releases: 'Available releases',
+        moreReleases: 'Other releases not displayed'
     },
     fr: {
         noSourceTitle: '⚠️ Aucune Source Trouvée',
@@ -52,7 +54,9 @@ const translations = {
         filters: 'Filtres de recherche',
         languages: 'Langues',
         resolution: 'Résolution min',
-        noFilters: 'Aucun'
+        noFilters: 'Aucun',
+        releases: 'Releases disponibles',
+        moreReleases: 'Autres releases non affichées'
     }
 };
 
@@ -304,21 +308,133 @@ function mediaLifecycleEmbed(media, title, color, extraFields = []) {
     };
 }
 
+/**
+ * Show the filters used for this exact check, not a possibly modified later setting.
+ * Older callers without a snapshot still use the media owner's saved preferences.
+ */
+function filtersForFoundNotification(media, result) {
+    if (result?.appliedFilters && typeof result.appliedFilters === 'object') {
+        return result.appliedFilters;
+    }
+    if (media.user_id == null) return null;
+    let languageTags = [];
+    try {
+        const parsed = JSON.parse(db.getSetting(`stream_filter_languages_${media.user_id}`) || '[]');
+        if (Array.isArray(parsed)) languageTags = parsed;
+    } catch { /* Malformed preferences are treated as unset. */ }
+    return {
+        languageTags,
+        minResolution: db.getSetting(`stream_filter_resolution_${media.user_id}`) || null
+    };
+}
+
+function formatSearchFilters(lang, prefs) {
+    const parts = [];
+    if (Array.isArray(prefs?.languageTags) && prefs.languageTags.length) {
+        parts.push(`**${lang.languages}:** ${prefs.languageTags.map(String).join(', ')}`);
+    }
+    if (prefs?.minResolution) parts.push(`**${lang.resolution}:** ${String(prefs.minResolution)}`);
+    return (parts.join('\n') || lang.noFilters).slice(0, 1024);
+}
+
+/** Addon-provided strings are untrusted; keep filenames readable and prevent formatting/pings. */
+function cleanDiscordText(value, maxLength = 260) {
+    const cleaned = String(value ?? '')
+        .replace(/[\x00-\x1f\x7f]/g, ' ')
+        .replace(/@/g, '＠')
+        .replace(/[`]/g, "'")
+        .replace(/[\\*_~|]/g, '\\$&')
+        .trim();
+    return cleaned.length > maxLength ? `${cleaned.slice(0, maxLength - 1)}…` : cleaned;
+}
+
+function releaseLine(stream) {
+    const quality = cleanDiscordText(stream.quality, 32);
+    const size = cleanDiscordText(stream.size, 32);
+    const name = cleanDiscordText(stream.name || stream.title || 'Unknown', 280);
+    const meta = [quality, size].filter(Boolean).join(' • ');
+    return `• ${meta ? `${meta} — ` : ''}\`${name}\``;
+}
+
+/**
+ * Discord limits: 25 fields, 1024 characters/field, and 6000 total per embed.
+ * Preserve one webhook message per event, and explicitly report undisplayed releases.
+ */
+function appendReleaseFields(embed, addons, streamCount, lang) {
+    const maxEmbedChars = 5600; // Room for truncation summary and Discord's 6000 limit.
+    const maxFieldValue = 960;
+    const maxFieldsBeforeSummary = 24;
+    let used = (embed.title?.length || 0) + (embed.description?.length || 0) +
+        (embed.author?.name?.length || 0) +
+        embed.fields.reduce((sum, f) => sum + f.name.length + f.value.length, 0);
+    let shown = 0;
+    let stop = false;
+
+    for (const addon of addons) {
+        const streams = Array.isArray(addon.streams) ? addon.streams : [];
+        if (!streams.length) continue;
+        const addonName = cleanDiscordText(addon.name || addon.id || 'Addon', 90);
+        const firstName = `${lang.releases} — ${addonName}`.slice(0, 256);
+        let field = null;
+        let chunk = 0;
+
+        for (const stream of streams) {
+            const line = releaseLine(stream);
+            const needsNewField = !field || field.value.length + 1 + line.length > maxFieldValue;
+            if (needsNewField) {
+                const name = chunk === 0 ? firstName : `${firstName} (${chunk + 1})`.slice(0, 256);
+                if (embed.fields.length >= maxFieldsBeforeSummary || used + name.length + line.length > maxEmbedChars) {
+                    stop = true;
+                    break;
+                }
+                field = { name, value: '', inline: false };
+                embed.fields.push(field);
+                used += name.length;
+                chunk++;
+            } else if (used + line.length + 1 > maxEmbedChars) {
+                stop = true;
+                break;
+            }
+            field.value += (field.value ? '\n' : '') + line;
+            used += line.length + (shown && field.value !== line ? 1 : 0);
+            shown++;
+        }
+        if (stop) break;
+    }
+
+    const counted = addons.reduce((sum, addon) => {
+        const listed = Array.isArray(addon.streams) ? addon.streams.length : 0;
+        const reported = Number(addon.streamCount);
+        return sum + (Number.isFinite(reported) && reported > listed ? reported : listed);
+    }, 0);
+    const omitted = Math.max(counted, Number(streamCount) || 0) - shown;
+    if (omitted > 0 && embed.fields.length < 25) {
+        const value = `+${omitted}`;
+        if (used + lang.moreReleases.length + value.length < 6000) {
+            embed.fields.push({ name: lang.moreReleases, value, inline: false });
+        }
+    }
+}
+
 /** Send only for a confirmed transition from unavailable to available. */
 async function sendSourcesFoundNotification(media, result) {
     if (!isNotificationsEnabled()) return;
     const lang = t();
-    const addons = (Array.isArray(result.addons) ? result.addons : [])
-        .filter(addon => Array.isArray(addon.streams) && addon.streams.length > 0)
-        .map(addon => String(addon.name || addon.id || '').slice(0, 80))
-        .filter(Boolean).slice(0, 8);
+    const addonsWithStreams = (Array.isArray(result.addons) ? result.addons : [])
+        .filter(addon => Array.isArray(addon.streams) && addon.streams.length > 0);
+    const addonNames = addonsWithStreams
+        .map(addon => cleanDiscordText(addon.name || addon.id || '', 80))
+        .filter(Boolean);
     const fields = [
+        { name: lang.filters, value: formatSearchFilters(lang, filtersForFoundNotification(media, result)), inline: false },
         { name: lang.streams, value: String(result.streamCount || 0), inline: true }
     ];
-    if (addons.length) {
-        fields.push({ name: lang.addons, value: addons.join(', ').slice(0, 1000), inline: false });
+    if (addonNames.length) {
+        fields.push({ name: lang.addons, value: addonNames.join(', ').slice(0, 1000), inline: false });
     }
-    await sendToAllWebhooks(mediaLifecycleEmbed(media, lang.sourcesFoundTitle, 0x24B47E, fields));
+    const embed = mediaLifecycleEmbed(media, lang.sourcesFoundTitle, 0x24B47E, fields);
+    appendReleaseFields(embed, addonsWithStreams, result.streamCount, lang);
+    await sendToAllWebhooks(embed);
 }
 
 /** Reasons are explicit; a watched mark without removal does not generate an alert. */

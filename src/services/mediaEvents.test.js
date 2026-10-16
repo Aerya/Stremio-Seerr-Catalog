@@ -125,8 +125,10 @@ test('source-found embed includes type, title, source count and suppresses Disco
     const embed = messages[0].embeds[0];
     assert.match(embed.title, /Sources trouvées/);
     assert.match(embed.fields[0].value, /Dead Mine/);
-    assert.equal(embed.fields[1].value, '2');
-    assert.match(embed.fields[2].value, /AIOStreams/);
+    assert.equal(embed.fields.find(f => f.name === 'Sources').value, '2');
+    assert.match(embed.fields.find(f => f.name === 'Addons').value, /AIOStreams/);
+    assert.match(embed.fields.find(f => f.name === 'Filtres de recherche').value, /Aucun/);
+    assert.match(embed.fields.find(f => f.name.includes('Releases disponibles')).value, /release/);
     assert.equal(messages[0].allowed_mentions.parse.length, 0);
 });
 
@@ -150,4 +152,92 @@ test('global notifications disabled also suppresses the new events', async () =>
     await api.sendSourcesFoundNotification({ title:'Film', type:'movie' }, success);
     await api.sendMediaRemovedNotification({ title:'Film', type:'movie' }, 'manual');
     assert.equal(messages.length, 0);
+});
+
+
+test('source-found notification preserves IMDB/TMDB URLs and displays applied filters and releases (FR)', async () => {
+    const { api, messages } = discordSandbox({
+        discord_notifications_language: 'fr',
+        stream_filter_languages_7: '["GERMAN"]',
+        stream_filter_resolution_7: '720p'
+    });
+    const media = { id: 23, user_id: 7, type: 'movie', title: 'Dead Mine', year: 2012,
+        imdb_id: 'tt2171847', tmdb_id: 190899 };
+    const result = {
+        streamCount: 2,
+        appliedFilters: { languageTags: ['FRENCH', 'MULTI'], minResolution: '1080p' },
+        addons: [{ name: 'AIOStreams', streamCount: 2, streams: [
+            { name: 'Dead.Mine.2012.MULTi.VFF.1080p.BluRay.HDLight.x264-PTN.mkv', quality: '1080p', size: '2.46 GB' },
+            { name: 'Dead.Mine.2012.FRENCH.2160p.WEB-DL.mkv', quality: '2160p', size: '8 GB' }
+        ] }]
+    };
+    await api.sendSourcesFoundNotification(media, result);
+    const embed = messages[0].embeds[0];
+    // Do not change the existing sources-found links in any way.
+    assert.equal(embed.description,
+        'https://www.imdb.com/title/tt2171847\nhttps://www.themoviedb.org/movie/190899'.replace('\\n', '\n'));
+    const filters = embed.fields.find(f => f.name === 'Filtres de recherche').value;
+    assert.match(filters, /FRENCH, MULTI/);
+    assert.match(filters, /1080p/);
+    assert.doesNotMatch(filters, /GERMAN|720p/); // The snapshot takes precedence over later settings.
+    const releases = embed.fields.filter(f => f.name.startsWith('Releases disponibles'));
+    assert.equal(releases.length, 1);
+    assert.match(releases[0].name, /AIOStreams/);
+    assert.match(releases[0].value, /2\.46 GB/);
+    assert.match(releases[0].value, /Dead\.Mine\.2012\.MULTi\.VFF\.1080p/);
+    assert.match(releases[0].value, /2160p/);
+    assert.equal(messages.length, 1);
+});
+
+test('legacy source-found result uses saved owner filters; English is translated', async () => {
+    const { api, messages } = discordSandbox({
+        discord_notifications_language: 'en',
+        stream_filter_languages_7: '["FRENCH","MULTI"]',
+        stream_filter_resolution_7: '1080p'
+    });
+    await api.sendSourcesFoundNotification({ user_id: 7, type: 'series', title: 'Season Test', tmdb_id: 3345 }, {
+        streamCount: 1,
+        addons: [{ name: 'Cinema', streamCount: 1, streams: [{name:'Season.Test.S03E01.1080p'}] }]
+    });
+    const embed = messages[0].embeds[0];
+    assert.match(embed.fields.find(f => f.name === 'Search Filters').value, /FRENCH, MULTI/);
+    assert.match(embed.fields.find(f => f.name === 'Search Filters').value, /1080p/);
+    assert.match(embed.fields.find(f => f.name.startsWith('Available releases')).value, /S03E01/);
+    assert.match(embed.description, /https:\/\/www.themoviedb.org\/tv\/3345/);
+});
+
+test('long lists are split under Discord limits and report omitted releases, without markdown pings', async () => {
+    const { api, messages } = discordSandbox({ discord_notifications_language: 'fr' });
+    const huge = Array.from({ length: 90 }, (_,i) => ({
+        name: `Title.Release.${i}.1080p.FRENCH.${'x'.repeat(210)}@everyone`, quality:'1080p', size:'2.44 GB'
+    }));
+    await api.sendSourcesFoundNotification({ type:'movie', title:'Very long title'.repeat(15), imdb_id:'tt2171847' }, {
+        streamCount: 215, appliedFilters: { languageTags: ['FRENCH'], minResolution: '1080p' },
+        addons: [
+            { name: 'AIOStreams', streamCount: 100, streams: huge },
+            { name: 'Second addon', streamCount: 115, streams: huge }
+        ]
+    });
+    assert.equal(messages.length, 1);
+    const [embed] = messages[0].embeds;
+    assert.ok(embed.fields.length <= 25);
+    assert.ok(embed.fields.every(f => f.name.length <= 256 && f.value.length <= 1024));
+    const total = embed.title.length + embed.description.length + embed.author.name.length +
+        embed.fields.reduce((sum, f) => sum + f.name.length + f.value.length, 0);
+    assert.ok(total <= 6000, `embed ${total} chars`);
+    assert.ok(embed.fields.some(f => f.name === 'Autres releases non affichées'));
+    assert.equal(messages[0].allowed_mentions.parse.length, 0);
+    assert.doesNotMatch(JSON.stringify(embed), /@everyone/);
+});
+
+test('no-source notification keeps filters and IMDB/TMDB links unchanged', async () => {
+    const { api, messages } = discordSandbox({ discord_notifications_language: 'fr' });
+    await api.sendNoSourceNotification({ type:'movie', title:'Dead Mine', year:2012,
+        imdb_id:'tt2171847', tmdb_id:190899 }, { languageTags:['FRENCH','MULTI'], minResolution:'1080p' });
+    const embed = messages[0].embeds[0];
+    assert.match(embed.description, /\*\*IMDB ID:\*\* `tt2171847`/);
+    assert.match(embed.description, /https:\/\/www.imdb.com\/title\/tt2171847/);
+    assert.match(embed.description, /https:\/\/www.themoviedb.org\/movie\/190899/);
+    assert.match(embed.fields.find(f => f.name === 'Filtres de recherche').value, /FRENCH, MULTI/);
+    assert.match(embed.fields.find(f => f.name === 'Filtres de recherche').value, /1080p/);
 });

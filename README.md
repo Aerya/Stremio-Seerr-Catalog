@@ -113,7 +113,7 @@ Les demandes passent automatiquement à l'état disponible lorsque SeerrCatalog 
 
 ### Notifications Discord — événements du catalogue
 
-Les webhooks Discord existants sont utilisés pour les **sources trouvées** (ajout, vérification manuelle ou automatique), les **sources absentes confirmées** à l'ajout et les **retraits de contenus** (visionné, suppression WebUI, retrait Radarr/Sonarr). Les recherches répétées sans changement d'état n'envoient pas de doublon. Un média simplement marqué visionné mais conservé n'est pas considéré comme retiré. L'activation globale et la langue FR/EN existantes restent inchangées.
+Les webhooks Discord existants sont utilisés pour les **sources trouvées** (ajout, vérification manuelle ou automatique), les **sources absentes confirmées** à l'ajout et les **retraits de contenus** (visionné, suppression WebUI, retrait Radarr/Sonarr). Les recherches répétées sans changement d'état n'envoient pas de doublon. Les notifications **« Sources trouvées »** détaillent les **filtres réellement appliqués** (langues et résolution minimale), le nombre de sources, les addons et les **releases regroupées par addon** (nom, qualité et taille si disponibles). La recherche conserve jusqu’à 50 noms par addon ; Discord répartit les résultats sur plusieurs champs et indique combien de releases ne sont pas affichées lorsque ses limites sont atteintes. Les liens IMDb/TMDB restent inchangés. Un média simplement marqué visionné mais conservé n'est pas considéré comme retiré. L'activation globale et la langue FR/EN existantes restent inchangées.
 
 ### Fiabilité des vérifications et notifications
 
