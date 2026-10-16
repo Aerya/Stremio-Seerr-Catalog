@@ -124,6 +124,8 @@ test('direct-only addon works without a Stremio auth key and keeps filters/thres
     assert.equal(result.streamCount, 1);
     assert.equal(result.addonsCount, 1);
     assert.equal(result.addons[0].name, 'Lumio · Salon');
+    assert.deepEqual(result.appliedFilters, { languageTags: ['FRENCH'], minResolution: '1080p' });
+    assert.match(result.addons[0].streams[0].name, /Movie\.2026\.WEB-DL\.mkv/);
 
     const strictResult = evaluateAvailability(result.streamCount, result.addons, {
         minStreamCount: 1,
@@ -194,4 +196,24 @@ test('AIOStreams account addon remains compatible with object-form stream resour
     assert.equal(result.streamCount, 1);
     assert.equal(result.addonsCount, 1);
     assert.equal(result.addons[0].name, 'AIOStreams');
+});
+
+
+test('stores up to 50 release names per addon while preserving full source count', async (t) => {
+    const originalFetch = global.fetch;
+    t.after(() => { global.fetch = originalFetch; });
+    const manifestUrl = 'https://long-list.example/manifest.json';
+    global.fetch = async (url) => String(url) === manifestUrl
+        ? { ok: true, json: async () => ({ id:'many', name:'Many sources', resources:['stream'] }) }
+        : { ok: true, json: async () => ({ streams: Array.from({ length: 60 }, (_, i) => ({
+            title: `Film.1080p.MULTI.Release.${i}`, infoHash: `0123456789abcdef${i.toString(16).padStart(2, '0')}`
+        })) }) };
+    const result = await checkStreamsWithUserAddons({
+        title: 'Film', type:'movie', imdb_id:'tt1234567'
+    }, null, null, {languageTags:['MULTI'],minResolution:'1080p'}, [manifestUrl]);
+    assert.equal(result.streamCount, 60);
+    assert.equal(result.addons[0].streamCount, 60);
+    assert.equal(result.addons[0].streams.length, 50);
+    assert.match(result.addons[0].streams[49].name, /Release\.49/);
+    assert.deepEqual(result.appliedFilters, {languageTags:['MULTI'], minResolution:'1080p'});
 });

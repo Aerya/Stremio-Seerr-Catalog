@@ -113,7 +113,7 @@ Requests automatically become available once SeerrCatalog validates the configur
 
 ### Discord notifications — catalogue events
 
-Existing Discord webhooks now report **sources found** (initial, manual or automatic checks), **confirmed missing sources** on addition, and **content removals** (watched cleanup, WebUI deletion, Radarr/Sonarr removal). Repeated checks without a status transition do not trigger duplicates. Marking an item as watched without removing it is not a removal. Existing enable/disable and EN/FR settings are unchanged.
+Existing Discord webhooks now report **sources found** (initial, manual or automatic checks), **confirmed missing sources** on addition, and **content removals** (watched cleanup, WebUI deletion, Radarr/Sonarr removal). Repeated checks without a status transition do not trigger duplicates. **Sources Found** alerts now show the **filters actually applied** (languages and minimum resolution), source count, addons, and **releases grouped by addon** (name, quality and size when available). Checks retain up to 50 release names per addon; Discord splits the list over fields and reports how many releases could not be displayed due to embed limits. IMDb/TMDB links are unchanged. Marking an item as watched without removing it is not a removal. Existing enable/disable and EN/FR settings are unchanged.
 
 ### Check reliability and notifications
 

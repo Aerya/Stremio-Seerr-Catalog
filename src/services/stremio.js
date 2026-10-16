@@ -416,7 +416,8 @@ async function checkStreamsWithUserAddons(
         const streamCount = streams.length;
         if (streamCount > 0) {
             totalStreams += streamCount;
-                const streamDetails = streams.slice(0, 10).map(stream => {
+                // Keep enough release details for Discord without retaining unlimited addon payloads.
+                const streamDetails = streams.slice(0, 50).map(stream => {
                     let displayName = stream.behaviorHints?.filename ||
                         stream.description?.split('\n')[0]?.trim() ||
                         stream.title?.split('\n')[0]?.trim() ||
@@ -462,6 +463,11 @@ async function checkStreamsWithUserAddons(
         streamCount: totalStreams,
         addonsCount: availability.matchedAddonCount,
         addons: checkedAddons,
+        // Snapshot of the filters actually applied, even if settings change before Discord sends.
+        appliedFilters: {
+            languageTags: Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : [],
+            minResolution: filterPrefs?.minResolution || null
+        },
         requirements: {
             minStreamCount: availability.minStreamCount,
             minAddonCount: availability.minAddonCount
