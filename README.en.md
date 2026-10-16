@@ -120,6 +120,14 @@ Requests automatically become available once SeerrCatalog validates the configur
 - Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
 - Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
 
+### Refreshed WebUI
+
+- Catalog: labelled filter groups, visible item count, and availability labels on posters without heavily dimming them.
+- Users: compact Stremio/Radarr/Sonarr/Jellyfin configuration panels with consistent form controls.
+- Settings: responsive TMDB, Jellyseerr and Discord panels; consistent login screen and small-screen layout.
+- Source details: keyboard-accessible expandable addon lists, clearer secondary/danger actions, completed FR/EN translations.
+- No change to API parameters, endpoints, persisted data, Compose or dependencies.
+
 ### Source detection
 
 <p align="center">
