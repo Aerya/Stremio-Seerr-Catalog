@@ -1288,3 +1288,6 @@ h4 .section-icon {
   padding: 0.1rem;
   font-size: 0.7rem;
 }
+/* Unobtrusive copy feedback and transient source-check status */
+.btn-copy.copied { color: var(--success, #39c98a); }
+.stream-check-pending { color: var(--text-muted, #a6adc8); font-size: .9rem; }

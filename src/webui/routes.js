@@ -70,7 +70,9 @@ router.post('/api/media/:id/check-streams', async (req, res) => {
     try {
         const { checkStreamsAvailable } = require('../services/streamChecker');
         const result = await checkStreamsAvailable(media, db);
-        db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+        if (result.conclusive) {
+            db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+        }
         res.json({ ...result, title: media.title });
     } catch (e) {
         res.status(500).json({ error: e.message });

@@ -4,6 +4,44 @@
  */
 
 const STREMIO_API_URL = 'https://api.strem.io/api';
+const ADDON_CACHE_MS = 60 * 1000;
+const accountAddonsCache = new Map();
+const directAddonsCache = new Map();
+const directAddonsInflight = new Map();
+const MAX_CONCURRENT_STREAM_REQUESTS = 4;
+let activeStreamRequests = 0;
+const streamRequestWaiters = [];
+
+async function withStreamPermit(task) {
+    if (activeStreamRequests < MAX_CONCURRENT_STREAM_REQUESTS) {
+        activeStreamRequests++;
+    } else {
+        await new Promise(resolve => streamRequestWaiters.push(resolve));
+    }
+    try {
+        return await task();
+    } finally {
+        const next = streamRequestWaiters.shift();
+        if (next) next();
+        else activeStreamRequests--;
+    }
+}
+
+function getCached(cache, key) {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (entry.expires > Date.now()) return entry.value;
+    cache.delete(key);
+    return null;
+}
+
+function setCached(cache, key, value) {
+    // Bound cache growth, including after Stremio auth keys are rotated.
+    if (cache.size >= 100) cache.delete(cache.keys().next().value);
+    cache.set(key, { value, expires: Date.now() + ADDON_CACHE_MS });
+    return value;
+}
+
 
 function hasStreamResource(manifest) {
     const resources = manifest?.resources || [];
@@ -14,13 +52,13 @@ function hasStreamResource(manifest) {
 }
 
 function addonSupportsType(addon, type) {
-    if (Array.isArray(addon.types) && addon.types.includes(type)) return true;
-
-    const resources = addon.resources || [];
-    return resources.some(resource => {
-        if (!resource || typeof resource !== 'object' || resource.name !== 'stream') return false;
-        return !Array.isArray(resource.types) || resource.types.length === 0 || resource.types.includes(type);
-    });
+    // Explicit type declarations take precedence; generic stream resources support both types.
+    if (Array.isArray(addon.types) && addon.types.length > 0) return addon.types.includes(type);
+    return (addon.resources || []).some(resource =>
+        resource === 'stream' ||
+        (resource?.name === 'stream' &&
+            (!Array.isArray(resource.types) || resource.types.length === 0 || resource.types.includes(type)))
+    );
 }
 
 function normalizeManifestUrl(rawUrl) {
@@ -52,47 +90,55 @@ function manifestToAddon(manifest, transportUrl, source = 'account') {
     };
 }
 
-async function getDirectAddons(manifestUrls = []) {
-    if (!Array.isArray(manifestUrls) || manifestUrls.length === 0) return [];
+async function fetchDirectAddon(manifestUrl) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+        const response = await fetch(manifestUrl, {
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const manifest = await response.json();
+        if (!hasStreamResource(manifest)) return null;
+        return manifestToAddon(manifest, manifestUrl, 'direct');
+    } finally {
+        clearTimeout(timeout);
+    }
+}
 
+async function getDirectAddons(manifestUrls = [], diagnostics = null) {
+    if (!Array.isArray(manifestUrls)) return [];
     const addons = [];
     const seenUrls = new Set();
-
     for (const rawUrl of manifestUrls) {
         try {
             const manifestUrl = normalizeManifestUrl(rawUrl);
             if (seenUrls.has(manifestUrl)) continue;
             seenUrls.add(manifestUrl);
 
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            let response;
-            try {
-                response = await fetch(manifestUrl, {
-                    signal: controller.signal,
-                    headers: { 'Accept': 'application/json' }
-                });
-            } finally {
-                clearTimeout(timeout);
+            let addon = getCached(directAddonsCache, manifestUrl);
+            if (!addon) {
+                let pending = directAddonsInflight.get(manifestUrl);
+                if (!pending) {
+                    pending = fetchDirectAddon(manifestUrl);
+                    directAddonsInflight.set(manifestUrl, pending);
+                }
+                try {
+                    addon = await pending;
+                    if (addon) setCached(directAddonsCache, manifestUrl, addon);
+                } finally {
+                    if (directAddonsInflight.get(manifestUrl) === pending) {
+                        directAddonsInflight.delete(manifestUrl);
+                    }
+                }
             }
-
-            if (!response.ok) {
-                console.log(`[Stremio] Direct addon manifest returned ${response.status} (${new URL(manifestUrl).hostname})`);
-                continue;
-            }
-
-            const manifest = await response.json();
-            if (!hasStreamResource(manifest)) {
-                console.log(`[Stremio] Direct addon has no stream resource: ${manifest.name || manifestUrl}`);
-                continue;
-            }
-
-            addons.push(manifestToAddon(manifest, manifestUrl, 'direct'));
+            if (addon) addons.push(addon);
         } catch (error) {
+            if (diagnostics) diagnostics.failed++;
             console.log(`[Stremio] Failed to load direct addon manifest: ${error.message}`);
         }
     }
-
     return addons;
 }
 
@@ -140,20 +186,28 @@ function evaluateAvailability(totalStreams, checkedAddons, availabilityPrefs = n
  * @param {string} authKey - User's Stremio authentication key
  * @returns {Promise<Array>} List of installed addons with stream capability
  */
-async function getInstalledAddons(authKey) {
+async function fetchInstalledAddons(authKey) {
     if (!authKey) {
         throw new Error('No Stremio auth key provided');
     }
 
     try {
-        const response = await fetch(`${STREMIO_API_URL}/addonCollectionGet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: 'AddonCollectionGet',
-                authKey: authKey
-            })
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        let response;
+        try {
+            response = await fetch(`${STREMIO_API_URL}/addonCollectionGet`, {
+                method: 'POST',
+                signal: controller.signal,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'AddonCollectionGet',
+                    authKey: authKey
+                })
+            });
+        } finally {
+            clearTimeout(timeout);
+        }
 
         if (!response.ok) {
             throw new Error(`Stremio API error: ${response.status}`);
@@ -186,6 +240,41 @@ async function getInstalledAddons(authKey) {
     }
 }
 
+async function getInstalledAddons(authKey) {
+    if (!authKey) throw new Error('No Stremio auth key provided');
+    const cached = getCached(accountAddonsCache, authKey);
+    if (cached) return cached;
+
+    // Cache the in-flight request too: simultaneous media additions share one API call.
+    const pending = fetchInstalledAddons(authKey);
+    setCached(accountAddonsCache, authKey, pending);
+    try {
+        const addons = await pending;
+        // An empty list can be transient; do not persist it in the cache.
+        if (addons.length) setCached(accountAddonsCache, authKey, addons);
+        else accountAddonsCache.delete(authKey);
+        return addons;
+    } catch (error) {
+        accountAddonsCache.delete(authKey);
+        throw error;
+    }
+}
+
+/** Probe real monitored seasons instead of assuming S01E01 exists. Bounded to three
+ * episodes per addon, including S01E01 as a compatibility fallback. */
+function buildStreamIds(media, imdbId) {
+    if (media.type === 'movie') return [imdbId];
+
+    const episodes = Array.isArray(media.checkEpisodes) ? media.checkEpisodes : [];
+    const seasons = [...new Set(episodes
+        .filter(ep => ep.monitored !== 0 && Number.isInteger(ep.season_number) && ep.season_number > 0)
+        .map(ep => ep.season_number))].sort((a, b) => b - a);
+    const ids = seasons.map(season => `${imdbId}:${season}:1`).slice(0, 2);
+    const legacyId = `${imdbId}:1:1`;
+    if (!ids.includes(legacyId)) ids.push(legacyId);
+    return ids.slice(0, 3);
+}
+
 /**
  * Check if streams are available for a media item using user's addons
  * @param {Object} media - Media object with type, imdb_id, tmdb_id
@@ -216,16 +305,20 @@ async function checkStreamsWithUserAddons(
             available: false,
             streamCount: 0,
             reason: 'No IMDB ID',
+            conclusive: false,
+            checkStatus: 'incomplete',
             lastChecked: new Date().toISOString()
         };
     }
 
     let accountAddons = [];
+    let accountFailed = false;
     if (authKey) {
         try {
             accountAddons = await getInstalledAddons(authKey);
         } catch (error) {
             console.log(`[Stremio] Failed to get account addons: ${error.message}`);
+            accountFailed = true;
         }
     }
 
@@ -234,7 +327,9 @@ async function checkStreamsWithUserAddons(
         console.log(`[Stremio] Filtering to ${accountAddons.length} selected account addons`);
     }
 
-    const directAddons = await getDirectAddons(directManifestUrls);
+    const directDiagnostics = { failed: 0 };
+    const directAddons = await getDirectAddons(directManifestUrls, directDiagnostics);
+    let failedAddonCount = (accountFailed ? 1 : 0) + directDiagnostics.failed;
     const addons = [];
     const seenTransports = new Set();
     for (const addon of [...accountAddons, ...directAddons]) {
@@ -247,7 +342,9 @@ async function checkStreamsWithUserAddons(
         return {
             available: false,
             streamCount: 0,
-            reason: 'No stream addons configured',
+            reason: 'No stream addons available to check',
+            conclusive: false,
+            checkStatus: 'incomplete',
             addons: [],
             lastChecked: new Date().toISOString()
         };
@@ -256,6 +353,8 @@ async function checkStreamsWithUserAddons(
     let totalStreams = 0;
     const type = media.type === 'movie' ? 'movie' : 'series';
     const checkedAddons = [];
+    let eligibleAddonCount = 0;
+    let successfulAddonCount = 0;
 
     for (const addon of addons) {
         if (!addonSupportsType(addon, type)) {
@@ -263,57 +362,60 @@ async function checkStreamsWithUserAddons(
             continue;
         }
 
-        try {
-            const streamId = type === 'series' ? `${imdbId}:1:1` : imdbId;
-            const streamUrl = buildResourceUrl(addon.transportUrl, 'stream', type, streamId);
-            console.log(`[Stremio] Checking addon: ${addon.name} (${addon.source || 'account'}, ${type}${type === 'series' ? ' S01E01' : ''})`);
-
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            let response;
+        eligibleAddonCount++;
+        // A series is considered available if a monitored season has a matching stream.
+        // Only use the first matching episode per addon to avoid inflated totals.
+        const episodeIds = buildStreamIds(media, imdbId);
+        let addonSucceeded = false;
+        let addonFailed = false;
+        let streams = [];
+        for (const streamId of episodeIds) {
             try {
-                response = await fetch(streamUrl, {
-                    signal: controller.signal,
-                    headers: { 'Accept': 'application/json' }
+                const streamUrl = buildResourceUrl(addon.transportUrl, 'stream', type, streamId);
+                console.log(`[Stremio] Checking ${addon.name} (${addon.source || 'account'}): ${type}/${streamId}`);
+                const response = await withStreamPermit(async () => {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    try {
+                        return await fetch(streamUrl, {
+                            signal: controller.signal,
+                            headers: { 'Accept': 'application/json' }
+                        });
+                    } finally {
+                        clearTimeout(timeout);
+                    }
                 });
-            } finally {
-                clearTimeout(timeout);
-            }
 
-            if (!response.ok) {
-                console.log(`[Stremio] ${addon.name} returned error: ${response.status}`);
-                continue;
-            }
-
-            const data = await response.json();
-            let streams = Array.isArray(data.streams) ? data.streams : [];
-            streams = streams.filter(isMeaningfulStream);
-            const originalCount = streams.length;
-
-            if (filterPrefs) {
-                if (filterPrefs.languageTags && filterPrefs.languageTags.length > 0) {
-                    streams = filterStreamsByLanguage(streams, filterPrefs.languageTags);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (!Array.isArray(data?.streams)) throw new Error('Invalid stream response');
+                addonSucceeded = true;
+                const candidates = data.streams.filter(isMeaningfulStream);
+                let matched = candidates;
+                if (filterPrefs?.languageTags?.length) {
+                    matched = filterStreamsByLanguage(matched, filterPrefs.languageTags);
                 }
-
-                if (filterPrefs.minResolution) {
-                    streams = filterStreamsByResolution(streams, filterPrefs.minResolution);
+                if (filterPrefs?.minResolution) {
+                    matched = filterStreamsByResolution(matched, filterPrefs.minResolution);
                 }
+                if (matched.length < candidates.length) {
+                    console.log(`[Stremio] ${addon.name}: ${candidates.length} → ${matched.length} after filters`);
+                }
+                if (matched.length > 0) {
+                    streams = matched;
+                    break;
+                }
+            } catch (error) {
+                addonFailed = true;
+                console.log(`[Stremio] Check failed for ${addon.name} (${streamId}): ${error.message}`);
             }
+        }
 
-            const streamCount = streams.length;
-            if (streamCount < originalCount) {
-                console.log(`[Stremio] ${addon.name}: ${originalCount} streams → ${streamCount} after filters`);
-            } else {
-                console.log(`[Stremio] ${addon.name}: ${streamCount} streams`);
-            }
-
-            if (streams.length > 0) {
-                const s = streams[0];
-                console.log(`[Stremio] Sample stream fields: name="${s.name}", title="${s.title}", description="${s.description?.substring(0, 100)}...", behaviorHints.filename="${s.behaviorHints?.filename}"`);
-            }
-
-            if (streamCount > 0) {
-                totalStreams += streamCount;
+        if (addonSucceeded) successfulAddonCount++;
+        if (addonFailed) failedAddonCount++;
+        const streamCount = streams.length;
+        if (streamCount > 0) {
+            totalStreams += streamCount;
                 const streamDetails = streams.slice(0, 10).map(stream => {
                     let displayName = stream.behaviorHints?.filename ||
                         stream.description?.split('\n')[0]?.trim() ||
@@ -332,20 +434,21 @@ async function checkStreamsWithUserAddons(
                     };
                 });
 
-                checkedAddons.push({
-                    id: addon.id,
-                    name: addon.name,
-                    source: addon.source || 'account',
-                    streamCount,
-                    streams: streamDetails
-                });
-            }
-        } catch (error) {
-            console.log(`[Stremio] Check failed for ${addon.name}: ${error.message}`);
+            checkedAddons.push({
+                id: addon.id,
+                name: addon.name,
+                source: addon.source || 'account',
+                streamCount,
+                streams: streamDetails
+            });
         }
     }
 
     const availability = evaluateAvailability(totalStreams, checkedAddons, availabilityPrefs);
+    // A negative result cannot be trusted when at least one configured addon failed.
+    const conclusive = availability.available ||
+        (eligibleAddonCount > 0 && successfulAddonCount === eligibleAddonCount && failedAddonCount === 0);
+    const checkStatus = availability.available ? 'available' : (conclusive ? 'unavailable' : 'incomplete');
     console.log(
         `[Stremio] ${media.title}: ${totalStreams} streams from ${availability.matchedAddonCount} addons ` +
         `(required: ${availability.minStreamCount} streams / ${availability.minAddonCount} addons) => ${availability.available ? 'available' : 'unavailable'}`
@@ -353,6 +456,9 @@ async function checkStreamsWithUserAddons(
 
     return {
         available: availability.available,
+        conclusive,
+        checkStatus,
+        reason: checkStatus === 'incomplete' ? 'One or more addons could not be verified' : undefined,
         streamCount: totalStreams,
         addonsCount: availability.matchedAddonCount,
         addons: checkedAddons,
@@ -378,15 +484,6 @@ function filterStreamsByLanguage(streams, languageTags = []) {
 
     // Convert to uppercase for case-insensitive matching
     const allowedTags = languageTags.map(tag => tag.toUpperCase());
-
-    // DEBUG: Log first 3 stream names to see what we're working with
-    if (streams.length > 0) {
-        console.log(`[Stremio] Sample stream names (first 3):`);
-        streams.slice(0, 3).forEach((s, i) => {
-            const name = getStreamSearchText(s) || 'NO NAME';
-            console.log(`  ${i + 1}. "${name.substring(0, 100)}"`);
-        });
-    }
 
     const filtered = streams.filter(stream => {
         // Get stream name from best available source
@@ -458,13 +555,22 @@ function extractSize(name) {
 async function getImdbIdFromTmdb(type, tmdbId) {
     try {
         const cinemata = 'https://v3-cinemeta.strem.io';
-        const response = await fetch(
-            `${cinemata}/meta/${type === 'movie' ? 'movie' : 'series'}/tmdb:${tmdbId}.json`
-        );
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        let response;
+        try {
+            response = await fetch(
+                `${cinemata}/meta/${type === 'movie' ? 'movie' : 'series'}/tmdb:${tmdbId}.json`,
+                { signal: controller.signal }
+            );
+        } finally {
+            clearTimeout(timeout);
+        }
 
         if (response.ok) {
             const data = await response.json();
-            return data.meta?.imdb_id || data.meta?.id || null;
+            const candidate = data.meta?.imdb_id || data.meta?.id;
+            return /^tt\d+$/i.test(candidate || '') ? candidate : null;
         }
     } catch (error) {
         console.error('[Stremio] Failed to get IMDB ID from Cinemeta:', error.message);
@@ -619,6 +725,8 @@ module.exports = {
     filterStreamsByLanguage,
     filterStreamsByResolution,
     isMeaningfulStream,
-    evaluateAvailability
+    evaluateAvailability,
+    buildStreamIds,
+    addonSupportsType
 };
 

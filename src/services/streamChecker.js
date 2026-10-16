@@ -3,10 +3,36 @@
  * Checks if streams are available for media items using user's Stremio addons
  */
 
-const { checkStreamsWithUserAddons, getImdbIdFromTmdb, getLibraryItems } = require('./stremio');
+const { checkStreamsWithUserAddons, getLibraryItems } = require('./stremio');
 
 // Check interval: 24 hours in milliseconds
 const RECHECK_INTERVAL = 24 * 60 * 60 * 1000;
+const INITIAL_RETRY_DELAY = 60 * 1000;
+const inFlightChecks = new Map();
+
+function parseSettingArray(json, fallback = []) {
+    if (!json) return fallback;
+    try {
+        const array = JSON.parse(json);
+        return Array.isArray(array) ? array : fallback;
+    } catch (error) {
+        console.warn('[StreamChecker] Invalid array setting:', error.message);
+        return fallback;
+    }
+}
+
+function getFilterPrefs(db, userId) {
+    return {
+        languageTags: parseSettingArray(db.getSetting(`stream_filter_languages_${userId}`)),
+        minResolution: db.getSetting(`stream_filter_resolution_${userId}`) || null
+    };
+}
+
+function shouldNotifyNoSources(result) {
+    // Zero validated releases, *not* a timeout, missing configuration or unmet threshold.
+    return result.conclusive === true && result.available === false && result.streamCount === 0;
+}
+
 
 /**
  * Check if streams are available for a media item using the owner's addons
@@ -14,7 +40,7 @@ const RECHECK_INTERVAL = 24 * 60 * 60 * 1000;
  * @param {Object} db - Database instance
  * @returns {Promise<Object>} Check result
  */
-async function checkStreamsAvailable(media, db) {
+async function performStreamCheck(media, db) {
     // Get the user who owns this media
     const user = media.user_id ? db.getUserById(media.user_id) : null;
 
@@ -24,19 +50,13 @@ async function checkStreamsAvailable(media, db) {
             available: false,
             streamCount: 0,
             reason: 'Media owner not found',
+            conclusive: false,
+            checkStatus: 'incomplete',
             lastChecked: new Date().toISOString()
         };
     }
 
-    const directManifestsJson = db.getSetting(`stremio_direct_manifests_${user.id}`);
-    let directManifestUrls = [];
-    if (directManifestsJson) {
-        try {
-            directManifestUrls = JSON.parse(directManifestsJson);
-        } catch (e) {
-            console.error(`[StreamChecker] Invalid direct addon setting for user ${user.id}:`, e.message);
-        }
-    }
+    const directManifestUrls = parseSettingArray(db.getSetting(`stremio_direct_manifests_${user.id}`));
 
     if (!user.stremio_auth_key && directManifestUrls.length === 0) {
         console.log(`[StreamChecker] No Stremio account or direct addons for media owner: ${media.title}`);
@@ -44,6 +64,8 @@ async function checkStreamsAvailable(media, db) {
             available: false,
             streamCount: 0,
             reason: 'Owner has no Stremio account or direct addons configured',
+            conclusive: false,
+            checkStatus: 'incomplete',
             lastChecked: new Date().toISOString()
         };
     }
@@ -68,16 +90,9 @@ async function checkStreamsAvailable(media, db) {
 
     // Get user's selected addons (if configured)
     const selectedAddonsJson = db.getSetting(`stremio_selected_addons_${user.id}`);
-    const selectedAddonIds = selectedAddonsJson ? JSON.parse(selectedAddonsJson) : null;
+    const selectedAddonIds = selectedAddonsJson ? parseSettingArray(selectedAddonsJson) : null;
 
-    // Get user's stream filter preferences
-    const languageTagsJson = db.getSetting(`stream_filter_languages_${user.id}`);
-    const minResolution = db.getSetting(`stream_filter_resolution_${user.id}`);
-
-    const filterPrefs = {
-        languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : [],
-        minResolution: minResolution || null
-    };
+    const filterPrefs = getFilterPrefs(db, user.id);
 
     const availabilityPrefs = {
         minStreamCount: parseInt(db.getSetting(`stream_min_count_${user.id}`) || '1', 10),
@@ -95,13 +110,69 @@ async function checkStreamsAvailable(media, db) {
 
     // Use account addons + optional direct manifest URLs. Direct-only mode is supported.
     return await checkStreamsWithUserAddons(
-        media,
+        media.type === 'series' ? { ...media, checkEpisodes: db.getEpisodes(media.id) } : media,
         user.stremio_auth_key,
         selectedAddonIds,
         filterPrefs,
         directManifestUrls,
         availabilityPrefs
     );
+}
+
+function checkStreamsAvailable(media, db) {
+    // Deduplicate overlapping background, manual and initial checks for the same media.
+    const key = media.id;
+    if (key == null) return performStreamCheck(media, db);
+    const existing = inFlightChecks.get(key);
+    if (existing) return existing;
+    const pending = Promise.resolve().then(() => performStreamCheck(media, db));
+    inFlightChecks.set(key, pending);
+    pending.finally(() => {
+        if (inFlightChecks.get(key) === pending) inFlightChecks.delete(key);
+    }).catch(() => {});
+    return pending;
+}
+
+/** Shared initial workflow for Radarr and Sonarr, with one delayed confirmation.
+ * Never emit a "no sources" alert for configuration/network failures. */
+async function handleInitialStreamCheck(media, db, origin = 'Catalog') {
+    let result;
+    const attempts = [];
+    for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) {
+            await new Promise(resolve => setTimeout(resolve, INITIAL_RETRY_DELAY));
+            console.log(`[${origin}] Confirming initial check for ${media.title}`);
+        }
+        if (!db.getMediaById(media.id)) return;
+        try {
+            result = await checkStreamsAvailable(media, db);
+        } catch (error) {
+            console.error(`[${origin}] Stream check failed for ${media.title}:`, error.message);
+            result = { available: false, conclusive: false, checkStatus: 'incomplete', streamCount: 0 };
+        }
+        attempts.push(result);
+        if (result.available) break;
+        // No point retrying absent settings/ID during the same request; keep pending.
+        if (result.reason && /no imdb|no stremio account|no media owner/i.test(result.reason)) break;
+    }
+
+    if (!db.getMediaById(media.id)) return;
+    if (!result.conclusive) {
+        console.warn(`[${origin}] Verification incomplete for ${media.title}; suppressing no-source notification`);
+        return;
+    }
+    db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+
+    if (result.available) {
+        console.log(`[${origin}] Streams found for ${media.title} (${result.streamCount})`);
+        const { notifyMediaAvailable } = require('./jellyseerr');
+        await notifyMediaAvailable(media);
+    } else if (attempts.length === 2 && attempts.every(shouldNotifyNoSources)) {
+        const { sendNoSourceNotification } = require('./discord');
+        await sendNoSourceNotification(media, getFilterPrefs(db, media.user_id));
+    } else {
+        console.log(`[${origin}] ${media.title}: no-source alert suppressed (unconfirmed absence or thresholds not met)`);
+    }
 }
 
 /**
@@ -124,11 +195,20 @@ async function recheckUnavailableMedia(db) {
             }
         }
 
-        const result = await checkStreamsAvailable(media, db);
-        db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
-
-        if (result.available) {
-            console.log(`[StreamChecker] ✅ Streams now available for: ${media.title} (${result.streamCount} streams)`);
+        try {
+            const result = await checkStreamsAvailable(media, db);
+            if (!result.conclusive) {
+                console.warn(`[StreamChecker] Incomplete recheck for ${media.title}; keeping previous status`);
+                continue;
+            }
+            db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+            if (result.available) {
+                console.log(`[StreamChecker] ✅ Streams now available for: ${media.title} (${result.streamCount} streams)`);
+                const { notifyMediaAvailable } = require('./jellyseerr');
+                await notifyMediaAvailable(media);
+            }
+        } catch (error) {
+            console.error(`[StreamChecker] Recheck failed for ${media.title}:`, error.message);
         }
         // No Discord notification on recheck - only on initial add via Radarr/Sonarr
 
@@ -237,25 +317,32 @@ async function syncWatchedState(db) {
  * @param {Object} db - Database instance
  */
 function startBackgroundChecker(db) {
-    // Initial check after 1 minute
-    setTimeout(() => {
-        recheckUnavailableMedia(db);
-        syncWatchedState(db).catch(console.error);
-        cleanupWatchedContent(db);
-    }, 60 * 1000);
+    let running = false;
+    async function runCycle() {
+        if (running) return;
+        running = true;
+        try {
+            await recheckUnavailableMedia(db);
+            await syncWatchedState(db);
+            await cleanupWatchedContent(db);
+        } catch (error) {
+            console.error('[StreamChecker] Background cycle failed:', error);
+        } finally {
+            running = false;
+        }
+    }
 
-    // Then every 24 hours
-    setInterval(() => {
-        recheckUnavailableMedia(db);
-        syncWatchedState(db).catch(console.error);
-        cleanupWatchedContent(db);
-    }, RECHECK_INTERVAL);
+    setTimeout(runCycle, 60 * 1000);
+    setInterval(runCycle, RECHECK_INTERVAL);
 
     console.log('[StreamChecker] Background checker started (24h interval)');
 }
 
 module.exports = {
     checkStreamsAvailable,
+    handleInitialStreamCheck,
+    shouldNotifyNoSources,
+    getFilterPrefs,
     recheckUnavailableMedia,
     cleanupWatchedContent,
     syncWatchedState,

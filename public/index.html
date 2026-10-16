@@ -437,35 +437,35 @@
                 <div class="config-row-mini">
                   <span data-i18n="manifest_url">Manifest URL:</span>
                   <code>${baseUrl}/user/${u.id}/manifest.json</code>
-                  <button class="btn-icon btn-copy" onclick="copyToClipboard('${baseUrl}/user/${u.id}/manifest.json')">📋</button>
+                  <button class="btn-icon btn-copy" onclick="copyToClipboard('${baseUrl}/user/${u.id}/manifest.json', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button>
                 </div>
               </div>
 
               <div class="user-config-card">
                 <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/radarr.webp" alt="" class="config-icon"> Radarr (${t('config_movies')})</h5>
-                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? t('yes') : t('no')}</code></div>
-                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/radarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/radarr')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="radarr-api-key-${u.id}">${t('loading')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('radarr-api-key-${u.id}').textContent)">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/radarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/radarr', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="radarr-api-key-${u.id}">${t('loading')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('radarr-api-key-${u.id}').textContent, this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
               </div>
 
               <div class="user-config-card">
                 <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/sonarr.webp" alt="" class="config-icon"> Sonarr (${t('config_series')})</h5>
-                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? t('yes') : t('no')}</code></div>
-                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/sonarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/sonarr')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="sonarr-api-key-${u.id}">${t('loading')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('sonarr-api-key-${u.id}').textContent)">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/user/${u.id}/sonarr</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/user/${u.id}/sonarr', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_api_key')}</span><code id="sonarr-api-key-${u.id}">${t('loading')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard(document.getElementById('sonarr-api-key-${u.id}').textContent, this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
               </div>
 
               <div class="user-config-card">
                 <h5><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/jellyfin.webp" alt="" class="config-icon"> Jellyfin (${t('jellyfin_auth')})</h5>
-                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}')">📋</button></div>
-                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_hostname')}</span><code>${location.hostname}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.hostname}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_port')}</span><code>${location.port || (location.protocol === 'https:' ? '443' : '80')}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${location.port || (location.protocol === 'https:' ? '443' : '80')}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
                 <div class="config-row-mini"><span>${t('config_ssl')}</span><code>${location.protocol === 'https:' ? t('yes') : t('no')}</code></div>
-                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/jellyfin</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/jellyfin')">📋</button></div>
-                <div class="config-row-mini"><span>${t('username')}:</span><code>${u.username}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${u.username}')">📋</button></div>
+                <div class="config-row-mini"><span>${t('config_url_base')}</span><code>/jellyfin</code><button class="btn-icon btn-copy" onclick="copyToClipboard('/jellyfin', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
+                <div class="config-row-mini"><span>${t('username')}:</span><code>${u.username}</code><button class="btn-icon btn-copy" onclick="copyToClipboard('${u.username}', this)" title="${t('copy')}" aria-label="${t('copy')}">📋</button></div>
               </div>
 
               <div class="user-config-card">
@@ -583,15 +583,20 @@
 
 
     // Media actions
-    async function showMediaActions(id) {
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[c]);
+    }
+
+    async function showMediaActions(id, checkResult = null) {
       const res = await fetch('/api/media');
       const media = await res.json();
       selectedMedia = media.find(m => m.id === id);
       if (!selectedMedia) return;
 
       // Clear previous sources list if exists
-      const prevSources = document.querySelector('.sources-list');
-      if (prevSources) prevSources.remove();
+      document.querySelectorAll('#action-modal .sources-list').forEach(el => el.remove());
 
       document.getElementById('modal-title').textContent = selectedMedia.title;
       document.getElementById('modal-actions').innerHTML = `
@@ -606,26 +611,26 @@
           // Create expandable list of streams for each addon
           const streamsHtml = addon.streams && addon.streams.length > 0
             ? addon.streams.map(s => {
-              const quality = s.quality ? `<span class="stream-quality">${s.quality}</span>` : '';
-              const size = s.size ? `<span class="stream-size">${s.size}</span>` : '';
+              const quality = s.quality ? `<span class="stream-quality">${escapeHtml(s.quality)}</span>` : '';
+              const size = s.size ? `<span class="stream-size">${escapeHtml(s.size)}</span>` : '';
               return `<div class="stream-item">
                 <div class="stream-tags">${quality}${size}</div>
-                <div class="stream-name">${s.name}</div>
+                <div class="stream-name">${escapeHtml(s.name)}</div>
               </div>`;
             }).join('')
             : '';
           return `
             <div class="addon-source">
               <div class="addon-header" onclick="this.parentElement.classList.toggle('expanded')">
-                <span class="addon-name">${addon.name}</span>
-                <span class="addon-count">${addon.streamCount} fichiers</span>
+                <span class="addon-name">${escapeHtml(addon.name)}</span>
+                <span class="addon-count">${addon.streamCount} ${t('files')}</span>
               </div>
               <div class="addon-streams">${streamsHtml}</div>
             </div>`;
         }).join('');
         document.getElementById('modal-actions').insertAdjacentHTML('beforebegin', `
           <div class="sources-list">
-            <h4>✅ Sources trouvées:</h4>
+            <h4>✅ ${t('sources_found')}</h4>
             <div class="sources-addons">${sourcesHtml}</div>
           </div>
         `);
@@ -633,9 +638,14 @@
         // Already checked but no sources
         document.getElementById('modal-actions').insertAdjacentHTML('beforebegin', `
           <div class="sources-list" style="color: var(--warning);">
-            <p>⚠️ Aucune source trouvée lors de la dernière vérification</p>
+            <p>⚠️ ${t('no_sources_found')}</p>
           </div>
         `);
+      }
+      if (checkResult?.conclusive === false || !selectedMedia.last_stream_check) {
+        const text = checkResult?.reason ? t('stream_check_incomplete') : t('stream_check_pending');
+        document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
+          `<div class="sources-list stream-check-pending" role="status">${text}</div>`);
       }
       document.getElementById('action-modal').classList.add('active');
     }
@@ -666,12 +676,16 @@
       const btn = document.querySelector('[onclick="checkStreams()"]');
       if (btn) btn.textContent = "⏳ ...";
 
-      const res = await fetch(`/api/media/${selectedMedia.id}/check-streams`, { method: 'POST' });
-      const data = await res.json();
-
-      loadCatalog();
-      // Re-open modal with updated data
-      showMediaActions(selectedMedia.id);
+      try {
+        const res = await fetch(`/api/media/${selectedMedia.id}/check-streams`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Stream check failed');
+        await loadCatalog();
+        await showMediaActions(selectedMedia.id, data);
+      } catch (error) {
+        console.error('Stream check failed:', error);
+        await showMediaActions(selectedMedia.id, { conclusive: false, reason: error.message });
+      }
     }
 
 
@@ -984,43 +998,48 @@
     }
 
     function copyUrl(id) {
-      const text = document.getElementById(id).textContent;
-      // Try modern API first, fallback to textarea method
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-      // Show feedback
-      const btn = document.querySelector(`[onclick="copyUrl('${id}')"]`);
-      if (btn) {
-        const original = btn.textContent;
-        btn.textContent = '✓';
-        setTimeout(() => btn.textContent = original, 1500);
-      }
+      const element = document.getElementById(id);
+      const button = document.querySelector(`[onclick="copyUrl('${id}')"]`);
+      return copyToClipboard(element?.textContent || '', button);
     }
 
-    function copyToClipboard(text) {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
+    async function copyToClipboard(text, button = null) {
+      if (!text) return;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.cssText = 'position:fixed;left:-9999px;top:0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          const copied = document.execCommand('copy');
+          textarea.remove();
+          if (!copied) throw new Error('Clipboard copy failed');
+        }
+        if (button) {
+          const original = button.textContent;
+          button.textContent = '✓';
+          button.classList.add('copied');
+          setTimeout(() => {
+            button.textContent = original;
+            button.classList.remove('copied');
+          }, 1200);
+        }
+      } catch (error) {
+        console.error('Copy failed:', error);
+        if (button) {
+          const original = button.textContent;
+          button.textContent = '!';
+          button.title = t('copy_failed');
+          setTimeout(() => {
+            button.textContent = original;
+            button.title = t('copy');
+          }, 1800);
+        }
       }
-      alert('Copied: ' + text);
     }
 
     // Jellyseerr settings
