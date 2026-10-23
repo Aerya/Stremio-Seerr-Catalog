@@ -1,4 +1,8 @@
-FROM node:22-alpine
+FROM node:22.23.4-alpine
+
+# eMudhra: refresh both the CA sources and the generated bundle.
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
+    && update-ca-certificates
 
 # Install build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
