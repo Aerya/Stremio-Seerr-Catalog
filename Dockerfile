@@ -19,7 +19,10 @@ RUN npm install --omit=dev
 COPY . .
 
 # Create data directory
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data && chown node:node /app/data
+
+# Only the image directory is prepared; mounted volumes are never chmod/chown-ed.
+USER node:node
 
 # Set environment variables
 ENV NODE_ENV=production

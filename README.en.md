@@ -1,5 +1,13 @@
 # SeerrCatalog
 
+
+### Docker user and existing volumes
+
+The image now runs as `node` (UID/GID `1000:1000`). **Before updating an existing installation with root-owned data**, add `user: "0:0"` to the `seerr-catalog` service in your current Compose file. With the Compose file provided here, set `CONTAINER_USER=0:0` in `.env` instead. Keep your existing volume paths, environment variables and secrets. This compatibility mode retains root execution; the TLS fix still applies.
+
+For a new installation, use an empty named volume mounted at `/app/data` (Docker initializes it with the image permissions), or prepare a bind directory writable by `1000:1000`. Existing custom users remain supported via `user: "UID:GID"`. No startup script changes ownership or permissions. Do not recursively change ownership of existing volumes. Plan the image replacement separately; updating these files alone does not migrate running containers.
+
+
 **A bridge between Jellyseerr and Stremio that turns media requests into a personal catalog, without SeerrCatalog downloading or storing media files.**
 
 [Français](README.md)
@@ -186,6 +194,7 @@ Both values default to `1`, preserving the previous behavior.
 services:
   seerr-catalog:
     image: ghcr.io/aerya/stremio-seerr-catalog:latest
+    user: "${CONTAINER_USER:-1000:1000}"
     container_name: seerr-catalog
     ports:
       - "7000:7000"

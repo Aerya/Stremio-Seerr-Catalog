@@ -29,3 +29,5 @@ jobs:
           RUNTIME: ${{ matrix.runtime }}
           PYTHON: ${{ matrix.python }}
         run: python3 security/emudhra/check-image.py emudhra-check --runtime "$RUNTIME" --python "$PYTHON"
+      - name: Vérifier les volumes neufs et la compatibilité root existante
+        run: python3 security/test-container-permissions.py emudhra-check seerr
