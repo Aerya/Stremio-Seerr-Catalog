@@ -1,30 +1,28 @@
 # SeerrCatalog
 
-
-### Docker user and existing volumes
-
-The image now runs as `node` (UID/GID `1000:1000`). **Before updating an existing installation with root-owned data**, add `user: "0:0"` to the `seerr-catalog` service in your current Compose file. With the Compose file provided here, set `CONTAINER_USER=0:0` in `.env` instead. Keep your existing volume paths, environment variables and secrets. This compatibility mode retains root execution; the TLS fix still applies.
-
-For a new installation, use an empty named volume mounted at `/app/data` (Docker initializes it with the image permissions), or prepare a bind directory writable by `1000:1000`. Existing custom users remain supported via `user: "UID:GID"`. No startup script changes ownership or permissions. Do not recursively change ownership of existing volumes. Plan the image replacement separately; updating these files alone does not migrate running containers.
-
+[Version française](README.md)
 
 **A bridge between Jellyseerr and Stremio that turns media requests into a personal catalog, without SeerrCatalog downloading or storing media files.**
 
-[Français](README.md)
-
-[![Build](https://github.com/Aerya/Stremio-Seerr-Catalog/actions/workflows/docker-publish.yml/badge.svg?branch=main)](https://github.com/Aerya/Stremio-Seerr-Catalog/actions/workflows/docker-publish.yml)
-[![GHCR](https://img.shields.io/badge/GHCR-latest-24292f)](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-555)](https://github.com/Aerya/Stremio-Seerr-Catalog/pkgs/container/stremio-seerr-catalog)
 [![Languages](https://img.shields.io/badge/WebUI-FR%20%7C%20EN-555)](README.md)
 [![License](https://img.shields.io/github/license/Aerya/Stremio-Seerr-Catalog)](LICENSE)
 
 SeerrCatalog sits between Jellyseerr, Stremio and your streaming sources. It exposes Jellyseerr requests through Jellyfin / Radarr / Sonarr compatible APIs, builds a personal Stremio catalog and checks actual stream availability before marking media as available.
 
-### TLS security — October 2026
+## Contents
 
-Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
-
-[Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
+- [How it works](#how-it-works)
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Availability rules](#availability-rules)
+- [Discord notifications](#discord-notifications)
+- [Screenshots](#screenshots)
+- [Environment variables](#environment-variables)
+- [Updating](#updating)
+- [Security](#security)
+- [Documentation](#documentation)
 
 ## How it works
 
@@ -71,8 +69,98 @@ Without a connected Stremio account, manually configured manifests can also be u
 | Multi-user | Catalog, sources, filters and availability rules are isolated per user. |
 | Automatic retry | Media without sources is checked again daily. |
 | Watched synchronization | Content watched at 90% or more can be automatically removed from the catalog. |
-| Discord notifications | Notify when no matching source is found. |
+| Discord notifications | Sources found, confirmed missing sources and catalog removals. |
 | WebUI | Responsive French and English interface. |
+
+## Installation
+
+### Docker user and existing volumes
+
+The image now runs as `node` (UID/GID `1000:1000`). **Before updating an existing installation with root-owned data**, add `user: "0:0"` to the `seerr-catalog` service in your current Compose file. With the Compose file provided here, set `CONTAINER_USER=0:0` in `.env` instead. Keep your existing volume paths, environment variables and secrets. This compatibility mode retains root execution; the TLS fix still applies.
+
+For a new installation, use an empty named volume mounted at `/app/data` (Docker initializes it with the image permissions), or prepare a bind directory writable by `1000:1000`. Existing custom users remain supported via `user: "UID:GID"`. No startup script changes ownership or permissions. Do not recursively change ownership of existing volumes. Plan the image replacement separately; updating these files alone does not migrate running containers.
+
+```yaml
+services:
+  seerr-catalog:
+    image: ghcr.io/aerya/stremio-seerr-catalog:latest
+    user: "${CONTAINER_USER:-1000:1000}"
+    container_name: seerr-catalog
+    ports:
+      - "7000:7000"
+    environment:
+      - BASE_URL=http://localhost:7000
+      - API_KEY=
+      - PORT=7000
+      - HOST=0.0.0.0
+      - TMDB_API_KEY=
+    volumes:
+      - /mnt/Docker/stremio/seerrcatalog:/app/data
+    restart: always
+```
+
+Start:
+
+```bash
+docker compose up -d
+```
+
+## Configuration
+
+1. Open `http://localhost:7000`.
+2. Create the administrator account.
+3. Configure the TMDB key.
+4. Connect a Stremio account if you want to automatically use its addons and watched synchronization.
+5. Under **Users > Sources & filters**, configure additional addons, filters and availability thresholds when needed.
+6. Configure Jellyseerr with the Radarr / Sonarr information displayed by SeerrCatalog.
+7. Install the SeerrCatalog manifest in Stremio.
+
+### Search sources
+
+For each user:
+
+- addons from the connected Stremio account are loaded automatically;
+- manifests entered under **Additional addons** are added to the same pool;
+- the same Stremio transport is queried only once if it appears in both lists;
+- filters are applied to returned releases;
+- availability thresholds are evaluated against the combined result.
+
+Manifest URLs are stored per user.
+
+### Connecting to Seerr / Jellyseerr
+
+In settings, enter a Seerr URL reachable from the SeerrCatalog container (for example `http://seerr:5055` on a shared Docker network) and the key from Seerr’s **Settings > General**. Save, then run the connection test.
+
+The test checks Seerr availability and, when a key is provided, access to its protected API. Without a key, only connectivity is checked. Your SeerrCatalog web session is separate from this API key.
+
+## Availability rules
+
+Two independent values determine when media is considered available:
+
+- **Min releases**: total number of releases matching the filters.
+- **Min distinct addons**: number of different sources that must return at least one release.
+
+| Min releases | Min addons | Example |
+|---:|---:|---|
+| 1 | 1 | At least one release from one source. |
+| 2 | 1 | At least two releases, even from a single addon. |
+| 1 | 2 | At least two different addons must return a release. |
+| 3 | 2 | At least three releases in total from at least two addons. |
+
+Both values default to `1`, preserving the previous behavior.
+
+### Check reliability and notifications
+
+- Following a Radarr/Sonarr addition, SeerrCatalog checks streams in the background and makes **one confirmation attempt after 60 seconds** if availability is not confirmed. The Jellyseerr creation response remains immediate.
+- Network errors, timeouts, unavailable addons and missing IMDB IDs are **incomplete checks**, not evidence of missing streams. A failed check does not overwrite previously saved results.
+- A Discord **“No Source Found”** alert is sent only after two conclusive checks find **zero releases matching the filters**. Releases that fail the configured minimum thresholds keep the media unavailable **without a misleading “No Source” alert**.
+- Series checks try monitored seasons (up to two recent seasons) before falling back to `S01E01`, instead of always using `S01E01`.
+- Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
+- Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
+
+## Discord notifications
+
+Discord webhooks report **sources found** (initial, manual or automatic checks), **confirmed missing sources** on addition, and **content removals** (watched cleanup, WebUI deletion, Radarr/Sonarr removal). Repeated checks without a status transition do not trigger duplicates. **Sources Found** alerts show the **filters actually applied** (languages and minimum resolution), source count, addons, and **releases grouped by addon** (name, quality and size when available). Checks retain up to 50 release names per addon; Discord splits the list over fields and reports how many releases could not be displayed due to embed limits. Notifications include IMDb/TMDB links. Marking an item as watched without removing it is not a removal. Enable notifications and choose their language in settings.
 
 <!-- screenshots:start -->
 ## Screenshots
@@ -125,27 +213,6 @@ Complete per-user configuration: Stremio account, Radarr / Sonarr / Jellyfin end
 Requests automatically become available once SeerrCatalog validates the configured source criteria.
 </sub></p>
 
-### Discord notifications — catalogue events
-
-Existing Discord webhooks now report **sources found** (initial, manual or automatic checks), **confirmed missing sources** on addition, and **content removals** (watched cleanup, WebUI deletion, Radarr/Sonarr removal). Repeated checks without a status transition do not trigger duplicates. **Sources Found** alerts now show the **filters actually applied** (languages and minimum resolution), source count, addons, and **releases grouped by addon** (name, quality and size when available). Checks retain up to 50 release names per addon; Discord splits the list over fields and reports how many releases could not be displayed due to embed limits. IMDb/TMDB links are unchanged. Marking an item as watched without removing it is not a removal. Existing enable/disable and EN/FR settings are unchanged.
-
-### Check reliability and notifications
-
-- Following a Radarr/Sonarr addition, SeerrCatalog checks streams in the background and makes **one confirmation attempt after 60 seconds** if availability is not confirmed. The Jellyseerr creation response remains immediate.
-- Network errors, timeouts, unavailable addons and missing IMDB IDs are **incomplete checks**, not evidence of missing streams. A failed check does not overwrite previously saved results.
-- A Discord **“No Source Found”** alert is sent only after two conclusive checks find **zero releases matching the filters**. Releases that fail the configured minimum thresholds keep the media unavailable **without a misleading “No Source” alert**.
-- Series checks try monitored seasons (up to two recent seasons) before falling back to `S01E01`, instead of always using `S01E01`.
-- Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
-- Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
-
-### Refreshed WebUI
-
-- Catalog: labelled filter groups, visible item count, and availability labels on posters without heavily dimming them.
-- Users: compact Stremio/Radarr/Sonarr/Jellyfin configuration panels with consistent form controls.
-- Settings: responsive TMDB, Jellyseerr and Discord panels; consistent login screen and small-screen layout.
-- Source details: keyboard-accessible expandable addon lists, clearer secondary/danger actions, completed FR/EN translations.
-- No change to API parameters, endpoints, persisted data, Compose or dependencies.
-
 ### Source detection
 
 <p align="center">
@@ -162,7 +229,7 @@ Compact view of the addons that returned releases and the number of matching res
 Detailed release information including addon, quality, size and release name.
 </sub></p>
 
-### Nuvio
+### Stremio and compatible clients
 
 <p align="center">
   <img src="screens/nuvio-catalog.webp" alt="SeerrCatalog catalog displayed in Nuvio" width="900">
@@ -171,71 +238,6 @@ Detailed release information including addon, quality, size and release name.
 Catalogs generated by SeerrCatalog can be consumed by Stremio-addon-compatible clients, shown here in Nuvio.
 </sub></p>
 <!-- screenshots:end -->
-
-## Availability rules
-
-Two independent values determine when media is considered available:
-
-- **Min releases**: total number of releases matching the filters.
-- **Min distinct addons**: number of different sources that must return at least one release.
-
-| Min releases | Min addons | Example |
-|---:|---:|---|
-| 1 | 1 | At least one release from one source. |
-| 2 | 1 | At least two releases, even from a single addon. |
-| 1 | 2 | At least two different addons must return a release. |
-| 3 | 2 | At least three releases in total from at least two addons. |
-
-Both values default to `1`, preserving the previous behavior.
-
-## Installation
-
-```yaml
-services:
-  seerr-catalog:
-    image: ghcr.io/aerya/stremio-seerr-catalog:latest
-    user: "${CONTAINER_USER:-1000:1000}"
-    container_name: seerr-catalog
-    ports:
-      - "7000:7000"
-    environment:
-      - BASE_URL=http://localhost:7000
-      - API_KEY=
-      - PORT=7000
-      - HOST=0.0.0.0
-      - TMDB_API_KEY=
-    volumes:
-      - /mnt/Docker/stremio/seerrcatalog:/app/data
-    restart: always
-```
-
-Start:
-
-```bash
-docker compose up -d
-```
-
-## Configuration
-
-1. Open `http://localhost:7000`.
-2. Create the administrator account.
-3. Configure the TMDB key.
-4. Connect a Stremio account if you want to automatically use its addons and watched synchronization.
-5. Under **Users > Sources & filters**, configure additional addons, filters and availability thresholds when needed.
-6. Configure Jellyseerr with the Radarr / Sonarr information displayed by SeerrCatalog.
-7. Install the SeerrCatalog manifest in Stremio.
-
-### Search sources
-
-For each user:
-
-- addons from the connected Stremio account are loaded automatically;
-- manifests entered under **Additional addons** are added to the same pool;
-- the same Stremio transport is queried only once if it appears in both lists;
-- filters are applied to returned releases;
-- availability thresholds are evaluated against the combined result.
-
-Manifest URLs are stored per user.
 
 ## Environment variables
 
@@ -248,6 +250,8 @@ Manifest URLs are stored per user.
 | `API_KEY` | API key exposed to compatible clients | — |
 
 ## Updating
+
+Before updating, check [volume permissions and the Docker user](#docker-user-and-existing-volumes), especially for an older installation running as root.
 
 With Docker Compose:
 
@@ -268,6 +272,12 @@ Some `manifest.json` URLs may contain private tokens, keys or configuration para
 - Protect the `/app/data` volume, which contains application settings.
 - Use HTTPS when the instance is exposed through a reverse proxy.
 - Set `BASE_URL` to the public URL when SeerrCatalog runs behind a proxy.
+
+### TLS security — October 2026
+
+Update image trust stores and TLS components following the eMudhra incident. Checks cover the compromised chains, including both No CT cases, and a valid HTTPS connection. Running images remain unchanged: schedule their replacement after validation.
+
+[Incident details](https://emudhra.we-have-a-problem.com/) · [TLS checks](security/emudhra/README.md)
 
 ## Documentation
 
