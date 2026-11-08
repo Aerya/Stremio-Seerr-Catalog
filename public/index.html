@@ -873,11 +873,23 @@
       }
     }
 
+    async function fetchJellyseerrSettings(url, options) {
+      const response = await fetch(url, options);
+      if (response.status === 401) {
+        throw new Error('Your Seerr Catalog session has expired. Sign in again, then save and retry.');
+      }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || `Request failed (HTTP ${response.status})`);
+      }
+      return response;
+    }
+
     // Jellyseerr Settings
     async function loadJellyseerrSettings() {
       try {
-        const urlRes = await fetch('/api/settings/jellyseerr_url');
-        const keyRes = await fetch('/api/settings/jellyseerr_api_key');
+        const urlRes = await fetchJellyseerrSettings('/api/settings/jellyseerr_url');
+        const keyRes = await fetchJellyseerrSettings('/api/settings/jellyseerr_api_key');
 
         const urlData = await urlRes.json();
         const keyData = await keyRes.json();
@@ -885,7 +897,8 @@
         if (urlData.value) document.getElementById('jellyseerr-url').value = urlData.value;
         if (keyData.value) document.getElementById('jellyseerr-key').value = keyData.value;
       } catch (e) {
-        console.error('Failed to load Jellyseerr settings:', e);
+        document.getElementById('jellyseerr-status').textContent = '❌ ' + e.message;
+        document.getElementById('jellyseerr-status').style.color = 'var(--error)';
       }
     }
 
@@ -895,17 +908,19 @@
       const apiKey = document.getElementById('jellyseerr-key').value.trim();
 
       try {
-        await fetch('/api/settings/jellyseerr_url', {
+        await fetchJellyseerrSettings('/api/settings/jellyseerr_url', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ value: url })
         });
 
-        await fetch('/api/settings/jellyseerr_api_key', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: apiKey })
-        });
+        if (apiKey) {
+          await fetchJellyseerrSettings('/api/settings/jellyseerr_api_key', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: apiKey })
+          });
+        }
 
         document.getElementById('jellyseerr-status').textContent = '✅ Jellyseerr settings saved!';
         document.getElementById('jellyseerr-status').style.color = 'var(--success)';
@@ -930,7 +945,7 @@
       document.getElementById('jellyseerr-status').style.color = 'var(--text-secondary)';
 
       try {
-        const response = await fetch('/api/jellyseerr/test', {
+        const response = await fetchJellyseerrSettings('/api/jellyseerr/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url, apiKey })
@@ -938,13 +953,8 @@
 
         const data = await response.json();
 
-        if (response.ok) {
-          document.getElementById('jellyseerr-status').textContent = `✅ ${data.message}`;
-          document.getElementById('jellyseerr-status').style.color = 'var(--success)';
-        } else {
-          document.getElementById('jellyseerr-status').textContent = `❌ ${data.error}`;
-          document.getElementById('jellyseerr-status').style.color = 'var(--error)';
-        }
+        document.getElementById('jellyseerr-status').textContent = `✅ ${data.message}`;
+        document.getElementById('jellyseerr-status').style.color = 'var(--success)';
       } catch (e) {
         document.getElementById('jellyseerr-status').textContent = `❌ Connection error: ${e.message}`;
         document.getElementById('jellyseerr-status').style.color = 'var(--error)';
@@ -1084,52 +1094,6 @@
         }
       }
     }
-
-    // Jellyseerr settings
-    async function saveJellyseerrSettings() {
-      const url = document.getElementById('jellyseerr-url').value.trim();
-      const key = document.getElementById('jellyseerr-key').value.trim();
-
-      try {
-        await fetch('/api/settings/jellyseerr_url', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: url })
-        });
-
-        if (key) {
-          await fetch('/api/settings/jellyseerr_api_key', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ value: key })
-          });
-        }
-
-        document.getElementById('jellyseerr-status').textContent = '✅ Saved!';
-        setTimeout(() => document.getElementById('jellyseerr-status').textContent = '', 3000);
-      } catch (e) {
-        document.getElementById('jellyseerr-status').textContent = '❌ Error: ' + e.message;
-      }
-    }
-
-    async function loadJellyseerrSettings() {
-      try {
-        const urlRes = await fetch('/api/settings/jellyseerr_url');
-        const urlData = await urlRes.json();
-        if (urlData.value) {
-          document.getElementById('jellyseerr-url').value = urlData.value;
-        }
-
-        const keyRes = await fetch('/api/settings/jellyseerr_api_key');
-        const keyData = await keyRes.json();
-        if (keyData.value) {
-          document.getElementById('jellyseerr-key').value = keyData.value;
-        }
-      } catch (e) {
-        console.log('Could not load Jellyseerr settings');
-      }
-    }
-
 
     // Logout handler
     async function handleLogout() {
