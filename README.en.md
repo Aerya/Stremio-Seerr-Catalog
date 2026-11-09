@@ -165,9 +165,8 @@ Both values default to `1`, preserving the previous behavior.
 The integration is **disabled by default**. [Ether Remix](https://github.com/Aerya/Ether-Remix) can reuse results already retrieved by SeerrCatalog instead of querying the same addons again just to check catalogue availability.
 
 1. Open **Settings → Ether Remix integration**, generate a shared token, and copy it into Remix.
-2. Enable and save the export. The read-only feed URL appears in that section.
-3. Optionally enter the complete Remix event receiver URL to push every conclusive check; otherwise Remix can periodically poll the feed.
-4. Items checked **before enablement** need another check for exportable data. Enabling does not trigger a bulk lookup.
+2. Enable and save the export. This section displays the base address to copy into Remix, without an `/api/…` path. No Remix receiving endpoint is required.
+3. Items checked **before enablement** need another check for exportable data. Enabling does not trigger a bulk lookup.
 
 In [Ether Remix](https://github.com/Aerya/Ether-Remix), open **Sources → Stremio → SeerrCatalog → Ether Remix**, enter the SeerrCatalog base address and the same token, then enable and save. Remix synchronizes every minute and trusts SeerrCatalog availability criteria for these titles, including “playable only”. Other visibility rules and viewer playback policies remain in force.
 

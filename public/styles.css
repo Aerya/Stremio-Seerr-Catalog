@@ -1425,8 +1425,6 @@ body {
 .settings-panel-grid a { color: #b9a3ff; text-underline-offset: 3px; }
 .settings-panel-grid .hint:empty { display: none; }
 .settings-callout { margin-top: 1rem; padding: .85rem 1rem; background: rgba(102,126,234,.08); border-left: 3px solid var(--accent); border-radius: 4px; }
-.remix-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.5rem; margin-top: 1.25rem; }
-.settings-panel-grid .remix-fields .settings-item { margin: 0; }
 .remix-overview { max-width: 85ch; }
 #remix-feed-url { display: block; margin-top: .65rem; padding: .7rem; background: #121728; border: 1px solid var(--border); border-radius: 8px; font-size: .8rem; line-height: 1.5; }
 .settings-panel-grid .settings-actions { border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
@@ -1475,7 +1473,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   .settings-panel-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
 @media (max-width: 800px) {
-  .settings-panel-grid .tmdb-settings, .remix-fields { grid-template-columns: minmax(0,1fr); gap: 1rem; }
+  .settings-panel-grid .tmdb-settings { grid-template-columns: minmax(0,1fr); gap: 1rem; }
   .settings-panel-grid .settings-section { padding: 1rem; }
   .header-content { padding: .75rem 1rem; }
   .main { padding: 1.4rem 1rem 2.8rem; }
