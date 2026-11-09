@@ -5,6 +5,7 @@
 
 const { checkStreamsWithUserAddons, getLibraryItems } = require('./stremio');
 const { recordStreamCheck, deleteMediaWithNotification, notifyRemoval } = require('./mediaEvents');
+const remix = require('./remixIntegration');
 
 // Check interval: 24 hours in milliseconds
 const RECHECK_INTERVAL = 24 * 60 * 60 * 1000;
@@ -116,7 +117,8 @@ async function performStreamCheck(media, db) {
         selectedAddonIds,
         filterPrefs,
         directManifestUrls,
-        availabilityPrefs
+        availabilityPrefs,
+        remix.getSettings(db).enabled
     );
 }
 
@@ -181,7 +183,10 @@ async function handleInitialStreamCheck(media, db, origin = 'Catalog') {
 async function recheckUnavailableMedia(db) {
     console.log('[StreamChecker] Starting 24h recheck of unavailable media...');
 
-    const unavailable = db.getMediaByAvailability(false);
+    const exporting = remix.getSettings(db).enabled;
+    const unavailable = exporting
+        ? [...db.getMediaByAvailability(false), ...db.getMediaByAvailability(true)]
+        : db.getMediaByAvailability(false);
     console.log(`[StreamChecker] Found ${unavailable.length} items to recheck`);
 
     for (const media of unavailable) {
@@ -301,7 +306,7 @@ async function syncWatchedState(db) {
                 const autoCleanup = db.getSetting(`auto_cleanup_${user.id}`);
                 const marked = db.markAsWatched(m.id, autoCleanup === 'true');
                 if (autoCleanup === 'true') {
-                    notifyRemoval(m, marked, 'watched');
+                    notifyRemoval(m, marked, 'watched', undefined, db);
                     console.log(`[StreamChecker] 🗑️ Auto-deleted watched content: ${m.title} (user ${user.username})`);
                 }
             }
@@ -315,8 +320,11 @@ async function syncWatchedState(db) {
  */
 function startBackgroundChecker(db) {
     let running = false;
+    let lastCycle = 0;
     async function runCycle() {
         if (running) return;
+        if (!remix.getSettings(db).enabled && Date.now() - lastCycle < RECHECK_INTERVAL) return;
+        lastCycle = Date.now();
         running = true;
         try {
             await recheckUnavailableMedia(db);
@@ -330,9 +338,9 @@ function startBackgroundChecker(db) {
     }
 
     setTimeout(runCycle, 60 * 1000);
-    setInterval(runCycle, RECHECK_INTERVAL);
+    setInterval(runCycle, 60 * 60 * 1000);
 
-    console.log('[StreamChecker] Background checker started (24h interval)');
+    console.log('[StreamChecker] Background checker started (24h checks; hourly wake for Remix)');
 }
 
 module.exports = {

@@ -17,6 +17,7 @@ SeerrCatalog sits between Jellyseerr, Stremio and your streaming sources. It exp
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Availability rules](#availability-rules)
+- [Ether Remix integration](#ether-remix-integration)
 - [Discord notifications](#discord-notifications)
 - [Screenshots](#screenshots)
 - [Environment variables](#environment-variables)
@@ -71,6 +72,7 @@ Without a connected Stremio account, manually configured manifests can also be u
 | Watched synchronization | Content watched at 90% or more can be automatically removed from the catalog. |
 | Discord notifications | Sources found, confirmed missing sources and catalog removals. |
 | WebUI | Responsive French and English interface. |
+| Ether Remix (opt-in) | Secure export of recently checked availability and stream descriptors without another addon lookup. |
 
 ## Installation
 
@@ -157,6 +159,47 @@ Both values default to `1`, preserving the previous behavior.
 - Series checks try monitored seasons (up to two recent seasons) before falling back to `S01E01`, instead of always using `S01E01`.
 - Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
 - Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
+
+## Ether Remix integration
+
+[SeerrCatalog · GitHub](https://github.com/Aerya/Stremio-Seerr-Catalog) · [Ether Remix · GitHub](https://github.com/Aerya/Ether-Remix)
+
+The integration is **disabled by default**. [Ether Remix](https://github.com/Aerya/Ether-Remix) can reuse results already retrieved by SeerrCatalog instead of querying the same addons again just to check catalogue availability.
+
+1. Open **Settings → Ether Remix integration**, generate a shared token, and copy it into Remix.
+2. Enable and save the export. The read-only feed URL appears in that section.
+3. Optionally enter the complete Remix event receiver URL to push every conclusive check; otherwise Remix can periodically poll the feed.
+4. Items checked **before enablement** need another check for exportable data. Enabling does not trigger a bulk lookup.
+
+In [Ether Remix](https://github.com/Aerya/Ether-Remix), open **Sources → Stremio → SeerrCatalog → Ether Remix**, enter the SeerrCatalog base address and the same token, then enable and save. Remix synchronizes every minute and trusts SeerrCatalog availability criteria for these titles, including “playable only”. Other visibility rules and viewer playback policies remain in force.
+
+While export is enabled, SeerrCatalog also rechecks already available items after 24 h (hourly wake-up). The 26 h validity allows for scheduling; prolonged outages let observations expire. Inconclusive checks do not extend their lifetime. Disabling restores normal checks of unavailable items only.
+
+The token accesses results for all users of this instance: connect only your trusted instances. Recent HTTP sources and torrent hashes are reused for playback; otherwise, or after failure, Remix falls back to ordinary discovery. Provider permissions, network access and restrictions must allow playback from Remix.
+
+### v1 API contract
+
+Paginated read with `Authorization: Bearer <token>`:
+
+```http
+GET /api/integrations/remix/v1/availability?after=0&limit=50
+Authorization: Bearer <integration-token>
+```
+
+The response is `{ "schema": "seerrcatalog.availability.v1", "revision": 12, "items": [<snapshot>], "nextCursor": null }`. `after` is the last numeric media ID, with a page size between 1 and 100. Each snapshot includes:
+
+- `media: { id, userId, type, imdbId, tmdbId, title, year }`;
+- `available`, `checkStatus`, `checkedAt`, `expiresAt` and `releasesExpireAt`;
+- `streamCount`, `addonsCount`, `appliedFilters`, `requirements`;
+- `releases` containing `addonId`, `addonName`, exact Stremio `streamId` (series include season and episode), `name`, `title`, `quality`, `size`, and a limited `stream` descriptor (`url`, `infoHash`, etc.).
+
+Only conclusive, non-expired checks are exported. Signed stream URLs and headers are removed from the export after at most **30 minutes** (they may stop working earlier), while stable torrent hashes can remain until the availability observation expires after **26 hours**. Stream links potentially containing credentials are kept out of the ordinary catalogue/media APIs.
+
+Every synchronization starts at `after=0`. Pass the returned `revision` on subsequent pages (`&revision=12`); HTTP 409 means restart. Replace local observations only after completing every page, removing absent media. The cursor is a media ID, **not an incremental change log**. This full reconciliation recovers missed deletions.
+
+With a receiver configured, SeerrCatalog sends an authenticated `POST` to the **full URL configured by the admin**. Its body is `{ "schema": "seerrcatalog.availability.v1", "event": "availability.updated", "data": <snapshot> }`, or `event: "media.removed"` with `data.media`. A failing receiver never interrupts catalogue updates; polling catches up after outages. The Remix receiver is available at `/api/integrations/seerrcatalog/v1/events`. Events trigger a full feed refresh, so duplicate or out-of-order notifications cannot overwrite newer observations.
+
+For a series, a result for an episode is **not** proof that the whole series is playable. Addon results are source observations, not guaranteed playback; Remix must apply its own policies and fall back to normal discovery when streams are expired or unusable. At most 10 releases per addon and 50 per media are exported. Stream URLs and headers may contain private access tokens: only connect a trusted Remix instance and use HTTPS outside a private network. Disabling clears stored snapshots; rotating the token invalidates the previous one immediately.
 
 ## Discord notifications
 

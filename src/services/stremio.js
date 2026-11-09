@@ -4,6 +4,7 @@
  */
 
 const STREMIO_API_URL = 'https://api.strem.io/api';
+const { exportRelease } = require('./remixIntegration');
 const ADDON_CACHE_MS = 60 * 1000;
 const accountAddonsCache = new Map();
 const directAddonsCache = new Map();
@@ -291,7 +292,8 @@ async function checkStreamsWithUserAddons(
     selectedAddonIds = null,
     filterPrefs = null,
     directManifestUrls = [],
-    availabilityPrefs = null
+    availabilityPrefs = null,
+    exportForRemix = false
 ) {
     let imdbId = media.imdb_id;
 
@@ -353,6 +355,7 @@ async function checkStreamsWithUserAddons(
     let totalStreams = 0;
     const type = media.type === 'movie' ? 'movie' : 'series';
     const checkedAddons = [];
+    const remixReleases = [];
     let eligibleAddonCount = 0;
     let successfulAddonCount = 0;
 
@@ -369,6 +372,7 @@ async function checkStreamsWithUserAddons(
         let addonSucceeded = false;
         let addonFailed = false;
         let streams = [];
+        let matchedStreamId = null;
         for (const streamId of episodeIds) {
             try {
                 const streamUrl = buildResourceUrl(addon.transportUrl, 'stream', type, streamId);
@@ -403,6 +407,7 @@ async function checkStreamsWithUserAddons(
                 }
                 if (matched.length > 0) {
                     streams = matched;
+                    matchedStreamId = streamId;
                     break;
                 }
             } catch (error) {
@@ -442,6 +447,12 @@ async function checkStreamsWithUserAddons(
                 streamCount,
                 streams: streamDetails
             });
+            if (exportForRemix && matchedStreamId) {
+                for (let i = 0; i < Math.min(streams.length, 10) && remixReleases.length < 50; i++) {
+                    const item = exportRelease(streams[i], addon, matchedStreamId, streamDetails[i]);
+                    if (item) remixReleases.push(item);
+                }
+            }
         }
     }
 
@@ -455,7 +466,7 @@ async function checkStreamsWithUserAddons(
         `(required: ${availability.minStreamCount} streams / ${availability.minAddonCount} addons) => ${availability.available ? 'available' : 'unavailable'}`
     );
 
-    return {
+    const result = {
         available: availability.available,
         conclusive,
         checkStatus,
@@ -474,6 +485,9 @@ async function checkStreamsWithUserAddons(
         },
         lastChecked: new Date().toISOString()
     };
+    // Never expose credential-bearing URLs in ordinary JSON API/Discord responses.
+    Object.defineProperty(result, 'remixReleases', { value: remixReleases, enumerable: false });
+    return result;
 }
 
 /**

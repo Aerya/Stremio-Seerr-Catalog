@@ -189,6 +189,41 @@
             </div>
           </div>
 
+          <div class="settings-section remix-settings" id="remix-settings">
+            <h3><span class="section-icon">🔄</span> <span data-i18n="remix_integration">Ether Remix integration</span></h3>
+            <div class="settings-item">
+              <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
+                <input type="checkbox" id="remix-enabled">
+                <strong data-i18n="remix_enable">Share verified availability with Ether Remix</strong>
+              </label>
+              <p class="hint" data-i18n="remix_description">Optional. Sends checked availability and short-lived Stremio releases to Ether Remix, without searching your addons twice. Playback is not guaranteed.</p>
+              <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a> · <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank" rel="noopener noreferrer">GitHub · SeerrCatalog</a></p>
+            </div>
+            <div class="settings-item">
+              <h4 data-i18n="remix_feed">Read-only snapshot feed</h4>
+              <p class="hint" data-i18n="remix_feed_help">Use this URL in Remix for the initial import and recovery after an outage.</p>
+              <code id="remix-feed-url" style="overflow-wrap:anywhere;"></code>
+            </div>
+            <div class="settings-item">
+              <h4 data-i18n="remix_webhook">Remix receiving endpoint (optional)</h4>
+              <input type="url" id="remix-webhook-url" placeholder="https://remix.example/api/integrations/seerrcatalog/v1/events" style="width:100%;">
+              <p class="hint" data-i18n="remix_webhook_help">Remix receives an event after each completed check. Leave empty to use periodic synchronization only. Use HTTPS outside your private network.</p>
+            </div>
+            <div class="settings-item">
+              <h4 data-i18n="remix_token">Shared integration token</h4>
+              <div class="input-group">
+                <input type="password" id="remix-token" autocomplete="off" readonly data-i18n-placeholder="remix_token_placeholder" placeholder="Generate a token to connect Remix">
+                <button class="btn btn-secondary btn-small" onclick="generateRemixToken()" data-i18n="remix_generate">Generate / rotate</button>
+                <button class="btn btn-secondary btn-small" onclick="copyRemixToken()" data-i18n="copy">Copy</button>
+              </div>
+              <p class="hint" data-i18n="remix_token_help">The token is displayed only when generated. Copy it into Ether Remix; rotating it invalidates the old one.</p>
+            </div>
+            <div class="settings-item">
+              <button class="btn btn-primary btn-small" onclick="saveRemixSettings()" data-i18n="remix_save">Save integration</button>
+              <p class="hint" id="remix-status" role="status"></p>
+            </div>
+          </div>
+
           <div class="settings-section">
             <h3><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/discord.webp" alt="Discord"
                 class="section-icon"> <span data-i18n="discord_notifications">Discord Notifications</span></h3>
@@ -1242,9 +1277,78 @@
       setTimeout(() => document.getElementById('discord-status').textContent = '', 4000);
     }
 
+    // ============== Ether Remix integration ==============
+
+    async function loadRemixSettings() {
+      try {
+        const response = await fetch('/api/integrations/remix/settings');
+        if (response.status === 403) {
+          document.getElementById('remix-settings').hidden = true;
+          return;
+        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const settings = await response.json();
+        document.getElementById('remix-enabled').checked = settings.enabled;
+        document.getElementById('remix-webhook-url').value = settings.webhookUrl || '';
+        document.getElementById('remix-feed-url').textContent = location.origin + settings.feedUrlPath;
+      } catch (error) {
+        console.error('Ether Remix settings could not be loaded:', error);
+      }
+    }
+
+    async function generateRemixToken() {
+      if (!confirm(t('remix_rotate_confirm'))) return;
+      const status = document.getElementById('remix-status');
+      try {
+        const response = await fetch('/api/integrations/remix/token', { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'HTTP ' + response.status);
+        document.getElementById('remix-token').value = data.token;
+        status.textContent = t('remix_token_ready');
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    }
+
+    async function copyRemixToken() {
+      const input = document.getElementById('remix-token');
+      if (!input.value) {
+        document.getElementById('remix-status').textContent = t('remix_no_token');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(input.value);
+        document.getElementById('remix-status').textContent = t('remix_copied');
+      } catch (_) {
+        input.focus(); input.select();
+        if (document.execCommand('copy')) {
+          document.getElementById('remix-status').textContent = t('remix_copied');
+        }
+      }
+    }
+
+    async function saveRemixSettings() {
+      const status = document.getElementById('remix-status');
+      try {
+        const response = await fetch('/api/integrations/remix/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            enabled: document.getElementById('remix-enabled').checked,
+            webhookUrl: document.getElementById('remix-webhook-url').value.trim()
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'HTTP ' + response.status);
+        status.textContent = t('remix_saved');
+      } catch (error) {
+        status.textContent = t('remix_error') + ' ' + error.message;
+      }
+    }
+
     // Init
     applyTranslations();
-    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings(); loadDiscordSettings();
+    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings(); loadDiscordSettings(); loadRemixSettings();
     setInterval(() => { loadStats(); loadCatalog(); }, 30000);
   </script>
 </body>

@@ -71,6 +71,20 @@ db.exec(`
     UNIQUE(media_id, season_number, episode_number)
   );
 
+  -- Stream links can contain short-lived account credentials. Keep them out of
+  -- the public media and Stremio catalogue APIs.
+  CREATE TABLE IF NOT EXISTS remix_revision (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL);
+  INSERT OR IGNORE INTO remix_revision VALUES(1,0);
+  CREATE TABLE IF NOT EXISTS remix_snapshots (
+    media_id INTEGER PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE,
+    payload TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+  );
+
+  CREATE TRIGGER IF NOT EXISTS remix_insert AFTER INSERT ON remix_snapshots BEGIN UPDATE remix_revision SET revision=revision+1 WHERE id=1; END;
+  CREATE TRIGGER IF NOT EXISTS remix_update AFTER UPDATE ON remix_snapshots BEGIN UPDATE remix_revision SET revision=revision+1 WHERE id=1; END;
+  CREATE TRIGGER IF NOT EXISTS remix_delete AFTER DELETE ON remix_snapshots BEGIN UPDATE remix_revision SET revision=revision+1 WHERE id=1; END;
+  CREATE TRIGGER IF NOT EXISTS remix_media_delete AFTER DELETE ON media BEGIN DELETE FROM remix_snapshots WHERE media_id=OLD.id; END;
   CREATE INDEX IF NOT EXISTS idx_media_type ON media(type);
   CREATE INDEX IF NOT EXISTS idx_media_tmdb ON media(tmdb_id);
   CREATE INDEX IF NOT EXISTS idx_media_imdb ON media(imdb_id);
@@ -208,7 +222,9 @@ function getMediaByType(type) {
 }
 
 function deleteMedia(id) {
-  return statements.deleteMedia.run(id);
+  const result = statements.deleteMedia.run(id);
+  if (result.changes) db.prepare('DELETE FROM remix_snapshots WHERE media_id = ?').run(id);
+  return result;
 }
 
 function updateStatus(id, status) {
@@ -480,3 +496,31 @@ function getAllSettings() {
   return db.prepare('SELECT key, value FROM settings').all()
     .reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
 }
+
+function saveRemixSnapshot(mediaId, payload) {
+  db.prepare(`
+    INSERT INTO remix_snapshots (media_id, payload, expires_at) VALUES (?, ?, ?)
+    ON CONFLICT(media_id) DO UPDATE SET payload = excluded.payload, expires_at = excluded.expires_at
+  `).run(mediaId, JSON.stringify(payload), payload.expiresAt);
+  db.prepare('DELETE FROM remix_snapshots WHERE expires_at <= ?').run(new Date().toISOString());
+}
+
+function getRemixSnapshotsAfter(afterId = 0, limit = 100) {
+  return db.prepare(`
+    SELECT r.media_id, r.payload FROM remix_snapshots r
+    INNER JOIN media m ON m.id = r.media_id
+    WHERE r.media_id > ? AND r.expires_at > ?
+    ORDER BY r.media_id ASC LIMIT ?
+  `).all(afterId, new Date().toISOString(), limit).map(row => ({
+    id: row.media_id, payload: JSON.parse(row.payload)
+  }));
+}
+
+function clearRemixSnapshots() {
+  db.prepare('DELETE FROM remix_snapshots').run();
+}
+
+function getRemixRevision() {
+  return db.prepare('SELECT revision FROM remix_revision WHERE id=1').get().revision;
+}
+Object.assign(module.exports, { saveRemixSnapshot, getRemixSnapshotsAfter, clearRemixSnapshots, getRemixRevision });

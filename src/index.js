@@ -9,6 +9,7 @@ const sonarrRoutes = require('./sonarr/routes');
 const jellyfinRoutes = require('./jellyfin/routes');
 const webuiRoutes = require('./webui/routes');
 const usersRoutes = require('./api/users');
+const remixRoutes = require('./api/remix');
 const db = require('./db');
 const { startBackgroundChecker } = require('./services/streamChecker');
 const { configureSession, requireAuth, handleLogin, handleLogout, getCurrentUser } = require('./auth/session');
@@ -250,6 +251,12 @@ app.post('/api/auth/create-first-user', (req, res) => {
 
 // WebUI routes with session auth
 app.use('/api/users', requireAuth, usersRoutes);
+
+// The feed uses a separate integration token; its settings require an admin session.
+app.use('/api/integrations/remix', (req, res, next) => {
+    if (req.path === '/v1/availability') return next();
+    requireAuth(req, res, next);
+}, remixRoutes.createRouter(db));
 
 // Jellyseerr connection test endpoint
 app.post('/api/jellyseerr/test', requireAuth, require('./services/seerrConnection').handleSeerrConnectionTest);

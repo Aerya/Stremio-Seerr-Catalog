@@ -31,7 +31,7 @@ function requireAuth(req, res, next) {
     }
 
     // Not authenticated - redirect to login
-    if (req.path.startsWith('/api/')) {
+    if (req.path.startsWith('/api/') || req.originalUrl?.startsWith('/api/')) {
         return res.status(401).json({ error: 'Authentication required' });
     }
     return res.redirect('/login');
