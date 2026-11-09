@@ -162,8 +162,6 @@ Par défaut, les deux valeurs sont à `1`, ce qui conserve le comportement histo
 
 ## Intégration Ether Remix
 
-[SeerrCatalog · GitHub](https://github.com/Aerya/Stremio-Seerr-Catalog) · [Ether Remix · GitHub](https://github.com/Aerya/Ether-Remix)
-
 L'intégration est **désactivée par défaut**. [Ether Remix](https://github.com/Aerya/Ether-Remix) peut réutiliser les résultats déjà récupérés par SeerrCatalog au lieu de relancer une recherche de disponibilité sur les mêmes addons.
 
 1. Dans **Paramètres → Intégration Ether Remix**, générez une clé partagée, puis copiez-la dans Remix.
