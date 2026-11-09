@@ -120,6 +120,26 @@ const translations = {
         jellyseerr_test_connection: 'Test Connection',
         jellyseerr_auto_sync_info: 'Jellyseerr automatically checks Radarr/Sonarr every 5 minutes. When SeerrCatalog finds streams, Jellyseerr will detect the change within 5 minutes and send notifications.',
 
+        // Ether Remix (opt-in)
+        remix_integration: 'Ether Remix integration',
+        remix_enable: 'Share verified availability with Ether Remix',
+        remix_description: 'Optional. Share checked availability and short-lived Stremio releases so Remix can reuse them instead of querying your addons again. A source result does not guarantee playback.',
+        remix_feed: 'Read-only snapshot feed',
+        remix_feed_help: 'Configure this URL in Remix for an initial import and recovery after an outage.',
+        remix_webhook: 'Remix receiving endpoint (optional)',
+        remix_webhook_help: 'Sends an event after each completed check. Leave empty for polling only. Use HTTPS outside your private network.',
+        remix_token: 'Shared integration token',
+        remix_token_placeholder: 'Generate a token to connect Remix',
+        remix_token_help: 'Shown only when generated. Copy it into Remix; rotating invalidates the previous token.',
+        remix_generate: 'Generate / rotate',
+        remix_rotate_confirm: 'Generate a new token? The previous token will stop working in Remix.',
+        remix_token_ready: 'Token generated. Copy it into Ether Remix.',
+        remix_no_token: 'Generate a token first.',
+        remix_copied: 'Token copied.',
+        remix_save: 'Save integration',
+        remix_saved: 'Integration settings saved.',
+        remix_error: 'Error:',
+
         // Stream sources, filters and availability
         stream_sources_filters: 'Sources & filters',
         search_sources: 'Search sources',
@@ -273,6 +293,26 @@ const translations = {
         jellyseerr_api_key_hint: 'Requis uniquement si votre API Jellyseerr est protégée',
         jellyseerr_test_connection: 'Tester la connexion',
         jellyseerr_auto_sync_info: 'ℹ️ Synchronisation automatique : Jellyseerr vérifie Radarr/Sonarr toutes les 5 minutes. Lorsque SeerrCatalog trouve des sources, Jellyseerr détectera le changement dans les 5 minutes et enverra les notifications.',
+
+        // Ether Remix (facultatif)
+        remix_integration: 'Intégration Ether Remix',
+        remix_enable: 'Partager les disponibilités vérifiées avec Ether Remix',
+        remix_description: 'Facultatif. Transmet les disponibilités contrôlées et les releases Stremio à durée limitée, pour éviter une seconde recherche dans Remix. Une source trouvée ne garantit pas la lecture.',
+        remix_feed: 'Flux de synchronisation en lecture seule',
+        remix_feed_help: 'Utilisez cette URL dans Remix pour l’import initial et la reprise après une interruption.',
+        remix_webhook: 'Point de réception Remix (facultatif)',
+        remix_webhook_help: 'Envoie un événement après chaque vérification terminée. Laissez vide pour la synchronisation périodique. Utilisez HTTPS hors du réseau privé.',
+        remix_token: 'Clé d’intégration partagée',
+        remix_token_placeholder: 'Générez une clé pour connecter Remix',
+        remix_token_help: 'Affichée uniquement lors de sa génération. Copiez-la dans Remix ; la renouveler invalide l’ancienne clé.',
+        remix_generate: 'Générer / renouveler',
+        remix_rotate_confirm: 'Générer une nouvelle clé ? L’ancienne ne fonctionnera plus dans Remix.',
+        remix_token_ready: 'Clé générée. Copiez-la dans Ether Remix.',
+        remix_no_token: 'Générez d’abord une clé.',
+        remix_copied: 'Clé copiée.',
+        remix_save: 'Enregistrer l’intégration',
+        remix_saved: 'Paramètres de l’intégration enregistrés.',
+        remix_error: 'Erreur :',
 
         // Sources, filtres et disponibilité
         stream_sources_filters: 'Sources et filtres',

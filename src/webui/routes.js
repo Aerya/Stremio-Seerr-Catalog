@@ -50,7 +50,7 @@ router.post('/api/media/:id/watched', (req, res) => {
     if (!media) return res.status(404).json({ error: 'Not found' });
 
     const result = db.markAsWatched(id, deleteAfter);
-    if (deleteAfter) notifyRemoval(media, result, 'watched');
+    if (deleteAfter) notifyRemoval(media, result, 'watched', undefined, db);
     res.json(result || { success: true, deleted: deleteAfter });
 });
 
@@ -108,18 +108,24 @@ router.get('/api/users', (req, res) => {
 
 // API: Get/Set settings
 router.get('/api/settings/:key', (req, res) => {
+    if (req.params.key.startsWith('ether_remix_')) return res.status(403).json({ error: 'Use integration settings' });
     const value = db.getSetting(req.params.key);
     res.json({ key: req.params.key, value });
 });
 
 router.put('/api/settings/:key', (req, res) => {
+    if (req.params.key.startsWith('ether_remix_')) return res.status(403).json({ error: 'Use integration settings' });
     const { value } = req.body;
     db.setSetting(req.params.key, value);
     res.json({ success: true });
 });
 
 router.get('/api/settings', (req, res) => {
-    res.json(db.getAllSettings());
+    const settings = db.getAllSettings();
+    for (const key of Object.keys(settings)) {
+        if (key.startsWith('ether_remix_')) delete settings[key];
+    }
+    res.json(settings);
 });
 
 // ============== Discord Webhook API ==============

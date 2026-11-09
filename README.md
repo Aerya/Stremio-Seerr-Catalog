@@ -17,6 +17,7 @@ SeerrCatalog se place entre Jellyseerr, Stremio et tes sources de streaming. Il 
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Règles de disponibilité](#règles-de-disponibilité)
+- [Intégration Ether Remix](#intégration-ether-remix)
 - [Notifications Discord](#notifications-discord)
 - [Captures d’écran](#captures-décran)
 - [Variables d’environnement](#variables-denvironnement)
@@ -71,6 +72,7 @@ Sans compte Stremio lié, les manifests ajoutés manuellement peuvent également
 | Synchronisation regardé | Les contenus regardés à au moins 90 % peuvent être automatiquement nettoyés du catalogue. |
 | Notifications Discord | Sources trouvées, absence confirmée de sources et retraits du catalogue. |
 | WebUI | Interface responsive en français et en anglais. |
+| Ether Remix (facultatif) | Export sécurisé des disponibilités et des releases récemment découvertes, sans nouveau contrôle des addons. |
 
 ## Installation
 
@@ -157,6 +159,62 @@ Par défaut, les deux valeurs sont à `1`, ce qui conserve le comportement histo
 - Pour les séries, la recherche teste prioritairement les saisons suivies (jusqu'à deux saisons récentes) puis `S01E01` comme solution de repli, au lieu de se limiter à `S01E01`.
 - Les manifests directs et les addons du compte Stremio sont mémorisés brièvement (60 secondes) pour réduire les requêtes lors des ajouts groupés. Les vérifications de sources sont limitées à 4 requêtes simultanées, sans changer la configuration.
 - Les boutons de copie affichent simplement une coche, sans popup. Une vérification manuelle incomplète s'affiche dans la fiche du média et ne remplace pas les résultats antérieurs.
+
+## Intégration Ether Remix
+
+L'intégration est **désactivée par défaut**. [Ether Remix](https://github.com/Aerya/Ether-Remix) peut réutiliser les résultats déjà récupérés par SeerrCatalog au lieu de relancer une recherche de disponibilité sur les mêmes addons.
+
+1. Dans **Paramètres → Intégration Ether Remix**, générez une clé partagée, puis copiez-la dans Remix.
+2. Activez l'export et enregistrez. L'URL du flux d'import figure dans cette rubrique.
+3. Facultatif : saisissez l'URL complète du récepteur Remix pour recevoir un événement après chaque vérification concluante. Sinon, Remix peut synchroniser périodiquement le flux.
+4. Les contenus vérifiés **avant activation** doivent être revérifiés pour disposer des données exportables. L'activation ne déclenche aucune recherche globale.
+
+Dans [Ether Remix](https://github.com/Aerya/Ether-Remix), ouvrez **Sources → Stremio → SeerrCatalog → Ether Remix**, renseignez l’adresse de base de SeerrCatalog et la même clé, puis activez et enregistrez. Remix synchronise chaque minute et fait confiance aux critères de disponibilité de SeerrCatalog pour ces titres, y compris avec « lisible uniquement ». Les autres règles de visibilité et les règles de lecture du spectateur restent appliquées.
+
+Tant que l’export est actif, SeerrCatalog revérifie aussi les contenus déjà disponibles après 24 h (réveil horaire). La durée de validité de 26 h laisse une marge au cycle ; une panne prolongée laisse expirer l’observation, sans prétendre que le titre est encore disponible. Les échecs de vérification ne renouvellent pas cette durée. Désactiver l’option rétablit les seuls contrôles habituels des contenus indisponibles.
+
+La clé donne accès aux résultats de tous les utilisateurs de cette instance : reliez uniquement vos instances de confiance. Les sources HTTP récentes et les hash torrent sont réutilisés à la lecture ; sinon, ou en cas d’échec, Remix retrouve ses recherches habituelles. Les droits, le réseau et les restrictions du fournisseur doivent permettre la lecture depuis Remix.
+
+### Contrat d'échange v1
+
+Le flux paginé exige l'en-tête `Authorization: Bearer <clé>` :
+
+```http
+GET /api/integrations/remix/v1/availability?after=0&limit=50
+Authorization: Bearer <integration-token>
+```
+
+Exemple de réponse (URL fictive) :
+
+```json
+{
+  "schema": "seerrcatalog.availability.v1",
+  "revision": 12,
+  "items": [{
+    "schema": "seerrcatalog.availability.v1",
+    "media": { "id": 7, "userId": 3, "type": "movie", "imdbId": "tt0133093", "tmdbId": 603, "title": "The Matrix", "year": 1999 },
+    "available": true,
+    "checkStatus": "available",
+    "checkedAt": "2026-11-09T17:00:00.000Z",
+    "expiresAt": "2026-11-10T19:00:00.000Z",
+    "releasesExpireAt": "2026-11-09T17:30:00.000Z",
+    "streamCount": 1,
+    "addonsCount": 1,
+    "appliedFilters": { "languageTags": ["FRENCH"], "minResolution": "1080p" },
+    "requirements": { "minStreamCount": 1, "minAddonCount": 1 },
+    "releases": [{ "addonId": "example", "addonName": "Example", "streamId": "tt0133093", "name": "Matrix.1080p.FRENCH", "title": "1080p", "quality": "1080p", "size": "2 GB", "stream": { "url": "https://stream.example/video" } }]
+  }],
+  "nextCursor": null
+}
+```
+
+`after` est le dernier identifiant numérique reçu, `limit` va de 1 à 100 et `nextCursor` permet de parcourir les pages. Seules les vérifications **concluantes** non périmées sont renvoyées. Les URL et en-têtes de lecture sont retirés de l’export après **30 minutes** au maximum (ils peuvent cesser de fonctionner plus tôt ; les hash torrent restent exploitables) ; les observations de disponibilité au bout de **26 heures**. Les liens potentiellement sensibles restent hors des API publiques de catalogue.
+
+Chaque synchronisation repart de `after=0`. Conservez la `revision` renvoyée sur chaque page suivante (`&revision=12`) ; un HTTP 409 impose de recommencer. Remplacez les données locales uniquement après le parcours complet : les médias absents sont retirés. Le curseur est un identifiant de média, **pas un journal incrémental**. Les suppressions manquées sont rattrapées par cette comparaison complète.
+
+Si une URL de réception est renseignée, SeerrCatalog envoie un `POST` authentifié avec le même Bearer. Corps : `{ "schema": "seerrcatalog.availability.v1", "event": "availability.updated", "data": <snapshot> }`. Lors d'une suppression : `event: "media.removed"` avec `data.media`. Une panne de Remix n'empêche jamais la mise à jour du catalogue ; la lecture paginée permet de reprendre les notifications manquées. Le récepteur Remix est disponible sur `/api/integrations/seerrcatalog/v1/events`. Les événements déclenchent une relecture du flux complet : les doublons et l’ordre des notifications n’altèrent pas les données.
+
+Pour les séries, une release porte l'identifiant Stremio précis de l'épisode contrôlé (`tt1234567:3:1` par exemple). **Une source trouvée n'est pas une lecture testée** : Remix doit respecter ses propres règles et prévoir un recours à la recherche ordinaire si le lien ne fonctionne plus. Export limité à 10 releases par addon et 50 par média. Les URL et en-têtes des streams peuvent contenir des accès privés : réservez cette intégration à un Remix de confiance et utilisez HTTPS hors du réseau privé. La désactivation supprime les instantanés enregistrés ; renouveler la clé invalide immédiatement l'ancienne.
 
 ## Notifications Discord
 

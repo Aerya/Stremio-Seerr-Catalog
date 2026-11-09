@@ -1401,6 +1401,7 @@ body {
 .user-stremio.stremio-disconnected { color: #f4b978 !important; }
 
 .settings-panel-grid { padding: 0; border: 0; background: transparent; box-shadow: none; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); align-items: start; gap: 1rem; }
+.settings-panel-grid .remix-settings { grid-column: 1 / -1; }
 .settings-section { padding: 1.25rem; margin: 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(21,25,39,.91); min-width: 0; }
 .settings-section h3 { font-size: 1.02rem; letter-spacing: -.015em; padding-bottom: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; margin-bottom: 1.15rem; }
 .settings-item { padding: .9rem; background: rgba(9, 12, 22, .48); margin-top: .65rem; min-width: 0; }
