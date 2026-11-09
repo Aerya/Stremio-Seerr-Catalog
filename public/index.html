@@ -235,17 +235,10 @@
               <p class="hint" data-i18n="remix_description">Optional. Sends checked availability and short-lived Stremio releases to Ether Remix, without searching your addons twice. Playback is not guaranteed.</p>
               <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a> · <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank" rel="noopener noreferrer">GitHub · SeerrCatalog</a></p>
             </div>
-            <div class="remix-fields">
-              <div class="settings-item">
-                <h4 data-i18n="remix_feed">Read-only snapshot feed</h4>
-                <p class="hint" data-i18n="remix_feed_help">Use this URL in Remix for the initial import and recovery after an outage.</p>
-                <code id="remix-feed-url" style="overflow-wrap:anywhere;"></code>
-              </div>
-              <div class="settings-item">
-                <h4 data-i18n="remix_webhook">Remix receiving endpoint (optional)</h4>
-                <input type="url" id="remix-webhook-url" placeholder="https://remix.example/api/integrations/seerrcatalog/v1/events" style="width:100%;">
-                <p class="hint" data-i18n="remix_webhook_help">Remix receives an event after each completed check. Leave empty to use periodic synchronization only. Use HTTPS outside your private network.</p>
-              </div>
+            <div class="settings-item">
+              <h4 data-i18n="remix_feed">Address to enter in Ether Remix</h4>
+              <p class="hint" data-i18n="remix_feed_help">Copy this base address into Remix, together with the shared token. Remix adds the API path and synchronizes every minute.</p>
+              <code id="remix-feed-url" style="overflow-wrap:anywhere;"></code>
             </div>
             <div class="settings-item">
               <h4 data-i18n="remix_token">Shared integration token</h4>
@@ -1290,8 +1283,7 @@
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const settings = await response.json();
         document.getElementById('remix-enabled').checked = settings.enabled;
-        document.getElementById('remix-webhook-url').value = settings.webhookUrl || '';
-        document.getElementById('remix-feed-url').textContent = location.origin + settings.feedUrlPath;
+        document.getElementById('remix-feed-url').textContent = location.origin;
       } catch (error) {
         console.error('Ether Remix settings could not be loaded:', error);
       }
@@ -1336,7 +1328,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             enabled: document.getElementById('remix-enabled').checked,
-            webhookUrl: document.getElementById('remix-webhook-url').value.trim()
+            webhookUrl: ''
           })
         });
         const data = await response.json();

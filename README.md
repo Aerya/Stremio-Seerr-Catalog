@@ -165,9 +165,8 @@ Par défaut, les deux valeurs sont à `1`, ce qui conserve le comportement histo
 L'intégration est **désactivée par défaut**. [Ether Remix](https://github.com/Aerya/Ether-Remix) peut réutiliser les résultats déjà récupérés par SeerrCatalog au lieu de relancer une recherche de disponibilité sur les mêmes addons.
 
 1. Dans **Paramètres → Intégration Ether Remix**, générez une clé partagée, puis copiez-la dans Remix.
-2. Activez l'export et enregistrez. L'URL du flux d'import figure dans cette rubrique.
-3. Facultatif : saisissez l'URL complète du récepteur Remix pour recevoir un événement après chaque vérification concluante. Sinon, Remix peut synchroniser périodiquement le flux.
-4. Les contenus vérifiés **avant activation** doivent être revérifiés pour disposer des données exportables. L'activation ne déclenche aucune recherche globale.
+2. Activez l'export et enregistrez. L’adresse de base à copier dans Remix figure dans cette rubrique, sans chemin `/api/…`. Aucun point de réception Remix n’est à renseigner.
+3. Les contenus vérifiés **avant activation** doivent être revérifiés pour disposer des données exportables. L'activation ne déclenche aucune recherche globale.
 
 Dans [Ether Remix](https://github.com/Aerya/Ether-Remix), ouvrez **Sources → Stremio → SeerrCatalog → Ether Remix**, renseignez l’adresse de base de SeerrCatalog et la même clé, puis activez et enregistrez. Remix synchronise chaque minute et fait confiance aux critères de disponibilité de SeerrCatalog pour ces titres, y compris avec « lisible uniquement ». Les autres règles de visibilité et les règles de lecture du spectateur restent appliquées.
 
