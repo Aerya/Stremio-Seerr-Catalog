@@ -137,7 +137,7 @@
         </div>
         <div class="card settings-panel-grid">
 
-          <div class="settings-section">
+          <div class="settings-section tmdb-settings">
             <h3><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/tmdb.webp" alt="TMDB"
                 class="section-icon"> <span data-i18n="tmdb_config">TMDB Configuration</span></h3>
             <div class="settings-item">
@@ -159,7 +159,7 @@
             <div class="settings-item">
               <h4 data-i18n="jellyseerr_url">Jellyseerr URL</h4>
               <div class="input-group">
-                <input type="url" id="jellyseerr-url" placeholder="http://192.168.0.139:5055">
+                <input type="url" id="jellyseerr-url" placeholder="http://jellyseerr:5055">
                 <button class="btn btn-primary btn-small" onclick="saveJellyseerrSettings()"
                   data-i18n="tmdb_save">Save</button>
               </div>
@@ -169,7 +169,7 @@
             <div class="settings-item">
               <h4 data-i18n="jellyseerr_api_key">Jellyseerr API Key (optional)</h4>
               <div class="input-group">
-                <input type="text" id="jellyseerr-key" data-i18n-placeholder="jellyseerr_key_placeholder" placeholder="API Key from Jellyseerr Settings">
+                <input type="password" id="jellyseerr-key" data-i18n-placeholder="jellyseerr_key_placeholder" placeholder="API Key from Jellyseerr Settings">
               </div>
               <p class="hint" data-i18n="jellyseerr_api_key_hint">Required only if your Jellyseerr API is protected</p>
               <p class="hint" id="jellyseerr-status"></p>
@@ -178,49 +178,13 @@
               <button class="btn btn-secondary btn-small" onclick="testJellyseerrConnection()"
                 data-i18n="jellyseerr_test_connection">🔗 Test
                 Connection</button>
-              <p class="hint"
-                style="margin-top:12px; padding:12px; background:rgba(102,126,234,0.1); border-left:3px solid var(--accent); border-radius:4px;"
+              <p class="hint settings-callout"
                 data-i18n="jellyseerr_auto_sync_info">
                 ℹ️ <strong>Auto-Sync:</strong> Jellyseerr automatically checks Radarr/Sonarr every <strong>5
                   minutes</strong>.
                 When SeerrCatalog finds streams, Jellyseerr will detect the change within 5 minutes and send
                 notifications.
               </p>
-            </div>
-          </div>
-
-          <div class="settings-section remix-settings" id="remix-settings">
-            <h3><span class="section-icon">🔄</span> <span data-i18n="remix_integration">Ether Remix integration</span></h3>
-            <div class="settings-item">
-              <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
-                <input type="checkbox" id="remix-enabled">
-                <strong data-i18n="remix_enable">Share verified availability with Ether Remix</strong>
-              </label>
-              <p class="hint" data-i18n="remix_description">Optional. Sends checked availability and short-lived Stremio releases to Ether Remix, without searching your addons twice. Playback is not guaranteed.</p>
-              <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a> · <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank" rel="noopener noreferrer">GitHub · SeerrCatalog</a></p>
-            </div>
-            <div class="settings-item">
-              <h4 data-i18n="remix_feed">Read-only snapshot feed</h4>
-              <p class="hint" data-i18n="remix_feed_help">Use this URL in Remix for the initial import and recovery after an outage.</p>
-              <code id="remix-feed-url" style="overflow-wrap:anywhere;"></code>
-            </div>
-            <div class="settings-item">
-              <h4 data-i18n="remix_webhook">Remix receiving endpoint (optional)</h4>
-              <input type="url" id="remix-webhook-url" placeholder="https://remix.example/api/integrations/seerrcatalog/v1/events" style="width:100%;">
-              <p class="hint" data-i18n="remix_webhook_help">Remix receives an event after each completed check. Leave empty to use periodic synchronization only. Use HTTPS outside your private network.</p>
-            </div>
-            <div class="settings-item">
-              <h4 data-i18n="remix_token">Shared integration token</h4>
-              <div class="input-group">
-                <input type="password" id="remix-token" autocomplete="off" readonly data-i18n-placeholder="remix_token_placeholder" placeholder="Generate a token to connect Remix">
-                <button class="btn btn-secondary btn-small" onclick="generateRemixToken()" data-i18n="remix_generate">Generate / rotate</button>
-                <button class="btn btn-secondary btn-small" onclick="copyRemixToken()" data-i18n="copy">Copy</button>
-              </div>
-              <p class="hint" data-i18n="remix_token_help">The token is displayed only when generated. Copy it into Ether Remix; rotating it invalidates the old one.</p>
-            </div>
-            <div class="settings-item">
-              <button class="btn btn-primary btn-small" onclick="saveRemixSettings()" data-i18n="remix_save">Save integration</button>
-              <p class="hint" id="remix-status" role="status"></p>
             </div>
           </div>
 
@@ -258,6 +222,43 @@
                 <button class="btn btn-secondary btn-small" onclick="testDiscordWebhook()">🔔 Test</button>
               </div>
               <p class="hint" id="discord-status" style="margin-top:8px;"></p>
+            </div>
+          </div>
+
+          <div class="settings-section remix-settings" id="remix-settings">
+            <h3><span class="section-icon">🔄</span> <span data-i18n="remix_integration">Ether Remix integration</span></h3>
+            <div class="settings-item remix-overview">
+              <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
+                <input type="checkbox" id="remix-enabled">
+                <strong data-i18n="remix_enable">Share verified availability with Ether Remix</strong>
+              </label>
+              <p class="hint" data-i18n="remix_description">Optional. Sends checked availability and short-lived Stremio releases to Ether Remix, without searching your addons twice. Playback is not guaranteed.</p>
+              <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a> · <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank" rel="noopener noreferrer">GitHub · SeerrCatalog</a></p>
+            </div>
+            <div class="remix-fields">
+              <div class="settings-item">
+                <h4 data-i18n="remix_feed">Read-only snapshot feed</h4>
+                <p class="hint" data-i18n="remix_feed_help">Use this URL in Remix for the initial import and recovery after an outage.</p>
+                <code id="remix-feed-url" style="overflow-wrap:anywhere;"></code>
+              </div>
+              <div class="settings-item">
+                <h4 data-i18n="remix_webhook">Remix receiving endpoint (optional)</h4>
+                <input type="url" id="remix-webhook-url" placeholder="https://remix.example/api/integrations/seerrcatalog/v1/events" style="width:100%;">
+                <p class="hint" data-i18n="remix_webhook_help">Remix receives an event after each completed check. Leave empty to use periodic synchronization only. Use HTTPS outside your private network.</p>
+              </div>
+            </div>
+            <div class="settings-item">
+              <h4 data-i18n="remix_token">Shared integration token</h4>
+              <div class="input-group">
+                <input type="password" id="remix-token" autocomplete="off" readonly data-i18n-placeholder="remix_token_placeholder" placeholder="Generate a token to connect Remix">
+                <button class="btn btn-secondary btn-small" onclick="generateRemixToken()" data-i18n="remix_generate">Generate / rotate</button>
+                <button class="btn btn-secondary btn-small" onclick="copyRemixToken()" data-i18n="copy">Copy</button>
+              </div>
+              <p class="hint" data-i18n="remix_token_help">The token is displayed only when generated. Copy it into Ether Remix; rotating it invalidates the old one.</p>
+            </div>
+            <div class="settings-item settings-actions">
+              <button class="btn btn-primary btn-small" onclick="saveRemixSettings()" data-i18n="remix_save">Save integration</button>
+              <p class="hint" id="remix-status" role="status"></p>
             </div>
           </div>
         </div>

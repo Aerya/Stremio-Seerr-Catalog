@@ -1400,7 +1400,8 @@ body {
 .user-stremio.stremio-connected { color: #6de1a5 !important; }
 .user-stremio.stremio-disconnected { color: #f4b978 !important; }
 
-.settings-panel-grid { padding: 0; border: 0; background: transparent; box-shadow: none; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); align-items: start; gap: 1rem; }
+.settings-panel-grid { padding: 0; border: 0; background: transparent; box-shadow: none; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); align-items: stretch; gap: 1rem; }
+.settings-panel-grid .tmdb-settings,
 .settings-panel-grid .remix-settings { grid-column: 1 / -1; }
 .settings-section { padding: 1.25rem; margin: 0; border-radius: 14px; border: 1px solid var(--border); background: rgba(21,25,39,.91); min-width: 0; }
 .settings-section h3 { font-size: 1.02rem; letter-spacing: -.015em; padding-bottom: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; margin-bottom: 1.15rem; }
@@ -1412,6 +1413,24 @@ body {
 .input-group input { width: 0; min-height: 39px; }
 .input-group > .btn { white-space: nowrap; }
 .settings-section .input-group, .user-config-card .config-row-mini { max-width: 100%; }
+
+/* Settings: compact credentials, paired integrations and a full-width Remix card. */
+.settings-panel-grid .settings-item { padding: 0; border: 0; border-radius: 0; background: none; margin-top: 1.25rem; }
+.settings-panel-grid .settings-item:first-of-type { margin-top: 0; }
+.settings-panel-grid .tmdb-settings { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr); align-items: center; gap: 1.5rem; }
+.settings-panel-grid .tmdb-settings h3 { border: 0; margin: 0; padding: 0; }
+.settings-panel-grid .tmdb-settings .settings-item { margin: 0; }
+.settings-panel-grid :is(input:not([type="checkbox"]), select, .btn) { min-height: 42px; }
+.settings-panel-grid input[type="checkbox"] { accent-color: var(--accent); flex-shrink: 0; width: 16px; height: 16px; }
+.settings-panel-grid a { color: #b9a3ff; text-underline-offset: 3px; }
+.settings-panel-grid .hint:empty { display: none; }
+.settings-callout { margin-top: 1rem; padding: .85rem 1rem; background: rgba(102,126,234,.08); border-left: 3px solid var(--accent); border-radius: 4px; }
+.remix-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.5rem; margin-top: 1.25rem; }
+.settings-panel-grid .remix-fields .settings-item { margin: 0; }
+.remix-overview { max-width: 85ch; }
+#remix-feed-url { display: block; margin-top: .65rem; padding: .7rem; background: #121728; border: 1px solid var(--border); border-radius: 8px; font-size: .8rem; line-height: 1.5; }
+.settings-panel-grid .settings-actions { border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.settings-actions .hint { margin: 0; }
 
 /* Single control language throughout the WebUI */
 :where(input:not([type="checkbox"]), select, textarea) { accent-color: var(--accent); }
@@ -1454,9 +1473,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   .header-content { flex-wrap: wrap; gap: .65rem 1rem; }
   .stats-bar { margin-left: auto; }
   .settings-panel-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .settings-section:last-child { grid-column: 1/-1; }
 }
 @media (max-width: 800px) {
+  .settings-panel-grid .tmdb-settings, .remix-fields { grid-template-columns: minmax(0,1fr); gap: 1rem; }
+  .settings-panel-grid .settings-section { padding: 1rem; }
   .header-content { padding: .75rem 1rem; }
   .main { padding: 1.4rem 1rem 2.8rem; }
   .nav-pills { order: 4; width: 100%; }
@@ -1467,10 +1487,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   .user-select-container { min-width: 0; margin-left: 0; width: 100%; }
   .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 1.2rem .9rem; }
   .user-config-section, .settings-panel-grid { grid-template-columns: minmax(0,1fr); }
-  .user-config-card:last-child, .settings-section:last-child { grid-column: auto; }
+  .user-config-card:last-child { grid-column: auto; }
   .modal-content { padding: 1.1rem; }
 }
 @media (max-width: 480px) {
+  .nav-pill { padding-inline: .5rem; min-width: 0; font-size: .78rem; }
   .page-heading { margin-bottom: 1.1rem; }
   .page-heading p { font-size: .82rem; }
   .filter-group { width: 100%; }
