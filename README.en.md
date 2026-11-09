@@ -162,8 +162,6 @@ Both values default to `1`, preserving the previous behavior.
 
 ## Ether Remix integration
 
-[SeerrCatalog · GitHub](https://github.com/Aerya/Stremio-Seerr-Catalog) · [Ether Remix · GitHub](https://github.com/Aerya/Ether-Remix)
-
 The integration is **disabled by default**. [Ether Remix](https://github.com/Aerya/Ether-Remix) can reuse results already retrieved by SeerrCatalog instead of querying the same addons again just to check catalogue availability.
 
 1. Open **Settings → Ether Remix integration**, generate a shared token, and copy it into Remix.
