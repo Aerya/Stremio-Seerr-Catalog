@@ -262,22 +262,8 @@
           <div class="settings-section remix-settings" id="supplemental-settings">
             <h3 data-i18n="supplemental_title">Recherche complémentaire</h3>
             <p class="hint" data-i18n="supplemental_help">Si les addons ne trouvent aucune source dans les langues principales, compléter via Remix ou Prowlarr. Remix nécessite le repli activé dans les préférences utilisateur. Prowlarr peut aussi servir seul.</p>
-            <div class="settings-item">
-              <label for="supplemental-mode" data-i18n="supplemental_provider">Fournisseur</label>
-              <select id="supplemental-mode" onchange="updateSupplementalFields()"><option value="off" data-i18n="supplemental_off">Désactivé</option><option value="remix">Ether Remix</option><option value="prowlarr">Prowlarr</option></select>
-            </div>
-            <div class="settings-item" id="supplemental-remix-fields">
-              <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a></p>
-              <label for="supplemental-remix-url" data-i18n="supplemental_remix_url">Adresse de base de Remix</label>
-              <input id="supplemental-remix-url" type="url" placeholder="https://remix.example.org" autocomplete="off">
-              <label for="supplemental-remix-token" data-i18n="supplemental_remix_token">Clé dédiée aux recherches (laisser vide pour conserver)</label>
-              <div class="input-group">
-                <input id="supplemental-remix-token" type="password" autocomplete="new-password" maxlength="256">
-                <button class="btn btn-secondary btn-small" onclick="generateSearchToken()" data-i18n="supplemental_generate_token">Générer une clé</button>
-                <button class="btn btn-secondary btn-small" onclick="copySearchToken()" data-i18n="copy">Copier</button>
-              </div>
-              <p class="hint" data-i18n="supplemental_remix_help">Générez une clé ici, copiez-la dans Remix → Sources → Stremio → Recherches pour SeerrCatalog, puis activez les recherches dans Remix. Enregistrez des deux côtés et testez. Le partage des disponibilités est indépendant.</p>
-            </div>
+            <label class="integration-toggle"><input type="checkbox" id="supplemental-prowlarr-enabled" onchange="selectSearchProvider('prowlarr')"><strong data-i18n="prowlarr_enable">Rechercher via Prowlarr</strong></label>
+            <p class="hint" data-i18n="supplemental_exclusive"></p>
             <div class="settings-item" id="supplemental-prowlarr-fields">
               <label for="supplemental-prowlarr-url" data-i18n="supplemental_prowlarr_url">Adresse de base de Prowlarr</label>
               <input id="supplemental-prowlarr-url" type="url" placeholder="http://prowlarr:9696" autocomplete="off">
@@ -286,20 +272,23 @@
             </div>
             <p class="hint" data-i18n="supplemental_limit">Seuls les torrents avec infoHash et les véritables flux vidéo de Remix sont comptés. Les liens NZB ne sont pas des flux vidéo. Les résultats Prowlarr ne sont pas automatiquement ajoutés aux addons de lecture Stremio.</p>
             <div class="inline-actions">
-              <button class="btn btn-primary btn-small" onclick="saveSupplementalSettings()" data-i18n="save_search_settings">Enregistrer</button>
-              <button class="btn btn-secondary btn-small" onclick="testSupplementalSearch()" data-i18n="jellyseerr_test_connection">Tester la connexion</button>
-              <span id="supplemental-status" role="status"></span>
+              <button class="btn btn-primary btn-small" onclick="saveSupplementalSettings('prowlarr')" data-i18n="save_search_settings">Enregistrer</button>
+              <button class="btn btn-secondary btn-small" onclick="testSupplementalSearch('prowlarr')" data-i18n="jellyseerr_test_connection">Tester la connexion</button>
+              <span id="prowlarr-search-status" role="status"></span>
             </div>
           </div>
           <div class="settings-section remix-settings" id="remix-settings">
             <h3><span data-i18n="remix_integration">Ether Remix integration</span></h3>
+            <p class="hint" data-i18n="remix_two_features"></p>
+            <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a> · <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank" rel="noopener noreferrer">GitHub · SeerrCatalog</a></p>
+            <div class="integration-panel">
+            <h4 data-i18n="remix_sharing_heading">Disponibilités vers Remix</h4>
             <div class="settings-item remix-overview">
               <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
                 <input type="checkbox" id="remix-enabled">
                 <strong data-i18n="remix_enable">Share verified availability with Ether Remix</strong>
               </label>
               <p class="hint" data-i18n="remix_description">Optional. Sends checked availability and short-lived Stremio releases to Ether Remix, without searching your addons twice. Playback is not guaranteed.</p>
-              <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a> · <a href="https://github.com/Aerya/Stremio-Seerr-Catalog" target="_blank" rel="noopener noreferrer">GitHub · SeerrCatalog</a></p>
             </div>
             <div class="settings-item">
               <h4 data-i18n="remix_feed">Address to enter in Ether Remix</h4>
@@ -318,6 +307,29 @@
             <div class="settings-item settings-actions">
               <button class="btn btn-primary btn-small" onclick="saveRemixSettings()" data-i18n="remix_save">Save integration</button>
               <p class="hint" id="remix-status" role="status"></p>
+            </div>
+            </div>
+            <div class="integration-panel" id="remix-search-settings">
+              <h4 data-i18n="remix_search_heading">Recherche via Remix</h4>
+              <label class="integration-toggle"><input type="checkbox" id="supplemental-remix-enabled" onchange="selectSearchProvider('remix')"><strong data-i18n="remix_search_enable">Compléter les recherches avec Remix</strong></label>
+              <p class="hint" data-i18n="remix_search_description"></p>
+              <p class="hint" data-i18n="supplemental_exclusive"></p>
+            <div class="settings-item" id="supplemental-remix-fields">
+              <label for="supplemental-remix-url" data-i18n="supplemental_remix_url">Adresse de base de Remix</label>
+              <input id="supplemental-remix-url" type="url" placeholder="https://remix.example.org" autocomplete="off">
+              <label for="supplemental-remix-token" data-i18n="supplemental_remix_token">Clé dédiée aux recherches (laisser vide pour conserver)</label>
+              <div class="input-group">
+                <input id="supplemental-remix-token" type="password" autocomplete="new-password" maxlength="256">
+                <button class="btn btn-secondary btn-small" onclick="generateSearchToken()" data-i18n="supplemental_generate_token">Générer une clé</button>
+                <button class="btn btn-secondary btn-small" onclick="copySearchToken()" data-i18n="copy">Copier</button>
+              </div>
+              <p class="hint" data-i18n="supplemental_remix_help">Générez une clé ici, copiez-la dans Remix → Sources → Stremio → Recherches pour SeerrCatalog, puis activez les recherches dans Remix. Enregistrez des deux côtés et testez. Le partage des disponibilités est indépendant.</p>
+            </div>
+              <div class="inline-actions">
+                <button class="btn btn-primary btn-small" onclick="saveSupplementalSettings('remix')" data-i18n="save_search_settings">Enregistrer</button>
+                <button class="btn btn-secondary btn-small" onclick="testSupplementalSearch('remix')" data-i18n="jellyseerr_test_connection">Tester la connexion</button>
+                <span id="remix-search-status" role="status"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -1409,50 +1421,64 @@
     function generateSearchToken() {
       const bytes = crypto.getRandomValues(new Uint8Array(32));
       document.getElementById('supplemental-remix-token').value = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-      document.getElementById('supplemental-status').textContent = t('supplemental_token_generated');
+      document.getElementById('remix-search-status').textContent = t('supplemental_token_generated');
     }
     async function copySearchToken() {
       const input = document.getElementById('supplemental-remix-token');
-      if (!input.value) { document.getElementById('supplemental-status').textContent = t('supplemental_token_missing'); return; }
+      if (!input.value) { document.getElementById('remix-search-status').textContent = t('supplemental_token_missing'); return; }
       try { await navigator.clipboard.writeText(input.value); }
       catch (_) { input.select(); document.execCommand('copy'); }
-      document.getElementById('supplemental-status').textContent = t('supplemental_token_copied');
+      document.getElementById('remix-search-status').textContent = t('supplemental_token_copied');
     }
-    function updateSupplementalFields() {
-      const mode = document.getElementById('supplemental-mode').value;
-      document.getElementById('supplemental-remix-fields').hidden = mode !== 'remix';
-      document.getElementById('supplemental-prowlarr-fields').hidden = mode !== 'prowlarr';
+    let supplementalConfig = { mode: 'off', remixUrl: '', prowlarrUrl: '' };
+    function selectSearchProvider(provider) {
+      if (document.getElementById(`supplemental-${provider}-enabled`).checked) {
+        const other = provider === 'remix' ? 'prowlarr' : 'remix';
+        document.getElementById(`supplemental-${other}-enabled`).checked = false;
+      }
     }
     async function loadSupplementalSettings() {
       const res = await fetch('/api/integrations/remix/search-settings');
-      if (!res.ok) { document.getElementById('supplemental-settings').hidden = true; return; }
-      const cfg = await res.json();
-      document.getElementById('supplemental-mode').value = cfg.mode;
-      document.getElementById('supplemental-remix-url').value = cfg.remixUrl;
-      document.getElementById('supplemental-prowlarr-url').value = cfg.prowlarrUrl;
-      document.getElementById('supplemental-remix-token').placeholder = cfg.hasRemixToken ? '••••••••' : '';
-      document.getElementById('supplemental-prowlarr-key').placeholder = cfg.hasProwlarrKey ? '••••••••' : '';
-      updateSupplementalFields();
+      if (!res.ok) {
+        document.getElementById('supplemental-settings').hidden = true;
+        document.getElementById('remix-search-settings').hidden = true;
+        return;
+      }
+      supplementalConfig = await res.json();
+      for (const provider of ['remix', 'prowlarr']) {
+        document.getElementById(`supplemental-${provider}-enabled`).checked = supplementalConfig.mode === provider;
+        document.getElementById(`supplemental-${provider}-url`).value = supplementalConfig[`${provider}Url`];
+      }
+      document.getElementById('supplemental-remix-token').placeholder = supplementalConfig.hasRemixToken ? '••••••••' : '';
+      document.getElementById('supplemental-prowlarr-key').placeholder = supplementalConfig.hasProwlarrKey ? '••••••••' : '';
     }
-    async function saveSupplementalSettings() {
-      const status = document.getElementById('supplemental-status');
+    async function saveSupplementalSettings(provider) {
+      const status = document.getElementById(`${provider}-search-status`);
+      const secret = provider === 'remix' ? 'token' : 'key';
+      const input = document.getElementById(`supplemental-${provider}-${secret}`);
+      const payload = {
+        mode: document.getElementById(`supplemental-${provider}-enabled`).checked ? provider : supplementalConfig.mode === provider ? 'off' : supplementalConfig.mode,
+        remixUrl: supplementalConfig.remixUrl,
+        prowlarrUrl: supplementalConfig.prowlarrUrl,
+        [`${provider}Url`]: document.getElementById(`supplemental-${provider}-url`).value.trim(),
+        [provider === 'remix' ? 'remixToken' : 'prowlarrKey']: input.value.trim()
+      };
       try {
-        const res = await fetch('/api/integrations/remix/search-settings', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-          mode:document.getElementById('supplemental-mode').value,
-          remixUrl:document.getElementById('supplemental-remix-url').value.trim(),
-          prowlarrUrl:document.getElementById('supplemental-prowlarr-url').value.trim(),
-          remixToken:document.getElementById('supplemental-remix-token').value.trim(),
-          prowlarrKey:document.getElementById('supplemental-prowlarr-key').value.trim()
-        })});
+        const res = await fetch('/api/integrations/remix/search-settings', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
         const data = await res.json(); if (!res.ok) throw new Error(data.error);
-        document.getElementById('supplemental-prowlarr-key').value = '';
-        document.getElementById('supplemental-remix-token').value = '';
+        supplementalConfig = {...supplementalConfig, ...payload};
+        // Keep only public configuration in memory; preserve unsaved fields in the other panel.
+        delete supplementalConfig.remixToken; delete supplementalConfig.prowlarrKey;
+        input.value = ''; input.placeholder = '••••••••';
+        for (const name of ['remix', 'prowlarr']) document.getElementById(`supplemental-${name}-enabled`).checked = payload.mode === name;
         status.textContent = t('supplemental_saved');
-        await loadSupplementalSettings();
       } catch (error) { status.textContent = error.message; }
     }
-    async function testSupplementalSearch() {
-      const status = document.getElementById('supplemental-status');
+    async function testSupplementalSearch(provider) {
+      const status = document.getElementById(`${provider}-search-status`);
+      if (supplementalConfig.mode !== provider || !document.getElementById(`supplemental-${provider}-enabled`).checked) {
+        status.textContent = t('supplemental_save_first'); return;
+      }
       status.textContent = t('supplemental_testing');
       try {
         const res = await fetch('/api/integrations/remix/search-test', {method:'POST'});

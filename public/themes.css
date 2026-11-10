@@ -80,13 +80,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .settings-panel-grid a { color: var(--accent); }
 #discord-webhooks-list > div { background: var(--bg-input) !important; color: var(--text-primary); border: 1px solid var(--border); }
 
-#supplemental-settings .settings-item label { display:block; font-size:13px; font-weight:600; margin:0 0 8px; }
-#supplemental-settings .settings-item input { display:block; width:100%; max-width:680px; margin-bottom:16px; }
-#supplemental-settings .settings-item select { width:100%; max-width:320px; }
+:is(#supplemental-settings, #remix-search-settings) .settings-item label { display:block; font-size:13px; font-weight:600; margin:0 0 8px; }
+:is(#supplemental-settings, #remix-search-settings) .settings-item input { display:block; width:100%; max-width:680px; margin-bottom:16px; }
+:is(#supplemental-settings, #remix-search-settings) .settings-item select { width:100%; max-width:320px; }
 #supplemental-settings [hidden] { display:none; }
 
-#supplemental-settings .input-group { max-width:680px; flex-wrap:wrap; }
-#supplemental-settings .input-group input { margin-bottom:0; min-width:0; }
+:is(#supplemental-settings, #remix-search-settings) .input-group { max-width:680px; flex-wrap:wrap; }
+:is(#supplemental-settings, #remix-search-settings) .input-group input { margin-bottom:0; min-width:0; }
 
 #users-list .language-filter-row {
   display:grid; grid-template-columns:180px repeat(2,minmax(0,1fr));
@@ -99,3 +99,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
   #users-list .language-filter-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
   #users-list .language-filter-row > span { grid-column:1 / -1; }
 }
+
+.integration-panel { border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 18px; }
+.integration-panel > h4 { margin: 0 0 16px; font-size: 15px; }
+.integration-toggle { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.integration-toggle input { flex: none; }
+@media (max-width: 600px) { .integration-panel { padding: 12px; } }

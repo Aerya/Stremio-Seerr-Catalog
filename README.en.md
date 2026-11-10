@@ -165,7 +165,7 @@ The integration is **disabled by default**. [Ether Remix](https://github.com/Aer
 2. Enable and save the export. This section displays the base address to copy into Remix, without an `/api/…` path. No Remix receiving endpoint is required.
 3. Previously confirmed titles are exported automatically, without new searches or renewing old playback links.
 
-In [Ether Remix](https://github.com/Aerya/Ether-Remix), open **Sources → Stremio → SeerrCatalog → Ether Remix**, enter the SeerrCatalog base address and the same token, then enable and save. Remix synchronizes every minute and trusts SeerrCatalog availability criteria for these titles, including “playable only”. Other visibility rules and viewer playback policies remain in force.
+In [Ether Remix](https://github.com/Aerya/Ether-Remix), open **Sources → Stremio → SeerrCatalog → Availability to Remix**, enter the SeerrCatalog base address and the same token, then enable and save. Remix synchronizes every minute and trusts SeerrCatalog availability criteria for these titles, including “playable only”. Other visibility rules and viewer playback policies remain in force.
 
 Confirmed availability carries `availabilityConfirmed: true` and persists until deletion. **Update both SeerrCatalog and Ether Remix**; older Remix versions continue to expire observations after 26 hours. Playback URLs still expire after 30 minutes without removing catalogue availability.
 
@@ -346,9 +346,9 @@ MIT — see [LICENSE](LICENSE).
 
 ### Complementary search: Remix or Prowlarr
 
-Under **Settings → Complementary search**, choose one provider (disabled by default), save, then **Test connection**:
+Under **Settings**, **Prowlarr complementary search** configures Prowlarr alone. **Ether Remix integration** groups availability sharing and search via Remix, each with its own switch and token. Only one complementary provider can be active: enabling Prowlarr replaces Remix, or vice versa, after saving. Save before **Test connection**:
 
-- **Ether Remix**: enter its base URL. Generate a dedicated search token in this section and paste it into **Remix → Sources → Stremio → Searches for SeerrCatalog**. Enable searches in Remix and language fallback in user preferences, then save on both sides. Availability sharing and its token are independent and can remain disabled. After updating both applications, configure this new token: the old sharing token no longer authorizes searches. If addons return no primary-language release, Remix searches its configured indexers, including Prowlarr, while respecting availability search budgets.
+- **Ether Remix → Search via Remix**: enter its base URL. Generate a dedicated search token in this section and paste it into **Remix → Sources → Stremio → SeerrCatalog → Search via Remix**. Enable searches in Remix and language fallback in user preferences, then save on both sides. Availability sharing and its token are independent and can remain disabled. After updating both applications, configure this new token: the old sharing token no longer authorizes searches. If addons return no primary-language release, Remix searches its configured indexers, including Prowlarr, while respecting availability search budgets.
 - **Standalone Prowlarr**: enter its base URL and API key. Neither Remix nor a Stremio account is required. Prowlarr complements addons with no primary-language result, or operates alone. Primary languages take precedence; custom fallback tags apply only when enabled and no primary source matches.
 
 Results are deduplicated across providers. Two distinct releases permanently confirm availability; one follows J+1/J+3 with notification and optional manual approval. Network errors never prove absence. A five-minute cache shares identical searches; confirmed titles are never searched again.
