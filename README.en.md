@@ -344,6 +344,8 @@ If SeerrCatalog is useful to you, you can support the project by starring the re
 
 MIT — see [LICENSE](LICENSE).
 
+Available items validated through fallback languages show a **VOSTFR** badge for VOSTFR/SUBFRENCH, or the custom tags actually used. The **Fallback languages** filter finds these items. **Search primary languages** in their details manually searches using the owner’s current primary tags, resolution and availability thresholds. When those criteria are met, sources are replaced, the fallback badge is removed and Remix sharing is updated. Errors, zero or too few releases keep the existing availability and fallback sources unchanged. This action does not restart automatic checks for confirmed items.
+
 ### Complementary search: Remix or Prowlarr
 
 Under **Settings**, **Prowlarr complementary search** configures Prowlarr alone. **Ether Remix integration** groups availability sharing and search via Remix, each with its own switch and token. Only one complementary provider can be active: enabling Prowlarr replaces Remix, or vice versa, after saving. Save before **Test connection**:

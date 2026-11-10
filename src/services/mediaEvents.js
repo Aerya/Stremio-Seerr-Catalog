@@ -71,6 +71,21 @@ async function recordStreamCheck(db, media, result, onAvailable = notifySourcesF
     return { updated: true, newlyAvailable };
 }
 
+/** Upgrade a confirmed fallback version without ever revoking its availability. */
+function recordPrimaryLanguageUpgrade(db, media, result) {
+    if (!result?.conclusive || !result.available || result.streamCount < 2 ||
+        result.appliedFilters?.subtitleFallbackUsed !== false || !result.appliedFilters?.languageTags?.length) return false;
+    return db.db.transaction(() => {
+        const previous = db.getMediaById(media.id);
+        if (!previous?.streams_available || !previous.stream_filters_detail?.subtitleFallbackUsed) return false;
+        db.db.prepare('UPDATE media SET stream_count = ?, last_stream_check = ?, streams_detail = ?, stream_filters_detail = ?, availability_manual = 0 WHERE id = ?')
+            .run(result.streamCount, result.lastChecked, JSON.stringify(result.addons || []), JSON.stringify(result.appliedFilters), media.id);
+        // Replace the shared observations too, without a second availability notification.
+        remix.recordSnapshot(db, previous, result);
+        return true;
+    })();
+}
+
 function notifyRemoval(media, outcome, reason, send = defaultRemovalNotifier, db = null) {
     if (!outcome || outcome.changes !== 1) return false;
     // Send after deletion, asynchronously, without delaying/invalidating responses.
@@ -98,6 +113,7 @@ function deleteMediaWithNotification(db, media, reason = 'manual', send) {
 
 module.exports = {
     recordStreamCheck,
+    recordPrimaryLanguageUpgrade,
     notifyRemoval,
     deleteMediaWithNotification
 };
