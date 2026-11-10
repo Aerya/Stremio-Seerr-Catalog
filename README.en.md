@@ -160,6 +160,12 @@ Both values default to `1`, preserving the previous behavior.
 - Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
 - Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
 
+### Show only available content in Stremio
+
+By default, the catalogue shows all requests, even without sources. Under **Users → Sources & filters → Availability criteria**, select **Show only available content in the personal Stremio catalog**, then **Save**. Install the personal addon URL `/user/<id>/manifest.json` from that user’s card; the global `/manifest.json` still shows all requests.
+
+This filters movies, series and search results before pagination, using the latest checks after language, resolution and source/addon thresholds. Unavailable and unchecked items are hidden without deleting requests or changing the Radarr/Sonarr-compatible APIs. Refresh Stremio to renew its cache; rerun checks after changing source criteria. Finding a source does not guarantee playback, and an available series does not mean every episode is available.
+
 ## Ether Remix integration
 
 The integration is **disabled by default**. [Ether Remix](https://github.com/Aerya/Ether-Remix) can reuse results already retrieved by SeerrCatalog instead of querying the same addons again just to check catalogue availability.

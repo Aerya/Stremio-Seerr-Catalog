@@ -103,6 +103,10 @@ function catalogHandler(args) {
     // Global catalog shows all media regardless of user
     if (userId !== undefined && userId !== null) {
         filters.userId = userId;
+        // Apply before pagination/search results are published, without deleting requests.
+        if (db.getSetting(`catalog_available_only_${userId}`) === 'true') {
+            filters.available = true;
+        }
     }
 
     let media = db.getFilteredMedia(filters);

@@ -160,6 +160,12 @@ Par défaut, les deux valeurs sont à `1`, ce qui conserve le comportement histo
 - Les manifests directs et les addons du compte Stremio sont mémorisés brièvement (60 secondes) pour réduire les requêtes lors des ajouts groupés. Les vérifications de sources sont limitées à 4 requêtes simultanées, sans changer la configuration.
 - Les boutons de copie affichent simplement une coche, sans popup. Une vérification manuelle incomplète s'affiche dans la fiche du média et ne remplace pas les résultats antérieurs.
 
+### Afficher uniquement les contenus disponibles dans Stremio
+
+Par défaut, le catalogue affiche toutes les demandes, même sans source. Dans **Utilisateurs → Sources et filtres → Critères de disponibilité**, cochez **Afficher uniquement les contenus disponibles dans le catalogue Stremio personnel**, puis cliquez sur **Enregistrer**. Utilisez l’URL d’addon personnelle `/user/<id>/manifest.json` proposée dans la fiche de cet utilisateur ; le manifeste global `/manifest.json` continue d’afficher toutes les demandes.
+
+Le filtre concerne les films, les séries et la recherche, avant pagination. Il utilise le dernier résultat des vérifications, après les filtres de langue, résolution et seuils de sources/addons. Les contenus indisponibles ou jamais vérifiés sont masqués, sans supprimer les demandes ni modifier les API compatibles Radarr/Sonarr. Actualisez Stremio pour renouveler son cache ; après un changement des critères de sources, relancez une vérification. Une source trouvée ne garantit pas la lecture et une série disponible ne signifie pas que tous ses épisodes le sont.
+
 ## Intégration Ether Remix
 
 L'intégration est **désactivée par défaut**. [Ether Remix](https://github.com/Aerya/Ether-Remix) peut réutiliser les résultats déjà récupérés par SeerrCatalog au lieu de relancer une recherche de disponibilité sur les mêmes addons.
