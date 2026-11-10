@@ -32,8 +32,8 @@ test('Remix search authenticates independently of availability sharing; incomple
  const old=global.fetch;t.after(()=>{global.fetch=old});let count=0;
  global.fetch=async(url,opts)=>{count++;assert.equal(opts.headers.Authorization,'Bearer '+'s'.repeat(64));return response(opts.method==='POST'?{schema:'seerrcatalog.search.v1',streams:[],conclusive:false}:{schema:'seerrcatalog.search.v1',ready:true})};
  await service.testConnection(db);
- await assert.rejects(service.search(db,media,[media.imdb_id]),/Incomplete/);
- await assert.rejects(service.search(db,media,[media.imdb_id]),/Incomplete/);assert.equal(count,3);
+ assert.equal((await service.search(db,media,[media.imdb_id]))[0].conclusive,false);
+ assert.equal((await service.search(db,media,[media.imdb_id]))[0].conclusive,false);assert.equal(count,3);
  db.setSetting('ether_remix_token','rotated-export-key');
  await service.testConnection(db);
  service.updateSettings(db,{mode:'remix',remixUrl:'https://remix.test',remixToken:''});
@@ -64,4 +64,21 @@ test('series fallback counts one episode only and can find the preferred languag
  const m={...media,type:'series',title:'Show'};
  const groups=await service.search(db,m,[media.imdb_id+':2:1',media.imdb_id+':1:1'],{languageTags:['GERMAN'],subtitleFallback:true,fallbackLanguageTags:['ENGLISH']});
  assert.equal(groups.length,1);assert.equal(groups[0].streamId,media.imdb_id+':1:1');assert.equal(groups[0].streams.length,1);
+});
+
+
+test('partial Remix evidence can validate availability, but insufficient or filtered evidence remains incomplete', async t => {
+ const db=database(); service.updateSettings(db,{mode:'remix',remixUrl:'https://partial.test',remixToken:'p'.repeat(64)});
+ const old=global.fetch;t.after(()=>{global.fetch=old});
+ let streams=[{title:'The.Matrix.FRENCH.1080p',infoHash:'a'.repeat(40)},{title:'The.Matrix.FRENCH.1080p',infoHash:'b'.repeat(40)}];
+ let complete=false, calls=0;
+ global.fetch=async()=>{calls++;return response({schema:'seerrcatalog.search.v1',streams,conclusive:complete})};
+ const check=(filters={languageTags:['FRENCH']},prefs=null)=>checkStreamsWithUserAddons(media,null,null,filters,[],prefs,true,ids=>service.search(db,media,ids,filters));
+ let r=await check();assert.equal(r.available,true);assert.equal(r.conclusive,true);assert.equal(r.streamCount,2);
+ r=await check({languageTags:['GERMAN']});assert.equal(r.available,false);assert.equal(r.conclusive,false);
+ r=await check(undefined,{minStreamCount:2,minAddonCount:2});assert.equal(r.available,false);assert.equal(r.conclusive,false);
+ streams=streams.slice(0,1);r=await check();assert.equal(r.streamCount,1);assert.equal(r.conclusive,false);
+ streams=[];r=await check();assert.equal(r.conclusive,false);
+ assert.equal(calls,5); // Partial searches are retried, never cached.
+ complete=true;r=await check();assert.equal(r.conclusive,true);assert.equal(r.available,false);
 });

@@ -84,6 +84,7 @@ async function search(db, media, streamIds, filters = {}) {
     if (pending.size >= 2) throw new Error('Supplemental search busy; retry on next check');
     const work = (async () => {
         const groups = [];
+        let complete = true;
         const {filterStreamsByLanguage, filterStreamsByResolution} = require('./stremio');
         const matching = (streams, tags) => {
             let found = tags?.length ? filterStreamsByLanguage(streams, tags) : streams;
@@ -99,7 +100,8 @@ async function search(db, media, streamIds, filters = {}) {
                     method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer ' + token},
                     body:JSON.stringify({media:{id:media.id,type:media.type,imdbId:media.imdb_id,tmdbId:Number(media.tmdb_id),title:media.title,year:Number(media.year)||0},season,episode})
                 });
-                if (data.schema !== 'seerrcatalog.search.v1' || !Array.isArray(data.streams) || data.conclusive !== true) throw new Error('Incomplete Remix search');
+                if (data.schema !== 'seerrcatalog.search.v1' || !Array.isArray(data.streams) || typeof data.conclusive !== 'boolean') throw new Error('Invalid Remix search response');
+                complete = complete && data.conclusive;
                 streams = data.streams;
             } else {
                 const url = new URL(cfg.prowlarrUrl + '/api/v1/search');
@@ -116,9 +118,11 @@ async function search(db, media, streamIds, filters = {}) {
         // Count one checked episode per provider, as for Stremio addons.
         const chosen = groups.find(g => matching(g.streams, filters.languageTags)) ||
             (filters.subtitleFallback && filters.fallbackLanguageTags?.length && groups.find(g => matching(g.streams, filters.fallbackLanguageTags))) || groups[0];
-        const selected = chosen ? [chosen] : [];
+        // Keep positive evidence even when another indexer failed. Never treat
+        // missing results from a partial response as confirmed absence.
+        const selected = chosen ? [{...chosen, conclusive: complete}] : [];
         if (cache.size >= 200) cache.delete(cache.keys().next().value);
-        cache.set(key,{until:Date.now()+5*60*1000,value:selected});
+        if (complete) cache.set(key,{until:Date.now()+5*60*1000,value:selected});
         return selected;
     })();
     pending.set(key,work);
