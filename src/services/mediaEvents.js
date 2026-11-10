@@ -21,6 +21,8 @@ async function notifySourcesFound(media, result) {
 
 /** Store conclusive results and notify only once when absent -> available. */
 async function recordStreamCheck(db, media, result, onAvailable = notifySourcesFound) {
+    if (result && db.setSetting) db.setSetting(`submaker_pending_${media.id}`,String(result.subtitlesPending===true && !result.available));
+    if(result?.subtitlesPending && db.db) {db.db.prepare('UPDATE media SET next_search_at = ? WHERE id = ? AND streams_available = 0').run(new Date(Date.now()+5*60000).toISOString(),media.id);}
     if (!result || result.conclusive !== true) return { updated: false, newlyAvailable: false };
     const previous = db.getMediaById(media.id);
     if (!previous || previous.streams_available) return { updated: false, newlyAvailable: false };
@@ -41,7 +43,7 @@ async function recordStreamCheck(db, media, result, onAvailable = notifySourcesF
         let stage = previous.search_stage || 0;
         if (previous.search_started_at && stage === 0 && now >= started + day) stage = 1;
         else if (stage === 1 && now >= started + 3 * day && now >= (Date.parse(previous.next_search_at) || 0)) stage = 2;
-        const next = result.available ? null : new Date(result.streamCount === 1 && stage === 0
+        const next = result.available ? null : result.subtitlesPending ? new Date(now+5*60000).toISOString() : new Date(result.streamCount === 1 && stage === 0
             ? started + day : result.streamCount === 1 && stage === 1
                 ? Math.max(started + 3 * day, now + 3600000) : now + day).toISOString();
         db.db.prepare('UPDATE media SET search_started_at = ?, next_search_at = ?, availability_manual = ?, search_stage = ?, stream_filters_detail = ? WHERE id = ?')

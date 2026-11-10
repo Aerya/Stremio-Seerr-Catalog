@@ -200,6 +200,18 @@ Les disponibilités confirmées portent `availabilityConfirmed: true` et restent
 
 La clé donne accès aux résultats de tous les utilisateurs de cette instance : reliez uniquement vos instances de confiance. Les sources HTTP récentes et les hash torrent sont réutilisés à la lecture ; sinon, ou en cas d’échec, Remix retrouve ses recherches habituelles. Les droits, le réseau et les restrictions du fournisseur doivent permettre la lecture depuis Remix.
 
+### VO avec sous-titres SubMaker via Remix
+
+Option désactivée par défaut. Dans **Paramètres → Intégration Ether Remix**, configurez la recherche via Remix et sa clé dédiée. Dans [Remix](https://github.com/Aerya/Ether-Remix), configurez [SubMaker](https://github.com/xtremexq/StremioSubMaker), public ou auto-hébergé, avec son manifeste personnel, les fournisseurs et le moteur de traduction de votre choix. Dans **Utilisateurs → Sources et filtres**, activez les sous-titres externes et choisissez la même langue cible que Remix (`fr` par défaut). Le partage des disponibilités reste indépendant.
+
+Sans release dans les langues principales, Remix peut rechercher des SRT dans la langue cible ou traduire des SRT anglais (langues modifiables). Seuls les fichiers reçus complètement, correspondant au nom de la release, sont retenus. Une traduction conserve les timecodes et le nombre de répliques ; la qualité linguistique et la synchronisation réelle doivent encore être vérifiées à la lecture. Une traduction en cours ou en erreur ne valide rien. Les tâches en attente sont revérifiées après cinq minutes.
+
+Deux releases distinctes avec sous-titres validés peuvent confirmer le média ; une seule conserve J+1/J+3 et la validation manuelle. Résolution et nombre d’addons requis restent appliqués. Le badge indique la langue des sous-titres et `IA` pour une traduction. La recherche « langues principales uniquement » n’utilise pas ce repli ; une disponibilité acquise reste définitive jusqu’à suppression.
+
+Le manifeste expose désormais la ressource `subtitles` : réinstallez l’addon si le client conserve l’ancienne liste. Pour obtenir le SRT associé, le lecteur doit transmettre le `filename` exact de la vidéo. Sans nom correspondant, aucun sous-titre n’est servi. Supprimer le média retire l’accès aux SRT associés. Le manifeste privé SubMaker reste dans Remix ; seul le résultat SRT transite par la recherche authentifiée.
+
+[Guide Remix : configuration, périmètres et limites](https://github.com/Aerya/Ether-Remix/blob/feat/submaker-integration/docs/pse/SUBMAKER.fr.md). Les tests utilisent un fournisseur simulé ; traduction réelle et lecture synchronisée restent à valider avec une configuration personnelle avant activation en production.
+
 ### Contrat d'échange v1
 
 Le flux paginé exige l'en-tête `Authorization: Bearer <clé>` :

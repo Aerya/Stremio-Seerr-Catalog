@@ -28,6 +28,8 @@ function getFilterPrefs(db, userId) {
         languageTags: parseSettingArray(db.getSetting(`stream_filter_languages_${userId}`), ['FRENCH', 'MULTI']),
         fallbackLanguageTags: parseSettingArray(db.getSetting(`stream_fallback_languages_${userId}`), ['VOSTFR', 'SUBFRENCH']),
         subtitleFallback: db.getSetting(`stream_subtitle_fallback_${userId}`) === 'true',
+        externalSubtitles: db.getSetting(`stream_external_subtitles_${userId}`) === 'true',
+        externalSubtitleLanguage: db.getSetting(`stream_external_subtitle_language_${userId}`) || 'fr',
         minResolution: db.getSetting(`stream_filter_resolution_${userId}`) || null
     };
 }
@@ -59,7 +61,7 @@ async function performStreamCheck(media, db, { primaryOnly = false } = {}) {
     const directManifestUrls = parseSettingArray(db.getSetting(`stremio_direct_manifests_${user.id}`));
 
     const searchMode = supplemental.getSettings(db).mode;
-    const supplementalEnabled = searchMode === 'prowlarr' || (searchMode === 'remix' && (primaryOnly || (getFilterPrefs(db, user.id).subtitleFallback && getFilterPrefs(db, user.id).fallbackLanguageTags.length > 0)));
+    const supplementalEnabled = searchMode === 'prowlarr' || (searchMode === 'remix' && (primaryOnly || getFilterPrefs(db,user.id).externalSubtitles || (getFilterPrefs(db, user.id).subtitleFallback && getFilterPrefs(db, user.id).fallbackLanguageTags.length > 0)));
     if (!user.stremio_auth_key && directManifestUrls.length === 0 && !supplementalEnabled) {
         console.log(`[StreamChecker] No Stremio account or direct addons for media owner: ${media.title}`);
         return {
@@ -95,7 +97,7 @@ async function performStreamCheck(media, db, { primaryOnly = false } = {}) {
     const selectedAddonIds = selectedAddonsJson ? parseSettingArray(selectedAddonsJson) : null;
 
     const filterPrefs = getFilterPrefs(db, user.id);
-    if (primaryOnly) filterPrefs.subtitleFallback = false;
+    if (primaryOnly) { filterPrefs.subtitleFallback = false; filterPrefs.externalSubtitles = false; }
 
     const availabilityPrefs = {
         minStreamCount: Math.max(2, parseInt(db.getSetting(`stream_min_count_${user.id}`) || '2', 10)),
@@ -173,11 +175,12 @@ async function handleInitialStreamCheck(media, db, origin = 'Catalog') {
  * Background job to check all media without streams
  * @param {Object} db - Database instance
  */
-async function recheckUnavailableMedia(db) {
+async function recheckUnavailableMedia(db, externalOnly = false) {
     console.log('[StreamChecker] Starting 24h recheck of unavailable media...');
 
     const unavailable = db.getMediaByAvailability(false);
     for (const media of unavailable) {
+        if(externalOnly && db.getSetting(`submaker_pending_${media.id}`)!=="true") continue;
         const due = media.next_search_at || (media.last_stream_check
             ? new Date(new Date(media.last_stream_check).getTime() + RECHECK_INTERVAL).toISOString() : null);
         if (due && Date.parse(due) > Date.now()) continue;
@@ -185,6 +188,7 @@ async function recheckUnavailableMedia(db) {
         try {
             const result = await checkStreamsAvailable(media, db);
             if (!result.conclusive) {
+                await recordStreamCheck(db,media,result);
                 console.warn(`[StreamChecker] Incomplete recheck for ${media.title}; keeping previous status`);
                 continue;
             }
@@ -319,6 +323,7 @@ function startBackgroundChecker(db) {
 
     setTimeout(runCycle, 60 * 1000);
     setInterval(runCycle, 60 * 60 * 1000);
+    setInterval(async()=>{if(running)return;running=true;try{await recheckUnavailableMedia(db,true);}catch(error){console.error('[StreamChecker] Pending subtitle check failed');}finally{running=false}},5*60*1000);
 
     console.log('[StreamChecker] Background checker started (hourly wake; J+1/J+3 then daily pending searches)');
 }

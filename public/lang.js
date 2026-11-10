@@ -3,6 +3,9 @@
  */
 const translations = {
     en: {
+        submaker_accept: "Without a primary source: accept VO + verified SubMaker subtitles through Remix",
+        submaker_language: "Subtitle language (ISO code)",
+        submaker_hint: "Enable SubMaker and its scope in Remix. Pending translations do not count as available. This addon serves the subtitles; refresh its installation in Stremio.",
         filter_fallback: "Fallback languages",
         fallback_version: "Available in a fallback language",
         search_primary: "Search primary languages",
@@ -231,6 +234,9 @@ const translations = {
     },
 
     fr: {
+        submaker_accept: "Sans source principale : accepter VO + sous-titres SubMaker vérifiés via Remix",
+        submaker_language: "Langue des sous-titres (code ISO)",
+        submaker_hint: "Activez SubMaker et son périmètre dans Remix. Une traduction en attente ne compte pas comme disponible. Les sous-titres sont servis par cet addon ; actualisez son installation Stremio.",
         filter_fallback: "VOSTFR / langues de repli",
         fallback_version: "Disponible en langue de repli",
         search_primary: "Rechercher les langues principales",
