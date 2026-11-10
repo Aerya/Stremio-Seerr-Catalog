@@ -83,6 +83,7 @@
                   data-i18n="filter_available">Available</span></button>
               <button class="filter-pill" data-filter="unavailable"><span data-i18n="filter_unavailable">No
                   Sources</span></button>
+              <button class="filter-pill" data-filter="fallback" data-i18n="filter_fallback">Fallback languages</button>
               </div>
             </div>
             <div class="filter-group">
@@ -711,7 +712,16 @@
 
       const res = await fetch(url);
       const media = await res.json();
-      renderCatalog(media);
+      renderCatalog(currentFilter === 'fallback' ? media.filter(isFallbackAvailable) : media);
+    }
+
+    function isFallbackAvailable(media) {
+      return !!media.streams_available && media.stream_filters_detail?.subtitleFallbackUsed === true;
+    }
+    function fallbackBadge(media) {
+      const tags = media.stream_filters_detail?.languageTags || [];
+      if (tags.length && tags.every(tag => ['VOSTFR', 'SUBFRENCH'].includes(String(tag).toUpperCase()))) return 'VOSTFR';
+      return tags.join(' / ') || t('fallback_version');
     }
 
     function renderCatalog(media) {
@@ -730,6 +740,7 @@
               <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/${item.type === 'movie' ? 'radarr' : 'sonarr'}.webp" alt="${item.type}" class="badge-icon">
               <span class="badge ${item.streams_available ? 'badge-status' : 'badge-unavailable'}" title="${item.streams_available ? t('filter_available') : t('filter_unavailable')}">${item.streams_available ? '✓' : '!'}</span>
             </div>
+            ${isFallbackAvailable(item) ? `<span class="badge-fallback" title="${escapeHtml(t('fallback_version') + ' : ' + fallbackBadge(item))}">${escapeHtml(fallbackBadge(item))}</span>` : ''}
             ${item.watched ? '<span class="badge badge-watched" style="position:absolute;bottom:0.5rem;right:0.5rem">👁️</span>' : ''}
           </div>
           <div class="media-info"><h4 title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h4><div class="media-meta"><span>${escapeHtml(item.year || '')}</span><span class="media-availability ${item.streams_available ? 'is-available' : 'is-unavailable'}">${item.streams_available ? t('available_singular') : (item.stream_count === 1 ? t('single_release') : t('filter_unavailable'))}</span></div></div>
@@ -762,14 +773,31 @@
       // Clear previous sources list if exists
       document.querySelectorAll('#action-modal .sources-list').forEach(el => el.remove());
 
+      let primaryTags = [];
+      if (isFallbackAvailable(selectedMedia)) {
+        try {
+          const prefs = await fetch(`/api/users/${selectedMedia.user_id}/stream-filters`);
+          if (prefs.ok) primaryTags = (await prefs.json()).languageTags || [];
+        } catch (_) { /* The server always uses the owner's saved tags. */ }
+      }
       document.getElementById('modal-title').textContent = selectedMedia.title;
       document.getElementById('modal-actions').innerHTML = `
         ${selectedMedia.streams_available ? `<p class="confirmed-notice">✓ ${t('availability_confirmed')}</p>` : `<button class="btn btn-secondary" onclick="checkStreams()"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="btn-icon-img"> ${t('check_streams')}</button>`}
         ${!selectedMedia.streams_available && selectedMedia.stream_count >= 1 ? `<button class="btn btn-primary" onclick="approveMedia()">${t('approve_release')}</button>` : ''}
+        ${isFallbackAvailable(selectedMedia) ? `<button class="btn btn-secondary primary-search-action" onclick="checkPrimaryStreams()">${t('search_primary')}${primaryTags.length ? ' (' + escapeHtml(primaryTags.join(' / ')) + ')' : ''}</button>` : ''}
         <button class="btn btn-danger" onclick="deleteMedia()">${t('delete')}</button>
         <button class="btn btn-secondary" onclick="closeModal('action-modal')">${t('cancel')}</button>
       `;
 
+      if (isFallbackAvailable(selectedMedia)) {
+        document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
+          `<p class="sources-list hint">${escapeHtml(t('fallback_version') + ' : ' + fallbackBadge(selectedMedia))}. ${t('primary_search_help')}</p>`);
+      }
+      if (checkResult?.primarySearch) {
+        const message = checkResult.upgraded ? t('primary_search_upgraded') : checkResult.conclusive === false ? t('primary_search_incomplete') : t('primary_search_retained');
+        document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
+          `<p class="sources-list hint" role="status">${message}${Number.isFinite(checkResult.streamCount) ? ' (' + checkResult.streamCount + ' ' + t('files') + ')' : ''}</p>`);
+      }
       if (!selectedMedia.streams_available && selectedMedia.next_search_at) {
         const due = new Date(selectedMedia.next_search_at).toLocaleString(currentLang === 'fr' ? 'fr-FR' : 'en-GB');
         document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
@@ -847,6 +875,22 @@
       const response = await fetch(`/api/media/${selectedMedia.id}/approve`, { method: 'POST' });
       if (!response.ok) { alert((await response.json()).error); return; }
       closeModal('action-modal'); loadCatalog(); loadStats();
+    }
+
+    async function checkPrimaryStreams() {
+      const id = selectedMedia?.id;
+      if (!id) return;
+      const button = document.querySelector('[onclick="checkPrimaryStreams()"]');
+      if (button) { button.disabled = true; button.textContent = t('supplemental_testing'); }
+      try {
+        const response = await fetch(`/api/media/${id}/check-primary-streams`, { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error('Primary search failed');
+        await loadCatalog();
+        await showMediaActions(id, { ...data, primarySearch: true });
+      } catch (_) {
+        await showMediaActions(id, { primarySearch: true, conclusive: false });
+      }
     }
 
     async function checkStreams() {

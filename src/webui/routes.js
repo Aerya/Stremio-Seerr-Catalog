@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const db = require('../db');
 const tmdb = require('../services/tmdb');
-const { recordStreamCheck, deleteMediaWithNotification, notifyRemoval } = require('../services/mediaEvents');
+const { recordPrimaryLanguageUpgrade, recordStreamCheck, deleteMediaWithNotification, notifyRemoval } = require('../services/mediaEvents');
 
 const router = express.Router();
 
@@ -76,6 +76,23 @@ router.post('/api/media/:id/check-streams', async (req, res) => {
         res.json({ ...result, title: media.title });
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+// Explicitly look for a primary-language version of an already available fallback title.
+router.post('/api/media/:id/check-primary-streams', async (req, res) => {
+    const media = db.getMediaById(parseInt(req.params.id));
+    if (!media) return res.status(404).json({ error: 'Not found' });
+    const { checkPrimaryStreams, getFilterPrefs } = require('../services/streamChecker');
+    if (!media.streams_available || !media.stream_filters_detail?.subtitleFallbackUsed || !getFilterPrefs(db, media.user_id).languageTags.length) {
+        return res.status(409).json({ error: 'A confirmed fallback version and primary language tags are required' });
+    }
+    try {
+        const result = await checkPrimaryStreams(media, db);
+        const upgraded = recordPrimaryLanguageUpgrade(db, media, result);
+        res.json({ ...result, upgraded, title: media.title });
+    } catch (_) {
+        res.status(502).json({ error: 'Primary-language search failed; existing availability retained' });
     }
 });
 

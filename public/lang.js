@@ -3,6 +3,14 @@
  */
 const translations = {
     en: {
+        filter_fallback: "Fallback languages",
+        fallback_version: "Available in a fallback language",
+        search_primary: "Search primary languages",
+        primary_search_help: "Manual search using your primary tags and usual criteria. Current availability is kept if the search fails or finds too few releases.",
+        primary_search_upgraded: "Primary-language version found: the fallback badge is removed.",
+        primary_search_retained: "Not enough primary-language releases: the fallback version remains available.",
+        primary_search_incomplete: "Search incomplete: the fallback version remains available.",
+
         prowlarr_enable: "Search via Prowlarr",
         supplemental_exclusive: "One complementary provider at a time. Enabling this search replaces the other provider after saving.",
         supplemental_save_first: "Enable and save this search before testing. The test uses saved settings.",
@@ -223,6 +231,14 @@ const translations = {
     },
 
     fr: {
+        filter_fallback: "VOSTFR / langues de repli",
+        fallback_version: "Disponible en langue de repli",
+        search_primary: "Rechercher les langues principales",
+        primary_search_help: "Recherche volontaire avec vos tags principaux et critères habituels. La disponibilité actuelle reste acquise si la recherche échoue ou trouve trop peu de releases.",
+        primary_search_upgraded: "Version dans les langues principales trouvée : le badge de repli est retiré.",
+        primary_search_retained: "Pas assez de releases dans les langues principales : la version de repli reste disponible.",
+        primary_search_incomplete: "Recherche incomplète : la version de repli reste disponible.",
+
         prowlarr_enable: "Rechercher via Prowlarr",
         supplemental_exclusive: "Un seul fournisseur complémentaire à la fois. Activer cette recherche remplace l’autre fournisseur après enregistrement.",
         supplemental_save_first: "Activez et enregistrez cette recherche avant de tester. Le test utilise les réglages enregistrés.",

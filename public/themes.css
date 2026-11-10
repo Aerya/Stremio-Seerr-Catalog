@@ -105,3 +105,11 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .integration-toggle { display: flex; align-items: center; gap: 9px; cursor: pointer; }
 .integration-toggle input { flex: none; }
 @media (max-width: 600px) { .integration-panel { padding: 12px; } }
+
+.badge-fallback { position: absolute; bottom: .6rem; left: .6rem; max-width: calc(100% - 3rem); padding: .3rem .5rem; border-radius: 5px; background: #245b91; color: #fff; font-size: .7rem; font-weight: 700; letter-spacing: .02em; overflow-wrap: anywhere; box-shadow: 0 1px 5px #0008; }
+#action-modal .modal-actions > .primary-search-action { grid-column: 1 / -1; grid-row: auto; }
+.catalog-toolbar .filter-pills { flex-wrap: wrap; }
+#action-modal .confirmed-notice { grid-column: 1 / -1; }
+#action-modal .modal-actions:has(.primary-search-action) > .primary-search-action { grid-row: 2; }
+#action-modal .modal-actions:has(.primary-search-action) > .btn-danger,
+#action-modal .modal-actions:has(.primary-search-action) > .btn:last-child { grid-row: 3; }

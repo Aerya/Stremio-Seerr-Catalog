@@ -40,7 +40,7 @@ function getFilterPrefs(db, userId) {
  * @param {Object} db - Database instance
  * @returns {Promise<Object>} Check result
  */
-async function performStreamCheck(media, db) {
+async function performStreamCheck(media, db, { primaryOnly = false } = {}) {
     // Get the user who owns this media
     const user = media.user_id ? db.getUserById(media.user_id) : null;
 
@@ -59,7 +59,7 @@ async function performStreamCheck(media, db) {
     const directManifestUrls = parseSettingArray(db.getSetting(`stremio_direct_manifests_${user.id}`));
 
     const searchMode = supplemental.getSettings(db).mode;
-    const supplementalEnabled = searchMode === 'prowlarr' || (searchMode === 'remix' && getFilterPrefs(db, user.id).subtitleFallback && getFilterPrefs(db, user.id).fallbackLanguageTags.length > 0);
+    const supplementalEnabled = searchMode === 'prowlarr' || (searchMode === 'remix' && (primaryOnly || (getFilterPrefs(db, user.id).subtitleFallback && getFilterPrefs(db, user.id).fallbackLanguageTags.length > 0)));
     if (!user.stremio_auth_key && directManifestUrls.length === 0 && !supplementalEnabled) {
         console.log(`[StreamChecker] No Stremio account or direct addons for media owner: ${media.title}`);
         return {
@@ -95,6 +95,7 @@ async function performStreamCheck(media, db) {
     const selectedAddonIds = selectedAddonsJson ? parseSettingArray(selectedAddonsJson) : null;
 
     const filterPrefs = getFilterPrefs(db, user.id);
+    if (primaryOnly) filterPrefs.subtitleFallback = false;
 
     const availabilityPrefs = {
         minStreamCount: Math.max(2, parseInt(db.getSetting(`stream_min_count_${user.id}`) || '2', 10)),
@@ -137,6 +138,23 @@ function checkStreamsAvailable(media, db) {
     pending.finally(() => {
         if (inFlightChecks.get(key) === pending) inFlightChecks.delete(key);
     }).catch(() => {});
+    return pending;
+}
+
+/** Explicit language upgrade only; automatic checks still freeze confirmed media. */
+function checkPrimaryStreams(media, db) {
+    const current = db.getMediaById(media.id);
+    if (!current?.streams_available || !current.stream_filters_detail?.subtitleFallbackUsed) {
+        return Promise.reject(new Error('Only confirmed fallback media can be upgraded'));
+    }
+    if (!getFilterPrefs(db, current.user_id).languageTags.length) {
+        return Promise.reject(new Error('Configure primary language tags first'));
+    }
+    const key = `${media.id}:primary`;
+    if (inFlightChecks.has(key)) return inFlightChecks.get(key);
+    const pending = Promise.resolve().then(() => performStreamCheck(current, db, { primaryOnly: true }));
+    inFlightChecks.set(key, pending);
+    pending.finally(() => inFlightChecks.delete(key)).catch(() => {});
     return pending;
 }
 
@@ -307,6 +325,7 @@ function startBackgroundChecker(db) {
 
 module.exports = {
     checkStreamsAvailable,
+    checkPrimaryStreams,
     handleInitialStreamCheck,
     getFilterPrefs,
     recheckUnavailableMedia,
