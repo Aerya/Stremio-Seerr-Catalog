@@ -580,6 +580,11 @@
                     <button class="btn btn-primary btn-small" onclick="saveStreamFilters(${u.id})" data-i18n="save_search_settings">Save</button>
                   </div>
                   <p id="availability-summary-${u.id}" style="margin:8px 0 0; font-size:12px; line-height:1.5; color:var(--text-secondary);"></p>
+                  <label style="display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer;">
+                    <input type="checkbox" id="catalog-available-only-${u.id}">
+                    <span data-i18n="catalog_available_only">Show only available content in the personal Stremio catalog</span>
+                  </label>
+                  <p class="hint" data-i18n="catalog_available_only_help">Applies to this user’s addon, using the latest source checks. Save above, then refresh Stremio. Requests remain visible in the WebUI. Recheck after changing filters.</p>
                 </div>
 
                 <div class="config-row-mini">
@@ -804,6 +809,7 @@
         document.getElementById(`direct-manifests-${userId}`).value = (data.directManifestUrls || []).join('\n');
         document.getElementById(`min-stream-count-${userId}`).value = data.minStreamCount || 1;
         document.getElementById(`min-addon-count-${userId}`).value = data.minAddonCount || 1;
+        document.getElementById(`catalog-available-only-${userId}`).checked = data.catalogAvailableOnly === true;
         updateAvailabilitySummary(userId);
       } catch (e) {
         console.error('Failed to load stream filters:', e);
@@ -847,7 +853,8 @@
             minResolution: resolution || null,
             directManifestUrls,
             minStreamCount,
-            minAddonCount
+            minAddonCount,
+            catalogAvailableOnly: document.getElementById(`catalog-available-only-${userId}`).checked
           })
         });
 

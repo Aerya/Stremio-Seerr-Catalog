@@ -284,7 +284,7 @@ router.get('/:id/stremio/selected-addons', (req, res) => {
 // Save stream filter preferences + direct addon manifests + availability thresholds
 router.put('/:id/stream-filters', (req, res) => {
     const id = parseInt(req.params.id);
-    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount } = req.body;
+    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount, catalogAvailableOnly } = req.body;
 
     const user = db.getUserById(id);
     if (!user) {
@@ -293,6 +293,10 @@ router.put('/:id/stream-filters', (req, res) => {
 
     if (languageTags && (!Array.isArray(languageTags) || languageTags.length > 2)) {
         return res.status(400).json({ error: 'languageTags must be an array with max 2 items' });
+    }
+
+    if (catalogAvailableOnly !== undefined && typeof catalogAvailableOnly !== 'boolean') {
+        return res.status(400).json({ error: 'catalogAvailableOnly must be a boolean' });
     }
 
     let cleanedDirectManifestUrls;
@@ -322,6 +326,9 @@ router.put('/:id/stream-filters', (req, res) => {
         return res.status(400).json({ error: 'minAddonCount must be an integer between 1 and 20' });
     }
 
+    if (catalogAvailableOnly !== undefined) {
+        db.setSetting(`catalog_available_only_${id}`, String(catalogAvailableOnly));
+    }
     if (languageTags) {
         db.setSetting(`stream_filter_languages_${id}`, JSON.stringify(languageTags));
     }
@@ -344,7 +351,8 @@ router.put('/:id/stream-filters', (req, res) => {
         minResolution,
         directManifestUrls: cleanedDirectManifestUrls,
         minStreamCount: parsedMinStreamCount,
-        minAddonCount: parsedMinAddonCount
+        minAddonCount: parsedMinAddonCount,
+        catalogAvailableOnly
     });
 });
 
@@ -366,7 +374,8 @@ router.get('/:id/stream-filters', (req, res) => {
         minResolution: minResolution || null,
         directManifestUrls: directManifestsJson ? JSON.parse(directManifestsJson) : [],
         minStreamCount: Number.parseInt(db.getSetting(`stream_min_count_${id}`) || '1', 10),
-        minAddonCount: Number.parseInt(db.getSetting(`stream_min_addons_${id}`) || '1', 10)
+        minAddonCount: Number.parseInt(db.getSetting(`stream_min_addons_${id}`) || '1', 10),
+        catalogAvailableOnly: db.getSetting(`catalog_available_only_${id}`) === 'true'
     });
 });
 
