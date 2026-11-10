@@ -293,7 +293,8 @@ async function checkStreamsWithUserAddons(
     filterPrefs = null,
     directManifestUrls = [],
     availabilityPrefs = null,
-    exportForRemix = false
+    exportForRemix = false,
+    supplementalSearch = null
 ) {
     let imdbId = media.imdb_id;
 
@@ -340,7 +341,7 @@ async function checkStreamsWithUserAddons(
         addons.push(addon);
     }
 
-    if (addons.length === 0) {
+    if (addons.length === 0 && !supplementalSearch) {
         return {
             available: false,
             streamCount: 0,
@@ -428,6 +429,29 @@ async function checkStreamsWithUserAddons(
         if (addonSucceeded) successfulAddonCount++;
         if (addonFailed) failedAddonCount++;
         observations.push({ addon, streams, matchedStreamId, subtitleStreams, subtitleStreamId });
+    }
+    // The complementary provider is consulted only when the addons have no
+    // primary-language result. All candidates then share filtering/deduplication.
+    if (supplementalSearch && !observations.some(o => o.streams.length)) {
+        eligibleAddonCount++;
+        try {
+            const groups = await supplementalSearch(buildStreamIds(media, imdbId));
+            successfulAddonCount++;
+            for (const { addon, streams: raw, streamId } of groups) {
+                const candidates = raw.filter(isMeaningfulStream);
+                let streams = filterPrefs?.languageTags?.length ? filterStreamsByLanguage(candidates, filterPrefs.languageTags) : candidates;
+                let subtitleStreams = filterPrefs?.subtitleFallback && fallbackLanguageTags.length ? filterStreamsByLanguage(candidates, fallbackLanguageTags) : [];
+                if (filterPrefs?.minResolution) {
+                    streams = filterStreamsByResolution(streams, filterPrefs.minResolution);
+                    subtitleStreams = filterStreamsByResolution(subtitleStreams, filterPrefs.minResolution);
+                }
+                observations.push({addon,streams,matchedStreamId:streamId,subtitleStreams,subtitleStreamId:streamId});
+            }
+        } catch (_) {
+            // Never log credentials, query URLs or upstream response bodies.
+            failedAddonCount++;
+            console.warn('[Stremio] Supplemental search failed; check provider connection');
+        }
     }
     // Fallback uses the same HTTP responses, only when no primary-language release exists.
     const usingSubtitles = !!filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0 && !observations.some(o => o.streams.length);

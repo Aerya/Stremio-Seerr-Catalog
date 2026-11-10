@@ -1,3 +1,4 @@
+const supplemental = require('./supplementalSearch');
 /**
  * Stream checker service
  * Checks if streams are available for media items using user's Stremio addons
@@ -57,7 +58,9 @@ async function performStreamCheck(media, db) {
 
     const directManifestUrls = parseSettingArray(db.getSetting(`stremio_direct_manifests_${user.id}`));
 
-    if (!user.stremio_auth_key && directManifestUrls.length === 0) {
+    const searchMode = supplemental.getSettings(db).mode;
+    const supplementalEnabled = searchMode === 'prowlarr' || (searchMode === 'remix' && getFilterPrefs(db, user.id).subtitleFallback && getFilterPrefs(db, user.id).fallbackLanguageTags.length > 0);
+    if (!user.stremio_auth_key && directManifestUrls.length === 0 && !supplementalEnabled) {
         console.log(`[StreamChecker] No Stremio account or direct addons for media owner: ${media.title}`);
         return {
             available: false,
@@ -115,7 +118,8 @@ async function performStreamCheck(media, db) {
         filterPrefs,
         directManifestUrls,
         availabilityPrefs,
-        remix.getSettings(db).enabled
+        remix.getSettings(db).enabled,
+        supplementalEnabled ? ids => supplemental.search(db, media, ids, filterPrefs) : null
     );
 }
 

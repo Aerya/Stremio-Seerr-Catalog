@@ -171,6 +171,19 @@ Par défaut, le catalogue affiche toutes les demandes, même sans source. Dans *
 
 Le filtre concerne les films, les séries et la recherche, avant pagination. Il utilise la décision de disponibilité confirmée, automatique ou manuelle. Les contenus indisponibles ou jamais vérifiés sont masqués, sans supprimer les demandes ni modifier les API compatibles Radarr/Sonarr. Actualisez Stremio pour renouveler son cache ; un changement des critères ne remet pas en cause les titres déjà validés. Une source trouvée ne garantit pas la lecture et une série disponible ne signifie pas que tous ses épisodes le sont.
 
+### Recherche complémentaire : Remix ou Prowlarr
+
+Dans **Paramètres → Recherche complémentaire**, choisissez un seul fournisseur (désactivé par défaut) et enregistrez avant **Tester la connexion** :
+
+- **Ether Remix** : indiquez son adresse de base. Activez le partage SeerrCatalog dans les deux applications avec la même clé, puis le repli de langue dans les préférences utilisateur. Après les addons, si aucune release ne correspond aux langues principales, Remix recherche via ses indexeurs configurés, dont Prowlarr. Les budgets d’indexation restent appliqués.
+- **Prowlarr autonome** : indiquez son adresse de base et sa clé API. Aucun Remix ni compte Stremio n’est nécessaire. Prowlarr complète les addons lorsqu’ils n’ont aucun résultat principal, ou sert seul. Les langues principales sont prioritaires ; les tags de repli personnalisés s’appliquent seulement si le repli est activé et qu’aucune source principale ne convient.
+
+Les résultats sont dédupliqués avec ceux des addons. Deux releases distinctes confirment définitivement le média ; une seule suit J+1/J+3 avec notification et validation manuelle possible. Les échecs réseau ne concluent pas à une absence de sources. Un cache de cinq minutes partage les recherches identiques ; aucune recherche complémentaire n’est lancée pour les titres confirmés.
+
+Le connecteur compte uniquement les torrents accompagnés d’un **infoHash** (ou magnet avec hash) et les vrais flux HTTP renvoyés par Remix. Les résultats NZB et les torrents sans hash exploitable ne sont pas comptés ; aucun téléchargement n’est déclenché. La présence d’une release n’est pas une garantie de lecture ni de cache débridé. Prowlarr n’ajoute pas automatiquement ces sources aux addons de lecture Stremio : SeerrCatalog reste un addon de catalogue. Un fournisseur complémentaire compte comme une source pour le seuil minimal de sources.
+
+La clé Prowlarr reste côté serveur et n’est pas renvoyée par les API de paramètres. Le test utilise la configuration enregistrée. Le retour de recherche nécessite une version de [Remix](https://github.com/Aerya/Ether-Remix) prenant en charge `/api/integrations/seerrcatalog/v1/search`.
+
 ## Intégration Ether Remix
 
 L'intégration est **désactivée par défaut**. [Ether Remix](https://github.com/Aerya/Ether-Remix) peut réutiliser les résultats déjà récupérés par SeerrCatalog au lieu de relancer une recherche de disponibilité sur les mêmes addons.

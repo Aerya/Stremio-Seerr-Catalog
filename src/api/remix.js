@@ -1,5 +1,6 @@
 const express = require('express');
 const remix = require('../services/remixIntegration');
+const supplemental = require('../services/supplementalSearch');
 
 function createRouter(db) {
     const router = express.Router();
@@ -54,6 +55,17 @@ function createRouter(db) {
         res.json({ token: remix.generateToken(db) });
     });
 
+    router.get('/search-settings', admin, (req, res) => {
+        res.set('Cache-Control', 'no-store').json(supplemental.getSettings(db));
+    });
+    router.put('/search-settings', admin, (req, res) => {
+        try { res.json(supplemental.updateSettings(db, req.body || {})); }
+        catch (error) { res.status(400).json({error:error.message}); }
+    });
+    router.post('/search-test', admin, async (req, res) => {
+        try { res.json(await supplemental.testConnection(db)); }
+        catch (error) { res.status(502).json({error:error.message}); }
+    });
     return router;
 }
 
