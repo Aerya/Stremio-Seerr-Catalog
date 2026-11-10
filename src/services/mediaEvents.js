@@ -9,7 +9,8 @@ async function notifySourcesFound(media, result) {
     const { notifyMediaAvailable } = require('./jellyseerr');
     const results = await Promise.allSettled([
         sendSourcesFoundNotification(media, result),
-        notifyMediaAvailable(media)
+        notifyMediaAvailable(media),
+        require('./notifications').sendApprise('Disponible', media.title, 'success')
     ]);
     for (const outcome of results) {
         if (outcome.status === 'rejected') {
@@ -22,11 +23,37 @@ async function notifySourcesFound(media, result) {
 async function recordStreamCheck(db, media, result, onAvailable = notifySourcesFound) {
     if (!result || result.conclusive !== true) return { updated: false, newlyAvailable: false };
     const previous = db.getMediaById(media.id);
-    if (!previous) return { updated: false, newlyAvailable: false };
+    if (!previous || previous.streams_available) return { updated: false, newlyAvailable: false };
+
+    if (!result.manualApproval && previous.last_stream_check === result.lastChecked) return { updated: false, newlyAvailable: false };
 
     // SQLite writes are synchronous. The transition is committed before awaiting any I/O,
     // so overlapping manual/background checks cannot send duplicate notifications.
+    // A positive decision is permanent. Manual approval is only possible from a recorded release.
+    result.available = result.manualApproval === true
+        ? previous.stream_count >= 1
+        : result.available && result.streamCount >= 2;
     db.updateStreamStatus(media.id, result.available, result.streamCount, result.lastChecked, result.addons);
+    if (db.db) {
+        const now = Date.parse(result.lastChecked) || Date.now();
+        const started = Date.parse(previous.search_started_at) || now;
+        const day = 86400000;
+        let stage = previous.search_stage || 0;
+        if (previous.search_started_at && stage === 0 && now >= started + day) stage = 1;
+        else if (stage === 1 && now >= started + 3 * day && now >= (Date.parse(previous.next_search_at) || 0)) stage = 2;
+        const next = result.available ? null : new Date(result.streamCount === 1 && stage === 0
+            ? started + day : result.streamCount === 1 && stage === 1
+                ? Math.max(started + 3 * day, now + 3600000) : now + day).toISOString();
+        db.db.prepare('UPDATE media SET search_started_at = ?, next_search_at = ?, availability_manual = ?, search_stage = ? WHERE id = ?')
+            .run(result.streamCount === 0 ? null : new Date(started).toISOString(), next, result.manualApproval ? 1 : 0, result.streamCount === 0 ? 0 : stage, media.id);
+        if (!result.available && result.streamCount === 1 && stage >= 2 && !previous.review_notified) {
+            // Claim before asynchronous delivery to avoid duplicate simultaneous checks.
+            const claimed = db.db.prepare('UPDATE media SET review_notified = 2 WHERE id = ? AND review_notified = 0').run(media.id);
+            if (claimed.changes) Promise.resolve().then(() => require('./notifications').sendReviewNotification(media))
+                .then(sent => { db.db.prepare('UPDATE media SET review_notified = ? WHERE id = ? AND review_notified = 2').run(sent ? 1 : 0, media.id); })
+                .catch(() => { db.db.prepare('UPDATE media SET review_notified = 0 WHERE id = ?').run(media.id); });
+        }
+    }
     if (typeof db.getSetting === 'function') {
         try {
             remix.recordSnapshot(db, previous, result);
@@ -59,7 +86,8 @@ function notifyRemoval(media, outcome, reason, send = defaultRemovalNotifier, db
 
 async function defaultRemovalNotifier(media, reason) {
     const { sendMediaRemovedNotification } = require('./discord');
-    await sendMediaRemovedNotification(media, reason);
+    await Promise.allSettled([sendMediaRemovedNotification(media, reason),
+        require('./notifications').sendApprise('Contenu retiré', media.title)]);
 }
 
 function deleteMediaWithNotification(db, media, reason = 'manual', send) {

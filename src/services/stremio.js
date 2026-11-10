@@ -169,7 +169,7 @@ function isMeaningfulStream(stream) {
 }
 
 function evaluateAvailability(totalStreams, checkedAddons, availabilityPrefs = null) {
-    const minStreamCount = Math.max(1, Number.parseInt(availabilityPrefs?.minStreamCount, 10) || 1);
+    const minStreamCount = Math.max(2, Number.parseInt(availabilityPrefs?.minStreamCount, 10) || 2);
     const minAddonCount = Math.max(1, Number.parseInt(availabilityPrefs?.minAddonCount, 10) || 1);
     const matchedAddonCount = new Set((checkedAddons || []).map(addon => addon.id || addon.name)).size;
 
@@ -355,6 +355,7 @@ async function checkStreamsWithUserAddons(
     let totalStreams = 0;
     const type = media.type === 'movie' ? 'movie' : 'series';
     const checkedAddons = [];
+    const observations = [];
     const remixReleases = [];
     let eligibleAddonCount = 0;
     let successfulAddonCount = 0;
@@ -373,6 +374,8 @@ async function checkStreamsWithUserAddons(
         let addonFailed = false;
         let streams = [];
         let matchedStreamId = null;
+        let subtitleStreams = [];
+        let subtitleStreamId = null;
         for (const streamId of episodeIds) {
             try {
                 const streamUrl = buildResourceUrl(addon.transportUrl, 'stream', type, streamId);
@@ -395,6 +398,11 @@ async function checkStreamsWithUserAddons(
                 if (!Array.isArray(data?.streams)) throw new Error('Invalid stream response');
                 addonSucceeded = true;
                 const candidates = data.streams.filter(isMeaningfulStream);
+                if (filterPrefs?.subtitleFallback && !subtitleStreams.length) {
+                    subtitleStreams = filterStreamsByLanguage(candidates, ['VOSTFR', 'SUBFRENCH']);
+                    if (filterPrefs.minResolution) subtitleStreams = filterStreamsByResolution(subtitleStreams, filterPrefs.minResolution);
+                    if (subtitleStreams.length) subtitleStreamId = streamId;
+                }
                 let matched = candidates;
                 if (filterPrefs?.languageTags?.length) {
                     matched = filterStreamsByLanguage(matched, filterPrefs.languageTags);
@@ -418,9 +426,24 @@ async function checkStreamsWithUserAddons(
 
         if (addonSucceeded) successfulAddonCount++;
         if (addonFailed) failedAddonCount++;
+        observations.push({ addon, streams, matchedStreamId, subtitleStreams, subtitleStreamId });
+    }
+    // Fallback uses the same HTTP responses, only when no primary-language release exists.
+    const usingSubtitles = !!filterPrefs?.subtitleFallback && !observations.some(o => o.streams.length);
+    const identities = new Set();
+    for (const observation of observations) {
+        const { addon } = observation;
+        const streams = usingSubtitles ? observation.subtitleStreams : observation.streams;
+        const matchedStreamId = usingSubtitles ? observation.subtitleStreamId : observation.matchedStreamId;
         const streamCount = streams.length;
         if (streamCount > 0) {
-            totalStreams += streamCount;
+            for (const stream of streams) {
+                // Identical torrent/file or URL returned by several addons counts once.
+                const key = stream.infoHash ? `${stream.infoHash.toLowerCase()}:${stream.fileIdx ?? ''}`
+                    : stream.url || stream.externalUrl || JSON.stringify(stream);
+                identities.add(key);
+            }
+            totalStreams = identities.size;
                 // Keep enough release details for Discord without retaining unlimited addon payloads.
                 const streamDetails = streams.slice(0, 50).map(stream => {
                     let displayName = stream.behaviorHints?.filename ||
@@ -476,7 +499,8 @@ async function checkStreamsWithUserAddons(
         addons: checkedAddons,
         // Snapshot of the filters actually applied, even if settings change before Discord sends.
         appliedFilters: {
-            languageTags: Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : [],
+            languageTags: usingSubtitles ? ['VOSTFR', 'SUBFRENCH'] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
+            subtitleFallbackUsed: usingSubtitles,
             minResolution: filterPrefs?.minResolution || null
         },
         requirements: {
@@ -510,7 +534,10 @@ function filterStreamsByLanguage(streams, languageTags = []) {
         const streamName = getStreamSearchText(stream).toUpperCase();
 
         // Check if stream contains ANY of the allowed language tags
-        const hasAllowedTag = allowedTags.some(tag => streamName.includes(tag));
+        const hasAllowedTag = allowedTags.some(tag => {
+            if (tag === 'FRENCH' && /SUBFRENCH/.test(streamName)) return /(?:^|[^A-Z])FRENCH(?:$|[^A-Z])/.test(streamName);
+            return streamName.includes(tag);
+        });
 
         return hasAllowedTag;
     });

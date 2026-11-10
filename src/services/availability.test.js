@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
     checkStreamsWithUserAddons, buildStreamIds, addonSupportsType
 } = require('./stremio');
-const { shouldNotifyNoSources } = require('./streamChecker');
+
 
 function fakeResponse(streams, status = 200) {
     return { ok: status === 200, status, json: async () => ({ streams }) };
@@ -47,7 +47,7 @@ test('series check finds streams for S03E01 when the first season is empty', asy
         title: 'Series', type: 'series', imdb_id: 'tt1234567',
         checkEpisodes: [{ season_number: 3, monitored: 1 }]
     }, null, null, null, [manifestUrl]);
-    assert.equal(result.available, true);
+    assert.equal(result.available, false); // One release awaits approval.
     assert.equal(result.conclusive, true);
     assert.equal(result.streamCount, 1);
     assert.deepEqual(requested, [manifestUrl, 'https://season-three.example/test/stream/series/tt1234567%3A3%3A1.json']);
@@ -67,10 +67,9 @@ test('HTTP errors are incomplete checks, not confirmed no-source alerts', async 
     );
     assert.equal(result.conclusive, false);
     assert.equal(result.checkStatus, 'incomplete');
-    assert.equal(shouldNotifyNoSources(result), false);
 });
 
-test('truly empty successful responses can notify, but insufficient thresholds cannot', async (t) => {
+test('empty and single-release successful responses remain conclusive but pending', async (t) => {
     const originalFetch = global.fetch;
     t.after(() => { global.fetch = originalFetch; });
     const manifestUrl = 'https://empty-addon.example/manifest.json';
@@ -82,7 +81,6 @@ test('truly empty successful responses can notify, but insufficient thresholds c
     const empty = await checkStreamsWithUserAddons(media, null, null, null, [manifestUrl]);
     assert.equal(empty.conclusive, true);
     assert.equal(empty.available, false);
-    assert.equal(shouldNotifyNoSources(empty), true);
 
     streams = [{ url: 'https://video.example/a', title: '1080p' }];
     const insufficient = await checkStreamsWithUserAddons(
@@ -91,13 +89,11 @@ test('truly empty successful responses can notify, but insufficient thresholds c
     assert.equal(insufficient.conclusive, true);
     assert.equal(insufficient.streamCount, 1);
     assert.equal(insufficient.available, false);
-    assert.equal(shouldNotifyNoSources(insufficient), false);
 });
 
 test('no IMDB ID never triggers no-source notification', async () => {
     const result = await checkStreamsWithUserAddons({ type: 'movie', title: 'Unknown' }, null);
     assert.equal(result.conclusive, false);
-    assert.equal(shouldNotifyNoSources(result), false);
 });
 
 test('simultaneous additions share direct manifests and limit stream fetch concurrency', async (t) => {

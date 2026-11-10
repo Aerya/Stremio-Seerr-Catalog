@@ -23,6 +23,7 @@ function createRouter(db) {
         if (!Number.isSafeInteger(after) || after < 0 || !Number.isSafeInteger(size) || size < 1 || size > 100) {
             return res.status(400).json({ error: 'Invalid pagination' });
         }
+        remix.ensureConfirmedSnapshots(db);
         const revision = db.getRemixRevision();
         if (req.query.revision !== undefined && String(revision) !== req.query.revision) {
             return res.status(409).json({ error: 'Snapshot changed; restart from after=0' });

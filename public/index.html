@@ -5,7 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SeerrCatalog</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/themes.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="/lang.js"></script>
@@ -37,6 +39,14 @@
               id="stat-available-label">Available</span></span>
         </div>
 
+        <div class="theme-controls">
+          <select aria-label="Mode d’affichage" id="theme-mode" onchange="setAppearance(this.value, null)">
+            <option value="system">Auto</option><option value="light">Jour</option><option value="dark">Nuit</option>
+          </select>
+          <select aria-label="Palette" id="theme-palette" onchange="setAppearance(null, this.value)">
+            <option value="violet">Violet</option><option value="ocean">Océan</option><option value="forest">Forêt</option><option value="rose">Rose</option><option value="amber">Ambre</option>
+          </select>
+        </div>
         <div class="lang-buttons" id="lang-buttons">
           <button class="lang-btn" data-lang="en" title="English"><img src="https://flagcdn.com/w20/gb.png"
               alt="EN"></button>
@@ -225,6 +235,30 @@
             </div>
           </div>
 
+          <div class="settings-section notification-settings">
+            <h3 data-i18n="notification_review">Apprise et alertes de validation</h3>
+            <div class="notification-grid">
+              <div class="config-group">
+                <label for="review-mention" data-i18n="review_mention">Utilisateur Discord à mentionner</label>
+                <input id="review-mention" inputmode="numeric" placeholder="Identifiant Discord (17 à 20 chiffres)">
+                <p class="hint" data-i18n="review_help">Après J+1 puis J+3 avec une seule release : une alerte invite à valider le titre. La recherche continue chaque jour. La mention Apprise dépend de la destination.</p>
+              </div>
+              <div class="config-group">
+                <label class="inline-label"><input type="checkbox" id="apprise-enabled"> <span data-i18n="apprise_enable">Activer Apprise</span></label>
+                <label for="apprise-endpoint" data-i18n="apprise_endpoint">Adresse de notification Apprise</label>
+                <input type="url" id="apprise-endpoint" placeholder="https://apprise.example/notify/ma-cle">
+                <label for="apprise-urls" data-i18n="apprise_targets">Destinations (facultatif)</label>
+                <input type="password" autocomplete="new-password" id="apprise-urls" placeholder="discord://… mailto://…">
+                <p class="hint" data-i18n="apprise_help">Utilisez /notify/clé avec les destinations configurées dans Apprise, ou /notify/ et vos URL de destination. Un champ vide conserve les destinations enregistrées.</p>
+                <label class="inline-label"><input type="checkbox" id="apprise-clear"> <span data-i18n="apprise_clear">Effacer les destinations enregistrées</span></label>
+              </div>
+            </div>
+            <div class="inline-actions">
+              <button class="btn btn-primary" onclick="saveNotificationSettings()" data-i18n="save_search_settings">Enregistrer</button>
+              <button class="btn btn-secondary" onclick="testApprise()" data-i18n="apprise_test">Tester Apprise</button>
+              <span id="notification-status" role="status"></span>
+            </div>
+          </div>
           <div class="settings-section remix-settings" id="remix-settings">
             <h3><span class="section-icon">🔄</span> <span data-i18n="remix_integration">Ether Remix integration</span></h3>
             <div class="settings-item remix-overview">
@@ -555,6 +589,7 @@
                     <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" class="filter-language-input">
                     <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" class="filter-language-input">
                   </div>
+                  <label class="inline-label"><input type="checkbox" id="subtitle-fallback-${u.id}"><span data-i18n="subtitle_fallback">Si aucune source FR : chercher en VOSTFR / SUBFRENCH</span></label>
                   <div class="config-row-mini">
                     <span data-i18n="min_resolution">Min Resolution:</span>
                     <select id="resolution-${u.id}" class="filter-resolution">
@@ -571,7 +606,7 @@
                   <div class="config-row-mini">
                     <label style="display:flex; align-items:center; gap:5px;">
                       <span data-i18n="min_releases">Min releases</span>
-                      <input type="number" id="min-stream-count-${u.id}" min="1" max="100" value="1" oninput="updateAvailabilitySummary(${u.id})" class="filter-count-input">
+                      <input type="number" id="min-stream-count-${u.id}" min="2" max="100" value="2" oninput="updateAvailabilitySummary(${u.id})" class="filter-count-input">
                     </label>
                     <label style="display:flex; align-items:center; gap:5px;">
                       <span data-i18n="min_addons">Min distinct addons</span>
@@ -645,7 +680,7 @@
             </div>
             ${item.watched ? '<span class="badge badge-watched" style="position:absolute;bottom:0.5rem;right:0.5rem">👁️</span>' : ''}
           </div>
-          <div class="media-info"><h4 title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h4><div class="media-meta"><span>${escapeHtml(item.year || '')}</span><span class="media-availability ${item.streams_available ? 'is-available' : 'is-unavailable'}">${item.streams_available ? t('available_singular') : t('filter_unavailable')}</span></div></div>
+          <div class="media-info"><h4 title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h4><div class="media-meta"><span>${escapeHtml(item.year || '')}</span><span class="media-availability ${item.streams_available ? 'is-available' : 'is-unavailable'}">${item.streams_available ? t('available_singular') : (item.stream_count === 1 ? t('single_release') : t('filter_unavailable'))}</span></div></div>
         </div>
       `).join('');
     }
@@ -677,11 +712,17 @@
 
       document.getElementById('modal-title').textContent = selectedMedia.title;
       document.getElementById('modal-actions').innerHTML = `
-        <button class="btn btn-secondary" onclick="checkStreams()"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="btn-icon-img"> ${t('check_streams')}</button>
+        ${selectedMedia.streams_available ? `<p class="confirmed-notice">✓ ${t('availability_confirmed')}</p>` : `<button class="btn btn-secondary" onclick="checkStreams()"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/webp/stremio.webp" alt="" class="btn-icon-img"> ${t('check_streams')}</button>`}
+        ${!selectedMedia.streams_available && selectedMedia.stream_count >= 1 ? `<button class="btn btn-primary" onclick="approveMedia()">${t('approve_release')}</button>` : ''}
         <button class="btn btn-danger" onclick="deleteMedia()">${t('delete')}</button>
         <button class="btn btn-secondary" onclick="closeModal('action-modal')">${t('cancel')}</button>
       `;
 
+      if (!selectedMedia.streams_available && selectedMedia.next_search_at) {
+        const due = new Date(selectedMedia.next_search_at).toLocaleString(currentLang === 'fr' ? 'fr-FR' : 'en-GB');
+        document.getElementById('modal-actions').insertAdjacentHTML('beforebegin',
+          `<p class="sources-list hint">${t('next_search')} ${escapeHtml(due)}</p>`);
+      }
       // Display sources if available with detailed stream info
       if (selectedMedia.streams_detail && selectedMedia.streams_detail.length > 0) {
         const sourcesHtml = selectedMedia.streams_detail.map(addon => {
@@ -749,6 +790,13 @@
       }
     }
 
+    async function approveMedia() {
+      if (!selectedMedia || !confirm(t('approve_confirm'))) return;
+      const response = await fetch(`/api/media/${selectedMedia.id}/approve`, { method: 'POST' });
+      if (!response.ok) { alert((await response.json()).error); return; }
+      closeModal('action-modal'); loadCatalog(); loadStats();
+    }
+
     async function checkStreams() {
       const btn = document.querySelector('[onclick="checkStreams()"]');
       if (btn) btn.textContent = "⏳ ...";
@@ -807,9 +855,10 @@
         document.getElementById(`lang-tag-2-${userId}`).value = data.languageTags[1] || '';
         document.getElementById(`resolution-${userId}`).value = data.minResolution || '';
         document.getElementById(`direct-manifests-${userId}`).value = (data.directManifestUrls || []).join('\n');
-        document.getElementById(`min-stream-count-${userId}`).value = data.minStreamCount || 1;
+        document.getElementById(`min-stream-count-${userId}`).value = data.minStreamCount || 2;
         document.getElementById(`min-addon-count-${userId}`).value = data.minAddonCount || 1;
         document.getElementById(`catalog-available-only-${userId}`).checked = data.catalogAvailableOnly === true;
+        document.getElementById(`subtitle-fallback-${userId}`).checked = data.subtitleFallback === true;
         updateAvailabilitySummary(userId);
       } catch (e) {
         console.error('Failed to load stream filters:', e);
@@ -822,7 +871,7 @@
       const summary = document.getElementById(`availability-summary-${userId}`);
       if (!streamInput || !addonInput || !summary) return;
 
-      const releases = Math.max(1, parseInt(streamInput.value, 10) || 1);
+      const releases = Math.max(2, parseInt(streamInput.value, 10) || 2);
       const addons = Math.max(1, parseInt(addonInput.value, 10) || 1);
 
       summary.textContent = t('availability_summary')
@@ -854,6 +903,7 @@
             directManifestUrls,
             minStreamCount,
             minAddonCount,
+            subtitleFallback: document.getElementById(`subtitle-fallback-${userId}`).checked,
             catalogAvailableOnly: document.getElementById(`catalog-available-only-${userId}`).checked
           })
         });
@@ -1168,6 +1218,40 @@
       });
     });
 
+    async function loadNotificationSettings() {
+      const response = await fetch('/api/notifications');
+      if (!response.ok) return;
+      const data = await response.json();
+      document.getElementById('apprise-enabled').checked = data.enabled;
+      document.getElementById('apprise-endpoint').value = data.endpoint || '';
+      document.getElementById('review-mention').value = data.mention || '';
+      document.getElementById('apprise-urls').placeholder = data.urlsConfigured ? '•••••••• (enregistrées)' : 'discord://… mailto://…';
+    }
+    async function saveNotificationSettings() {
+      const status = document.getElementById('notification-status');
+      const urls = document.getElementById('apprise-urls').value.trim();
+      const clear = document.getElementById('apprise-clear').checked;
+      try {
+        const response = await fetch('/api/notifications', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: document.getElementById('apprise-enabled').checked,
+            endpoint: document.getElementById('apprise-endpoint').value.trim(), mention: document.getElementById('review-mention').value.trim(),
+            ...(urls || clear ? { urls: clear ? '' : urls } : {}) }) });
+        if (!response.ok) throw new Error((await response.json()).error);
+        status.textContent = '✓ ' + t('saved');
+        document.getElementById('apprise-urls').value = ''; document.getElementById('apprise-clear').checked = false;
+        await loadNotificationSettings();
+      } catch (error) { status.textContent = error.message; }
+    }
+    async function testApprise() {
+      const status = document.getElementById('notification-status');
+      status.textContent = t('testing');
+      try {
+        const response = await fetch('/api/notifications/test', { method: 'POST' });
+        if (!response.ok) throw new Error((await response.json()).error);
+        status.textContent = '✓ ' + t('test_sent');
+      } catch (error) { status.textContent = error.message; }
+    }
+
     // ============== Discord Notifications ==============
 
     async function loadDiscordSettings() {
@@ -1348,7 +1432,7 @@
 
     // Init
     applyTranslations();
-    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings(); loadDiscordSettings(); loadRemixSettings();
+    loadStats(); loadUsers(); loadCatalog(); loadJellyseerrSettings(); loadDiscordSettings(); loadRemixSettings(); loadNotificationSettings();
     setInterval(() => { loadStats(); loadCatalog(); }, 30000);
   </script>
 </body>

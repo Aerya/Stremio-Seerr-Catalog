@@ -9,7 +9,6 @@ const remix = require('./remixIntegration');
 
 // Check interval: 24 hours in milliseconds
 const RECHECK_INTERVAL = 24 * 60 * 60 * 1000;
-const INITIAL_RETRY_DELAY = 60 * 1000;
 const inFlightChecks = new Map();
 
 function parseSettingArray(json, fallback = []) {
@@ -25,15 +24,12 @@ function parseSettingArray(json, fallback = []) {
 
 function getFilterPrefs(db, userId) {
     return {
-        languageTags: parseSettingArray(db.getSetting(`stream_filter_languages_${userId}`)),
+        languageTags: parseSettingArray(db.getSetting(`stream_filter_languages_${userId}`), ['FRENCH', 'MULTI']),
+        subtitleFallback: db.getSetting(`stream_subtitle_fallback_${userId}`) === 'true',
         minResolution: db.getSetting(`stream_filter_resolution_${userId}`) || null
     };
 }
 
-function shouldNotifyNoSources(result) {
-    // Zero validated releases, *not* a timeout, missing configuration or unmet threshold.
-    return result.conclusive === true && result.available === false && result.streamCount === 0;
-}
 
 
 /**
@@ -97,7 +93,7 @@ async function performStreamCheck(media, db) {
     const filterPrefs = getFilterPrefs(db, user.id);
 
     const availabilityPrefs = {
-        minStreamCount: parseInt(db.getSetting(`stream_min_count_${user.id}`) || '1', 10),
+        minStreamCount: Math.max(2, parseInt(db.getSetting(`stream_min_count_${user.id}`) || '2', 10)),
         minAddonCount: parseInt(db.getSetting(`stream_min_addons_${user.id}`) || '1', 10)
     };
 
@@ -123,6 +119,9 @@ async function performStreamCheck(media, db) {
 }
 
 function checkStreamsAvailable(media, db) {
+    const current = db.getMediaById(media.id);
+    if (current?.streams_available) return Promise.resolve({ available: true, conclusive: true,
+        frozen: true, streamCount: current.stream_count, lastChecked: current.last_stream_check });
     // Deduplicate overlapping background, manual and initial checks for the same media.
     const key = media.id;
     if (key == null) return performStreamCheck(media, db);
@@ -136,43 +135,14 @@ function checkStreamsAvailable(media, db) {
     return pending;
 }
 
-/** Shared initial workflow for Radarr and Sonarr, with one delayed confirmation.
- * Never emit a "no sources" alert for configuration/network failures. */
+/** Shared initial workflow for Radarr and Sonarr. Pending titles follow the persisted timetable. */
 async function handleInitialStreamCheck(media, db, origin = 'Catalog') {
-    let result;
-    const attempts = [];
-    for (let attempt = 0; attempt < 2; attempt++) {
-        if (attempt > 0) {
-            await new Promise(resolve => setTimeout(resolve, INITIAL_RETRY_DELAY));
-            console.log(`[${origin}] Confirming initial check for ${media.title}`);
-        }
-        if (!db.getMediaById(media.id)) return;
-        try {
-            result = await checkStreamsAvailable(media, db);
-        } catch (error) {
-            console.error(`[${origin}] Stream check failed for ${media.title}:`, error.message);
-            result = { available: false, conclusive: false, checkStatus: 'incomplete', streamCount: 0 };
-        }
-        attempts.push(result);
-        if (result.available) break;
-        // No point retrying absent settings/ID during the same request; keep pending.
-        if (result.reason && /no imdb|no stremio account|no media owner/i.test(result.reason)) break;
-    }
-
     if (!db.getMediaById(media.id)) return;
-    if (!result.conclusive) {
-        console.warn(`[${origin}] Verification incomplete for ${media.title}; suppressing no-source notification`);
-        return;
-    }
-    await recordStreamCheck(db, media, result);
-
-    if (result.available) {
-        console.log(`[${origin}] Streams found for ${media.title} (${result.streamCount})`);
-    } else if (attempts.length === 2 && attempts.every(shouldNotifyNoSources)) {
-        const { sendNoSourceNotification } = require('./discord');
-        await sendNoSourceNotification(media, getFilterPrefs(db, media.user_id));
-    } else {
-        console.log(`[${origin}] ${media.title}: no-source alert suppressed (unconfirmed absence or thresholds not met)`);
+    try {
+        const result = await checkStreamsAvailable(media, db);
+        await recordStreamCheck(db, media, result);
+    } catch (error) {
+        console.error(`[${origin}] Initial verification failed:`, error.message);
     }
 }
 
@@ -183,21 +153,11 @@ async function handleInitialStreamCheck(media, db, origin = 'Catalog') {
 async function recheckUnavailableMedia(db) {
     console.log('[StreamChecker] Starting 24h recheck of unavailable media...');
 
-    const exporting = remix.getSettings(db).enabled;
-    const unavailable = exporting
-        ? [...db.getMediaByAvailability(false), ...db.getMediaByAvailability(true)]
-        : db.getMediaByAvailability(false);
-    console.log(`[StreamChecker] Found ${unavailable.length} items to recheck`);
-
+    const unavailable = db.getMediaByAvailability(false);
     for (const media of unavailable) {
-        // Skip if checked less than 24h ago
-        if (media.last_stream_check) {
-            const lastCheck = new Date(media.last_stream_check).getTime();
-            const now = Date.now();
-            if (now - lastCheck < RECHECK_INTERVAL) {
-                continue;
-            }
-        }
+        const due = media.next_search_at || (media.last_stream_check
+            ? new Date(new Date(media.last_stream_check).getTime() + RECHECK_INTERVAL).toISOString() : null);
+        if (due && Date.parse(due) > Date.now()) continue;
 
         try {
             const result = await checkStreamsAvailable(media, db);
@@ -315,16 +275,13 @@ async function syncWatchedState(db) {
 }
 
 /**
- * Start the background checker (runs every 24 hours)
+ * Start the hourly scheduler; only pending titles whose deadline has passed are checked.
  * @param {Object} db - Database instance
  */
 function startBackgroundChecker(db) {
     let running = false;
-    let lastCycle = 0;
     async function runCycle() {
         if (running) return;
-        if (!remix.getSettings(db).enabled && Date.now() - lastCycle < RECHECK_INTERVAL) return;
-        lastCycle = Date.now();
         running = true;
         try {
             await recheckUnavailableMedia(db);
@@ -340,13 +297,12 @@ function startBackgroundChecker(db) {
     setTimeout(runCycle, 60 * 1000);
     setInterval(runCycle, 60 * 60 * 1000);
 
-    console.log('[StreamChecker] Background checker started (24h checks; hourly wake for Remix)');
+    console.log('[StreamChecker] Background checker started (hourly wake; J+1/J+3 then daily pending searches)');
 }
 
 module.exports = {
     checkStreamsAvailable,
     handleInitialStreamCheck,
-    shouldNotifyNoSources,
     getFilterPrefs,
     recheckUnavailableMedia,
     cleanupWatchedContent,

@@ -90,7 +90,7 @@ function snapshot(media, result, now = new Date()) {
     if (!result || result.conclusive !== true) return null;
     const checked = new Date(result.lastChecked || now).getTime();
     if (!Number.isFinite(checked)) return null;
-    const raw = result.available && Array.isArray(result.remixReleases) ? result.remixReleases : [];
+    const raw = Array.isArray(result.remixReleases) ? result.remixReleases : [];
     return {
         schema: SCHEMA,
         media: {
@@ -103,6 +103,7 @@ function snapshot(media, result, now = new Date()) {
             year: media.year || null
         },
         available: !!result.available,
+        availabilityConfirmed: !!result.available,
         checkStatus: result.available ? 'available' : 'unavailable',
         checkedAt: new Date(checked).toISOString(),
         expiresAt: new Date(checked + STATUS_TTL_MS).toISOString(),
@@ -116,7 +117,8 @@ function snapshot(media, result, now = new Date()) {
 }
 
 function activeSnapshot(data, now = Date.now()) {
-    if (!data || Date.parse(data.expiresAt) <= now) return null;
+    if (!data || (!data.availabilityConfirmed && Date.parse(data.expiresAt) <= now)) return null;
+    if (!data.available) return { ...data, releases: [] };
     if (Date.parse(data.releasesExpireAt) <= now) {
         // Magnet info hashes are stable; expiring signed HTTP links and headers
         // must never be reused after their short validity window.
@@ -217,7 +219,24 @@ function recordRemoval(db, media) {
     Promise.resolve().then(() => sendEvent(db, 'media.removed', data)).catch(() => {});
 }
 
+// Backfill catalogue decisions, never renew the lifetime of playback links.
+function ensureConfirmedSnapshots(db) {
+    if (!enabled(db) || !db.db) return;
+    const rows = db.db.prepare(`SELECT m.*, r.payload FROM media m LEFT JOIN remix_snapshots r ON r.media_id=m.id
+        WHERE m.streams_available=1 AND (r.payload IS NULL OR COALESCE(json_extract(r.payload, '$.availabilityConfirmed'), 0) != 1)`).all();
+    for (const media of rows) {
+        const previous = media.payload ? JSON.parse(media.payload) : null;
+        if (previous?.availabilityConfirmed && previous.available) continue;
+        const value = previous?.available ? { ...previous, availabilityConfirmed: true } : snapshot(media, {
+            available: true, conclusive: true, streamCount: media.stream_count,
+            lastChecked: media.last_stream_check || media.added_at
+        });
+        if (value) db.saveRemixSnapshot(media.id, value);
+    }
+}
+
 module.exports = {
+    ensureConfirmedSnapshots,
     SCHEMA, exportRelease, snapshot, activeSnapshot, bearerAuthorized,
     getSettings, updateSettings, generateToken, recordSnapshot, recordRemoval, sendEvent
 };

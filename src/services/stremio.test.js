@@ -120,11 +120,11 @@ test('direct-only addon works without a Stremio auth key and keeps filters/thres
     );
 
     assert.deepEqual(requested, [manifestUrl, expectedStreamUrl]);
-    assert.equal(result.available, true);
+    assert.equal(result.available, false);
     assert.equal(result.streamCount, 1);
     assert.equal(result.addonsCount, 1);
     assert.equal(result.addons[0].name, 'Lumio · Salon');
-    assert.deepEqual(result.appliedFilters, { languageTags: ['FRENCH'], minResolution: '1080p' });
+    assert.deepEqual(result.appliedFilters, { languageTags: ['FRENCH'], minResolution: '1080p', subtitleFallbackUsed: false });
     assert.match(result.addons[0].streams[0].name, /Movie\.2026\.WEB-DL\.mkv/);
 
     const strictResult = evaluateAvailability(result.streamCount, result.addons, {
@@ -192,7 +192,7 @@ test('AIOStreams account addon remains compatible with object-form stream resour
         { minStreamCount: 1, minAddonCount: 1 }
     );
 
-    assert.equal(result.available, true);
+    assert.equal(result.available, false);
     assert.equal(result.streamCount, 1);
     assert.equal(result.addonsCount, 1);
     assert.equal(result.addons[0].name, 'AIOStreams');
@@ -215,5 +215,5 @@ test('stores up to 50 release names per addon while preserving full source count
     assert.equal(result.addons[0].streamCount, 60);
     assert.equal(result.addons[0].streams.length, 50);
     assert.match(result.addons[0].streams[49].name, /Release\.49/);
-    assert.deepEqual(result.appliedFilters, {languageTags:['MULTI'], minResolution:'1080p'});
+    assert.deepEqual(result.appliedFilters, {languageTags:['MULTI'], minResolution:'1080p', subtitleFallbackUsed:false});
 });

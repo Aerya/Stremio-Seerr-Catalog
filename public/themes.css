@@ -1,0 +1,81 @@
+/* Appearance tokens are shared by every screen. No server settings are changed. */
+:root {
+  --accent: #7b64d9;
+  --accent-hover: #6952c5;
+  --accent-gradient: linear-gradient(120deg, var(--accent), var(--accent-hover));
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+:root[data-palette="ocean"] { --accent: #267ca1; --accent-hover: #1c6687; }
+:root[data-palette="forest"] { --accent: #35846b; --accent-hover: #286b56; }
+:root[data-palette="rose"] { --accent: #b45078; --accent-hover: #993c61; }
+:root[data-palette="amber"] { --accent: #a66a21; --accent-hover: #895617; }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-dark: #eeefed; --bg-card: #f9faf8; --bg-hover: #e7e9e7; --bg-input: #f1f3f0;
+  --border: #d2d8d4; --text-primary: #26352e; --text-secondary: #56645c; --text-muted: #65736b;
+  --success: #287348; --warning: #8d5b19; --danger: #b6434f;
+  --shadow: 0 16px 50px #20352b18;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-dark: #151a1e; --bg-card: #1c2329; --bg-hover: #29333a; --bg-input: #171e23;
+  --border: #344048; --text-primary: #e0e6e8; --text-secondary: #aebcc3; --text-muted: #93a4ae;
+  --success: #79c99d; --warning: #e2b675; --danger: #e7848e;
+  --shadow: 0 16px 50px #0003;
+}
+:root { --border-focus: var(--accent); }
+body { background: var(--bg-dark); }
+a { color: var(--accent); }
+.header { background: var(--bg-card); border-color: var(--border); box-shadow: none; }
+.header-content { min-height: 64px; gap: 1rem; padding-block: .6rem; flex-wrap: wrap; }
+.logo svg { filter: none; width: 28px; height: 28px; }
+.main { padding-top: 1.75rem; }
+.nav-pills, .filter-pills, .lang-buttons { background: var(--bg-input); }
+.nav-pill, .btn, .filter-pill, .type-pill { min-height: 32px; padding: .4rem .75rem; font-weight: 500; border-radius: 7px; font-size: .82rem; }
+.btn-primary, .nav-pill.active { background: var(--accent); color: #fff; box-shadow: none; }
+.btn-primary:hover, .nav-pill.active:hover { background: var(--accent-hover); }
+.btn-secondary, .btn-copy, .filter-pill, .type-pill { background: var(--bg-input); color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-secondary:hover, .btn-copy:hover { background: var(--bg-hover); color: var(--text-primary); }
+.filter-pill.active, .type-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+.theme-controls { display: flex; gap: .35rem; margin-left: auto; }
+.theme-controls select { width: auto; min-height: 32px; padding: .3rem 1.5rem .3rem .55rem; font-size: .75rem; }
+.stat-item { border: 0; padding: .25rem .45rem; }
+.stat-item strong, .page-eyebrow, .addon-count { color: var(--accent); }
+.card, .catalog-toolbar, .users-panel, .settings-section, .modal-content, .login-card { background: var(--bg-card); border-color: var(--border); box-shadow: none; }
+.settings-section { padding: 1.25rem; }
+.settings-section h3 { font-size: .95rem; margin-bottom: 1rem; padding-bottom: .8rem; }
+.settings-item h4, .user-config-card h5, .media-info h4, .catalog-section-title h3, .sources-list h4 { color: var(--text-primary); }
+.user-card, .user-config-card, .sources-list, .addon-source, .empty-state, .stream-name, .config-row-mini code { background: var(--bg-input); color: var(--text-primary); border-color: var(--border); }
+.user-config-card { background: var(--bg-card); }
+.config-row-mini > span, .hint { color: var(--text-secondary); }
+.page-count { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border); }
+input:not([type="checkbox"]), textarea, select { background: var(--bg-input); color: var(--text-primary); border-color: var(--border); min-height: 34px; border-radius: 7px; }
+input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 1; }
+input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
+.input-group input { min-height: 34px; }
+.settings-panel-grid .notification-settings { grid-column: 1 / -1; }
+.notification-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.config-group { display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+.config-group label { font-size: .83rem; }
+.config-group input:not([type="checkbox"]) { width: 100%; }
+.inline-label { display: flex; align-items: center; gap: .6rem; margin: .65rem 0; font-size: .82rem; }
+.inline-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-top: 1.25rem; }
+#notification-status { font-size: .8rem; color: var(--text-secondary); }
+.media-availability.is-available { color: var(--success); }
+.media-availability.is-unavailable { color: var(--warning); }
+.media-card:hover { transform: translateY(-2px); }
+#action-modal .modal-actions { display: flex; flex-wrap: wrap; }
+#action-modal .modal-actions > .btn { width: auto; flex: 1 1 40%; min-height: 34px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+#action-modal .modal-actions > .btn-primary { background: var(--accent); color: white; }
+#action-modal .modal-actions > .btn-danger { color: var(--danger); }
+.confirmed-notice { width: 100%; padding: .65rem; color: var(--success); font-size: .85rem; }
+:root[data-theme="light"] .media-poster { box-shadow: 0 6px 16px #20352b15; }
+@media (max-width: 800px) { .notification-grid { grid-template-columns: 1fr; } .theme-controls { margin-left: auto; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+.settings-section :is(input:not([type="checkbox"]), select, textarea),
+.user-config-card :is(input:not([type="checkbox"]), select, textarea),
+.form-group input, #remix-feed-url { background: var(--bg-input); color: var(--text-primary); border-color: var(--border); }
+.settings-panel-grid :is(input:not([type="checkbox"]), select, .btn) { min-height: 34px; }
+.settings-panel-grid a { color: var(--accent); }
+#discord-webhooks-list > div { background: var(--bg-input) !important; color: var(--text-primary); border: 1px solid var(--border); }

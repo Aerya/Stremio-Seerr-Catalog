@@ -33,7 +33,7 @@ test('manual and periodic checks emit only the first unavailable -> available tr
     const first = await recordStreamCheck(db, db.getMediaById(4), success, notifier);
     const next = await recordStreamCheck(db, db.getMediaById(4), success, notifier);
     assert.deepEqual(first, { updated: true, newlyAvailable: true });
-    assert.deepEqual(next, { updated: true, newlyAvailable: false });
+    assert.deepEqual(next, { updated: false, newlyAvailable: false });
     await flush();
     assert.deepEqual(calls, [[4, 3]]);
 });
