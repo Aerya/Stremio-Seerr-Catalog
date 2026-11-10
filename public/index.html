@@ -267,9 +267,10 @@
               <select id="supplemental-mode" onchange="updateSupplementalFields()"><option value="off" data-i18n="supplemental_off">Désactivé</option><option value="remix">Ether Remix</option><option value="prowlarr">Prowlarr</option></select>
             </div>
             <div class="settings-item" id="supplemental-remix-fields">
+              <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a></p>
               <label for="supplemental-remix-url" data-i18n="supplemental_remix_url">Adresse de base de Remix</label>
               <input id="supplemental-remix-url" type="url" placeholder="https://remix.example.org" autocomplete="off">
-              <p class="hint" data-i18n="supplemental_remix_help">Utilise la clé partagée de l’intégration ci-dessous. Activez cette même intégration dans Remix, puis testez la connexion.</p>
+              <p class="hint" data-i18n="supplemental_remix_help">Authentification automatique avec la clé partagée de l’intégration ci-dessous, envoyée côté serveur. Configurez la même clé dans Remix : l’adresse seule ne suffit pas. Aucun mot de passe Remix supplémentaire à saisir ici.</p>
             </div>
             <div class="settings-item" id="supplemental-prowlarr-fields">
               <label for="supplemental-prowlarr-url" data-i18n="supplemental_prowlarr_url">Adresse de base de Prowlarr</label>
@@ -285,7 +286,7 @@
             </div>
           </div>
           <div class="settings-section remix-settings" id="remix-settings">
-            <h3><span class="section-icon">🔄</span> <span data-i18n="remix_integration">Ether Remix integration</span></h3>
+            <h3><span data-i18n="remix_integration">Ether Remix integration</span></h3>
             <div class="settings-item remix-overview">
               <label style="display:flex; align-items:center; gap:9px; cursor:pointer;">
                 <input type="checkbox" id="remix-enabled">
