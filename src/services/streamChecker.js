@@ -25,6 +25,7 @@ function parseSettingArray(json, fallback = []) {
 function getFilterPrefs(db, userId) {
     return {
         languageTags: parseSettingArray(db.getSetting(`stream_filter_languages_${userId}`), ['FRENCH', 'MULTI']),
+        fallbackLanguageTags: parseSettingArray(db.getSetting(`stream_fallback_languages_${userId}`), ['VOSTFR', 'SUBFRENCH']),
         subtitleFallback: db.getSetting(`stream_subtitle_fallback_${userId}`) === 'true',
         minResolution: db.getSetting(`stream_filter_resolution_${userId}`) || null
     };

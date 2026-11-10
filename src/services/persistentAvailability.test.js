@@ -82,6 +82,26 @@ test('VOSTFR fallback reuses fetched streams, never overrides one FR release, an
     r=await check(); assert.equal(r.streamCount,1); assert.equal(r.available,false);
 });
 
+test('custom fallback tags replace French defaults and empty tags never accept arbitrary streams', async t => {
+    const original = global.fetch; t.after(() => { global.fetch = original; });
+    let streams = ['ENGLISH', 'ENGLISH', 'VOSTFR'].map((tag, i) => ({title:`Title.${tag}.1080p`,url:`https://video.test/${i}`}));
+    global.fetch = async url => ({ok:true,json:async()=>String(url).endsWith('manifest.json')
+        ? {id:'custom-fallback',name:'Custom',resources:['stream']} : {streams}});
+    const check = tags => checkStreamsWithUserAddons({type:'movie',imdb_id:'tt0133093'},null,null,
+        {languageTags:['GERMAN'],subtitleFallback:true,fallbackLanguageTags:tags},['https://custom-fallback.test/manifest.json']);
+    let result = await check(['ENGLISH']);
+    assert.equal(result.available, true);
+    assert.equal(result.streamCount, 2);
+    assert.deepEqual(result.appliedFilters.languageTags, ['ENGLISH']);
+    result = await check([]);
+    assert.equal(result.streamCount, 0);
+    assert.equal(result.appliedFilters.subtitleFallbackUsed, false);
+    streams.push({title:'Title.GERMAN.1080p',url:'https://video.test/de'});
+    result = await check(['ENGLISH']);
+    assert.equal(result.streamCount, 1);
+    assert.equal(result.appliedFilters.subtitleFallbackUsed, false);
+});
+
 test('manual approval rejects zero sources and freezes a single release; old available media backfills Remix without fresh links', async t => {
     const express=require('express'), app=express(); app.use(express.json()); app.use(require('../webui/routes'));
     const server=app.listen(0,'127.0.0.1'); await new Promise(resolve=>server.once('listening',resolve));
@@ -131,4 +151,23 @@ test('missed J+1 and overlapping results cannot consume J+3 in the same check', 
     await recordStreamCheck(db,media,result(1,start+4*day+1));
     assert.equal(db.getMediaById(media.id).search_stage,1);
     assert.equal(db.getMediaById(media.id).review_notified,0);
+});
+
+
+test('fallback language preferences retain defaults, persist custom and empty tags, and reject malformed input', async t => {
+    const express = require('express'), app = express();
+    app.use(express.json()); app.use('/users', require('../api/users'));
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise(resolve => server.once('listening', resolve));
+    t.after(() => { server.closeAllConnections(); server.close(); });
+    const url = `http://127.0.0.1:${server.address().port}/users/${user.id}/stream-filters`;
+    const get = async () => (await fetch(url)).json();
+    assert.deepEqual((await get()).fallbackLanguageTags, ['VOSTFR', 'SUBFRENCH']);
+    const put = tags => fetch(url, {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({fallbackLanguageTags:tags})});
+    assert.equal((await put([' english ', 'english'])).status, 200);
+    assert.deepEqual((await get()).fallbackLanguageTags, ['ENGLISH']);
+    for (const invalid of [null, 'ENGLISH', [1], ['a','b','c']]) assert.equal((await put(invalid)).status, 400);
+    assert.deepEqual((await get()).fallbackLanguageTags, ['ENGLISH']);
+    assert.equal((await put([])).status, 200);
+    assert.deepEqual((await get()).fallbackLanguageTags, []);
 });

@@ -144,7 +144,7 @@ Automatic confirmation requires **at least two distinct releases** (default: two
 - After both checks still yield one release, send one review alert through Discord and/or Apprise, optionally mentioning a configured Discord user. Continue searching daily without repeating a successfully delivered alert.
 - **Approve this release** in the title details confirms a single release permanently, immediately if desired. Zero releases cannot be approved.
 - **Zero releases:** remain searching, checking daily indefinitely, without a final failure alert. Returning to zero resets the single-release timetable for its next discovery.
-- The per-user **VOSTFR / SUBFRENCH fallback** reuses existing addon responses only when no primary-language release passes the language/resolution filters. One FR release prevents fallback. New profiles default to `FRENCH` and `MULTI`; subtitles follow the same confirmation rules.
+- The per-user **Configurable language fallback** reuses existing addon responses only when no primary-language release passes the language/resolution filters. One matching primary-language release prevents fallback. Each user can edit up to two fallback tags, prefilled with `VOSTFR` and `SUBFRENCH` as examples; leaving both empty disables fallback. New profiles default to `FRENCH` and `MULTI`; subtitles follow the same confirmation rules.
 - Network/addon errors preserve previous results and do not trigger review alerts. They are retried on the next scheduler wake. Series checks cover monitored seasons (up to two recent seasons, then `S01E01`); availability does not guarantee every episode. Manifest caching lasts 60 seconds and stream concurrency is limited to four.
 
 ### Appearance

@@ -589,7 +589,13 @@
                     <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" class="filter-language-input">
                     <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" class="filter-language-input">
                   </div>
-                  <label class="inline-label"><input type="checkbox" id="subtitle-fallback-${u.id}"><span data-i18n="subtitle_fallback">Si aucune source FR : chercher en VOSTFR / SUBFRENCH</span></label>
+                  <label class="inline-label"><input type="checkbox" id="subtitle-fallback-${u.id}"><span data-i18n="subtitle_fallback">Si aucune source ne correspond aux langues principales : utiliser les tags de repli</span></label>
+                  <div class="config-row-mini">
+                    <span data-i18n="fallback_language_tags">Tags de repli (max 2) :</span>
+                    <input type="text" id="fallback-tag-1-${u.id}" placeholder="VOSTFR" maxlength="100" class="filter-language-input" aria-label="Fallback tag 1">
+                    <input type="text" id="fallback-tag-2-${u.id}" placeholder="SUBFRENCH" maxlength="100" class="filter-language-input" aria-label="Fallback tag 2">
+                  </div>
+                  <p data-i18n="fallback_tags_help" style="font-size:12px;color:var(--text-secondary)">VOSTFR et SUBFRENCH sont des exemples modifiables. Deux champs vides désactivent le repli.</p>
                   <div class="config-row-mini">
                     <span data-i18n="min_resolution">Min Resolution:</span>
                     <select id="resolution-${u.id}" class="filter-resolution">
@@ -859,6 +865,9 @@
         document.getElementById(`min-addon-count-${userId}`).value = data.minAddonCount || 1;
         document.getElementById(`catalog-available-only-${userId}`).checked = data.catalogAvailableOnly === true;
         document.getElementById(`subtitle-fallback-${userId}`).checked = data.subtitleFallback === true;
+        const fallbackTags = data.fallbackLanguageTags || ['VOSTFR', 'SUBFRENCH'];
+        document.getElementById(`fallback-tag-1-${userId}`).value = fallbackTags[0] || '';
+        document.getElementById(`fallback-tag-2-${userId}`).value = fallbackTags[1] || '';
         updateAvailabilitySummary(userId);
       } catch (e) {
         console.error('Failed to load stream filters:', e);
@@ -903,6 +912,7 @@
             directManifestUrls,
             minStreamCount,
             minAddonCount,
+            fallbackLanguageTags: [1, 2].map(n => document.getElementById(`fallback-tag-${n}-${userId}`).value.trim().toUpperCase()).filter(Boolean),
             subtitleFallback: document.getElementById(`subtitle-fallback-${userId}`).checked,
             catalogAvailableOnly: document.getElementById(`catalog-available-only-${userId}`).checked
           })

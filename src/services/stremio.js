@@ -352,6 +352,7 @@ async function checkStreamsWithUserAddons(
         };
     }
 
+    const fallbackLanguageTags = Array.isArray(filterPrefs?.fallbackLanguageTags) ? filterPrefs.fallbackLanguageTags : ['VOSTFR', 'SUBFRENCH'];
     let totalStreams = 0;
     const type = media.type === 'movie' ? 'movie' : 'series';
     const checkedAddons = [];
@@ -398,8 +399,8 @@ async function checkStreamsWithUserAddons(
                 if (!Array.isArray(data?.streams)) throw new Error('Invalid stream response');
                 addonSucceeded = true;
                 const candidates = data.streams.filter(isMeaningfulStream);
-                if (filterPrefs?.subtitleFallback && !subtitleStreams.length) {
-                    subtitleStreams = filterStreamsByLanguage(candidates, ['VOSTFR', 'SUBFRENCH']);
+                if (filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0 && !subtitleStreams.length) {
+                    subtitleStreams = filterStreamsByLanguage(candidates, fallbackLanguageTags);
                     if (filterPrefs.minResolution) subtitleStreams = filterStreamsByResolution(subtitleStreams, filterPrefs.minResolution);
                     if (subtitleStreams.length) subtitleStreamId = streamId;
                 }
@@ -429,7 +430,7 @@ async function checkStreamsWithUserAddons(
         observations.push({ addon, streams, matchedStreamId, subtitleStreams, subtitleStreamId });
     }
     // Fallback uses the same HTTP responses, only when no primary-language release exists.
-    const usingSubtitles = !!filterPrefs?.subtitleFallback && !observations.some(o => o.streams.length);
+    const usingSubtitles = !!filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0 && !observations.some(o => o.streams.length);
     const identities = new Set();
     for (const observation of observations) {
         const { addon } = observation;
@@ -500,7 +501,7 @@ async function checkStreamsWithUserAddons(
         addons: checkedAddons,
         // Snapshot of the filters actually applied, even if settings change before Discord sends.
         appliedFilters: {
-            languageTags: usingSubtitles ? ['VOSTFR', 'SUBFRENCH'] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
+            languageTags: usingSubtitles ? [...fallbackLanguageTags] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
             subtitleFallbackUsed: usingSubtitles,
             minResolution: filterPrefs?.minResolution || null
         },
