@@ -24,15 +24,21 @@ test('Prowlarr direct search scopes titles, keeps reusable hashes, shares cached
  assert.equal(service.matches({title:'Show.S02.ENGLISH'}, {type:'series',title:'Show'},2,1),true);
 });
 
-test('Remix connection and search authenticate with shared token; incomplete searches are not cached', async t => {
- const db=database();db.setSetting('ether_remix_enabled','true');db.setSetting('ether_remix_token','shared');
- service.updateSettings(db,{mode:'remix',remixUrl:'https://remix.test'});
+test('Remix search authenticates independently of availability sharing; incomplete searches are not cached', async t => {
+ const db=database();db.setSetting('ether_remix_enabled','false');db.setSetting('ether_remix_token','export-key');
+ assert.throws(()=>service.updateSettings(db,{mode:'remix',remixUrl:'https://remix.test'}),/dedicated/);
+ service.updateSettings(db,{mode:'remix',remixUrl:'https://remix.test',remixToken:'s'.repeat(64)});
+ assert.equal(JSON.stringify(service.getSettings(db)).includes('s'.repeat(64)),false);
  const old=global.fetch;t.after(()=>{global.fetch=old});let count=0;
- global.fetch=async(url,opts)=>{count++;assert.equal(opts.headers.Authorization,'Bearer shared');return response(opts.method==='POST'?{schema:'seerrcatalog.search.v1',streams:[],conclusive:false}:{schema:'seerrcatalog.search.v1',ready:true})};
+ global.fetch=async(url,opts)=>{count++;assert.equal(opts.headers.Authorization,'Bearer '+'s'.repeat(64));return response(opts.method==='POST'?{schema:'seerrcatalog.search.v1',streams:[],conclusive:false}:{schema:'seerrcatalog.search.v1',ready:true})};
  await service.testConnection(db);
  await assert.rejects(service.search(db,media,[media.imdb_id]),/Incomplete/);
  await assert.rejects(service.search(db,media,[media.imdb_id]),/Incomplete/);assert.equal(count,3);
- db.setSetting('ether_remix_enabled','false');await assert.rejects(service.search(db,media,[media.imdb_id]),/disabled/);
+ db.setSetting('ether_remix_token','rotated-export-key');
+ await service.testConnection(db);
+ service.updateSettings(db,{mode:'remix',remixUrl:'https://remix.test',remixToken:''});
+ assert.equal(db.getSetting('supplemental_remix_token'),'s'.repeat(64));
+ db.setSetting('supplemental_remix_token','');await assert.rejects(service.search(db,media,[media.imdb_id]),/dedicated/);
 });
 
 test('supplemental provider obeys primary priority, deduplicates hashes and preserves incomplete failure', async t => {

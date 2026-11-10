@@ -270,7 +270,13 @@
               <p class="hint"><a href="https://github.com/Aerya/Ether-Remix" target="_blank" rel="noopener noreferrer">GitHub · Ether Remix</a></p>
               <label for="supplemental-remix-url" data-i18n="supplemental_remix_url">Adresse de base de Remix</label>
               <input id="supplemental-remix-url" type="url" placeholder="https://remix.example.org" autocomplete="off">
-              <p class="hint" data-i18n="supplemental_remix_help">Authentification automatique avec la clé partagée de l’intégration ci-dessous, envoyée côté serveur. Configurez la même clé dans Remix : l’adresse seule ne suffit pas. Aucun mot de passe Remix supplémentaire à saisir ici.</p>
+              <label for="supplemental-remix-token" data-i18n="supplemental_remix_token">Clé dédiée aux recherches (laisser vide pour conserver)</label>
+              <div class="input-group">
+                <input id="supplemental-remix-token" type="password" autocomplete="new-password" maxlength="256">
+                <button class="btn btn-secondary btn-small" onclick="generateSearchToken()" data-i18n="supplemental_generate_token">Générer une clé</button>
+                <button class="btn btn-secondary btn-small" onclick="copySearchToken()" data-i18n="copy">Copier</button>
+              </div>
+              <p class="hint" data-i18n="supplemental_remix_help">Générez une clé ici, copiez-la dans Remix → Sources → Stremio → Recherches pour SeerrCatalog, puis activez les recherches dans Remix. Enregistrez des deux côtés et testez. Le partage des disponibilités est indépendant.</p>
             </div>
             <div class="settings-item" id="supplemental-prowlarr-fields">
               <label for="supplemental-prowlarr-url" data-i18n="supplemental_prowlarr_url">Adresse de base de Prowlarr</label>
@@ -610,19 +616,19 @@
 
                 <div style="margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08);">
                   <div style="font-weight:600; margin-bottom:7px;" data-i18n="stream_filters">Stream filters</div>
-                  <div class="config-row-mini">
+                  <div class="config-row-mini language-filter-row">
                     <span data-i18n="language_tags">Language Tags (max 2):</span>
-                    <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" class="filter-language-input">
-                    <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" class="filter-language-input">
+                    <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" class="filter-language-input" spellcheck="false">
+                    <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" class="filter-language-input" spellcheck="false">
                   </div>
                   <label class="inline-label"><input type="checkbox" id="subtitle-fallback-${u.id}"><span data-i18n="subtitle_fallback">Si aucune source ne correspond aux langues principales : utiliser les tags de repli</span></label>
-                  <div class="config-row-mini">
+                  <div class="config-row-mini language-filter-row">
                     <span data-i18n="fallback_language_tags">Tags de repli (max 2) :</span>
-                    <input type="text" id="fallback-tag-1-${u.id}" placeholder="VOSTFR" maxlength="100" class="filter-language-input" aria-label="Fallback tag 1">
-                    <input type="text" id="fallback-tag-2-${u.id}" placeholder="SUBFRENCH" maxlength="100" class="filter-language-input" aria-label="Fallback tag 2">
+                    <input type="text" id="fallback-tag-1-${u.id}" placeholder="VOSTFR" maxlength="100" class="filter-language-input" spellcheck="false" aria-label="Fallback tag 1">
+                    <input type="text" id="fallback-tag-2-${u.id}" placeholder="SUBFRENCH" maxlength="100" class="filter-language-input" spellcheck="false" aria-label="Fallback tag 2">
                   </div>
                   <p data-i18n="fallback_tags_help" style="font-size:12px;color:var(--text-secondary)">VOSTFR et SUBFRENCH sont des exemples modifiables. Deux champs vides désactivent le repli.</p>
-                  <div class="config-row-mini">
+                  <div class="config-row-mini language-filter-row">
                     <span data-i18n="min_resolution">Min Resolution:</span>
                     <select id="resolution-${u.id}" class="filter-resolution">
                       <option value="" data-i18n="filter_all">All</option>
@@ -1400,6 +1406,18 @@
 
     // ============== Ether Remix integration ==============
 
+    function generateSearchToken() {
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      document.getElementById('supplemental-remix-token').value = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      document.getElementById('supplemental-status').textContent = t('supplemental_token_generated');
+    }
+    async function copySearchToken() {
+      const input = document.getElementById('supplemental-remix-token');
+      if (!input.value) { document.getElementById('supplemental-status').textContent = t('supplemental_token_missing'); return; }
+      try { await navigator.clipboard.writeText(input.value); }
+      catch (_) { input.select(); document.execCommand('copy'); }
+      document.getElementById('supplemental-status').textContent = t('supplemental_token_copied');
+    }
     function updateSupplementalFields() {
       const mode = document.getElementById('supplemental-mode').value;
       document.getElementById('supplemental-remix-fields').hidden = mode !== 'remix';
@@ -1412,6 +1430,7 @@
       document.getElementById('supplemental-mode').value = cfg.mode;
       document.getElementById('supplemental-remix-url').value = cfg.remixUrl;
       document.getElementById('supplemental-prowlarr-url').value = cfg.prowlarrUrl;
+      document.getElementById('supplemental-remix-token').placeholder = cfg.hasRemixToken ? '••••••••' : '';
       document.getElementById('supplemental-prowlarr-key').placeholder = cfg.hasProwlarrKey ? '••••••••' : '';
       updateSupplementalFields();
     }
@@ -1422,10 +1441,12 @@
           mode:document.getElementById('supplemental-mode').value,
           remixUrl:document.getElementById('supplemental-remix-url').value.trim(),
           prowlarrUrl:document.getElementById('supplemental-prowlarr-url').value.trim(),
+          remixToken:document.getElementById('supplemental-remix-token').value.trim(),
           prowlarrKey:document.getElementById('supplemental-prowlarr-key').value.trim()
         })});
         const data = await res.json(); if (!res.ok) throw new Error(data.error);
         document.getElementById('supplemental-prowlarr-key').value = '';
+        document.getElementById('supplemental-remix-token').value = '';
         status.textContent = t('supplemental_saved');
         await loadSupplementalSettings();
       } catch (error) { status.textContent = error.message; }

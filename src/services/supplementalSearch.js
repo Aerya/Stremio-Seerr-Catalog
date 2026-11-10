@@ -10,18 +10,20 @@ function baseUrl(raw) {
     return u.toString().replace(/\/$/, '');
 }
 function getSettings(db) {
-    return { mode: setting(db, 'mode') || 'off', remixUrl: setting(db, 'remix_url') || '', prowlarrUrl: setting(db, 'prowlarr_url') || '', hasProwlarrKey: !!setting(db, 'prowlarr_key') };
+    return { mode: setting(db, 'mode') || 'off', remixUrl: setting(db, 'remix_url') || '', prowlarrUrl: setting(db, 'prowlarr_url') || '', hasProwlarrKey: !!setting(db, 'prowlarr_key'), hasRemixToken: !!setting(db, 'remix_token') };
 }
 function updateSettings(db, body) {
     if (!['off', 'remix', 'prowlarr'].includes(body.mode)) throw new Error('Invalid search mode');
     const remixUrl = body.remixUrl ? baseUrl(body.remixUrl) : '';
     const prowlarrUrl = body.prowlarrUrl ? baseUrl(body.prowlarrUrl) : '';
     if (body.prowlarrKey !== undefined && (typeof body.prowlarrKey !== 'string' || body.prowlarrKey.length > 256 || /[\r\n]/.test(body.prowlarrKey))) throw new Error('Invalid API key');
-    if (body.mode === 'remix' && (!remixUrl || db.getSetting('ether_remix_enabled') !== 'true' || !db.getSetting('ether_remix_token'))) throw new Error('Enable Remix sharing and generate the shared token first');
+    if (body.remixToken !== undefined && (typeof body.remixToken !== 'string' || (body.remixToken && (body.remixToken.length < 32 || body.remixToken.length > 256 || /\s/.test(body.remixToken))))) throw new Error('Search token must contain 32 to 256 characters without whitespace');
+    if (body.mode === 'remix' && (!remixUrl || !(body.remixToken || setting(db, 'remix_token')))) throw new Error('Remix URL and dedicated search token required');
     if (body.mode === 'prowlarr' && (!prowlarrUrl || !(body.prowlarrKey || setting(db, 'prowlarr_key')))) throw new Error('Prowlarr URL and API key required');
     db.setSetting(PREFIX + 'mode', body.mode);
     db.setSetting(PREFIX + 'remix_url', remixUrl);
     db.setSetting(PREFIX + 'prowlarr_url', prowlarrUrl);
+    if (body.remixToken) db.setSetting(PREFIX + 'remix_token', body.remixToken);
     if (body.prowlarrKey) db.setSetting(PREFIX + 'prowlarr_key', body.prowlarrKey);
     cache.clear();
     return getSettings(db);
@@ -36,8 +38,9 @@ async function request(url, options = {}) {
 async function testConnection(db) {
     const cfg = getSettings(db);
     if (cfg.mode === 'remix') {
-        const result = await request(cfg.remixUrl + '/api/integrations/seerrcatalog/v1/search', {headers:{Authorization:'Bearer ' + db.getSetting('ether_remix_token')}});
-        if (result.schema !== 'seerrcatalog.search.v1' || !result.ready) throw new Error('Remix search unavailable: update Remix and enable the shared integration');
+        if (!setting(db, 'remix_token')) throw new Error('Configure the dedicated Remix search token');
+        const result = await request(cfg.remixUrl + '/api/integrations/seerrcatalog/v1/search', {headers:{Authorization:'Bearer ' + setting(db, 'remix_token')}});
+        if (result.schema !== 'seerrcatalog.search.v1' || !result.ready) throw new Error('Remix search unavailable: update Remix and enable SeerrCatalog searches');
     } else if (cfg.mode === 'prowlarr') {
         const result = await request(cfg.prowlarrUrl + '/api/v1/system/status', {headers:{'X-Api-Key':setting(db,'prowlarr_key')}});
         if (!result.version) throw new Error('Invalid Prowlarr response');
@@ -71,9 +74,9 @@ function matches(row, media, season, episode) {
 }
 async function search(db, media, streamIds, filters = {}) {
     const cfg = getSettings(db);
-    const token = cfg.mode === 'remix' ? db.getSetting('ether_remix_token') : setting(db,'prowlarr_key');
+    const token = cfg.mode === 'remix' ? setting(db, 'remix_token') : setting(db,'prowlarr_key');
     if (cfg.mode === 'off') return [];
-    if (cfg.mode === 'remix' && db.getSetting('ether_remix_enabled') !== 'true') throw new Error('Remix sharing is disabled');
+    if (cfg.mode === 'remix' && !token) throw new Error('Configure the dedicated Remix search token');
     const key = crypto.createHash('sha256').update(JSON.stringify([cfg,token,media.type,media.imdb_id,media.tmdb_id,media.title,media.year,streamIds,filters])).digest('hex');
     const hit = cache.get(key);
     if (hit && hit.until > Date.now()) return hit.value;

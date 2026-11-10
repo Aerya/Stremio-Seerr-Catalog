@@ -348,7 +348,7 @@ MIT — see [LICENSE](LICENSE).
 
 Under **Settings → Complementary search**, choose one provider (disabled by default), save, then **Test connection**:
 
-- **Ether Remix**: enter its base URL. Enable SeerrCatalog sharing in both applications with the same token, and language fallback in user preferences. If addons return no primary-language release, Remix searches its configured indexers, including Prowlarr, while respecting availability search budgets.
+- **Ether Remix**: enter its base URL. Generate a dedicated search token in this section and paste it into **Remix → Sources → Stremio → Searches for SeerrCatalog**. Enable searches in Remix and language fallback in user preferences, then save on both sides. Availability sharing and its token are independent and can remain disabled. After updating both applications, configure this new token: the old sharing token no longer authorizes searches. If addons return no primary-language release, Remix searches its configured indexers, including Prowlarr, while respecting availability search budgets.
 - **Standalone Prowlarr**: enter its base URL and API key. Neither Remix nor a Stremio account is required. Prowlarr complements addons with no primary-language result, or operates alone. Primary languages take precedence; custom fallback tags apply only when enabled and no primary source matches.
 
 Results are deduplicated across providers. Two distinct releases permanently confirm availability; one follows J+1/J+3 with notification and optional manual approval. Network errors never prove absence. A five-minute cache shares identical searches; confirmed titles are never searched again.
