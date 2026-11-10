@@ -436,7 +436,10 @@ async function checkStreamsWithUserAddons(
         eligibleAddonCount++;
         try {
             const groups = await supplementalSearch(buildStreamIds(media, imdbId));
-            successfulAddonCount++;
+            if (groups.some(group => group.conclusive === false)) {
+                failedAddonCount++;
+                console.warn('[Stremio] Supplemental search partial; using returned candidates without confirming absence');
+            } else successfulAddonCount++;
             for (const { addon, streams: raw, streamId } of groups) {
                 const candidates = raw.filter(isMeaningfulStream);
                 let streams = filterPrefs?.languageTags?.length ? filterStreamsByLanguage(candidates, filterPrefs.languageTags) : candidates;
