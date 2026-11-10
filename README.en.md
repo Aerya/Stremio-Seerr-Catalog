@@ -171,6 +171,18 @@ Confirmed availability carries `availabilityConfirmed: true` and persists until 
 
 The token accesses results for all users of this instance: connect only your trusted instances. Recent HTTP sources and torrent hashes are reused for playback; otherwise, or after failure, Remix falls back to ordinary discovery. Provider permissions, network access and restrictions must allow playback from Remix.
 
+### Original-language releases with SubMaker subtitles via Remix
+
+Disabled by default. Configure authenticated **Search via Remix** in **Settings → Ether Remix integration**. In [Remix](https://github.com/Aerya/Ether-Remix), configure public or self-hosted [SubMaker](https://github.com/xtremexq/StremioSubMaker) with a personal manifest, subtitle providers and translation engine. Under **Users → Sources & filters**, enable external subtitles and select the same target language as Remix (`fr` by default). Availability sharing remains independent.
+
+When no primary-language release exists, Remix can find target-language SRTs or translate English SRTs (languages are configurable). Only complete files matching the release filename are accepted. Translations must retain cue counts and timestamps; linguistic quality and actual synchronization still need playback verification. Pending or failed translations do not confirm availability. Pending jobs are checked again after five minutes.
+
+Two distinct qualifying releases with checked subtitles can confirm availability; one retains J+1/J+3 retries and manual approval. Resolution and addon-count criteria remain enforced. The badge identifies the subtitle language and AI translation. Primary-language-only searches exclude this fallback. Confirmed availability remains permanent until deletion.
+
+The manifest now exposes `subtitles`; reinstall the addon if the client caches its old resource list. The player must send the matching video `filename` to retrieve the stored SRT. Without it, no subtitle is served. Deleting the media removes subtitle access. Remix retains the private SubMaker manifest; only the SRT result is sent through authenticated search.
+
+[Remix setup, scopes and limits](https://github.com/Aerya/Ether-Remix/blob/feat/submaker-integration/docs/pse/SUBMAKER.en.md). SeerrCatalog tests use a simulated provider. The Remix connector also retrieved a real SRT, and a short English-to-French translation succeeded; the complete SeerrCatalog flow and synchronized playback still need verification before production activation.
+
 ### v1 API contract
 
 Paginated read with `Authorization: Bearer <token>`:

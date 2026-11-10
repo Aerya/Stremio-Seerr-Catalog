@@ -94,6 +94,8 @@ app.use('/', (req, res, next) => {
     next();
 });
 
+require('./services/externalSubtitles').routes(app,db,BASE_URL);
+
 // Stremio Addon (no auth for compatibility)
 const manifest = getManifest(BASE_URL);
 

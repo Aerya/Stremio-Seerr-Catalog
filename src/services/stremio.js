@@ -432,10 +432,12 @@ async function checkStreamsWithUserAddons(
     }
     // The complementary provider is consulted only when the addons have no
     // primary-language result. All candidates then share filtering/deduplication.
+    let subtitlesPending = false;
     if (supplementalSearch && !observations.some(o => o.streams.length)) {
         eligibleAddonCount++;
         try {
             const groups = await supplementalSearch(buildStreamIds(media, imdbId));
+            subtitlesPending = groups.some(g=>g.subtitlesPending === true);
             if (groups.some(group => group.conclusive === false)) {
                 failedAddonCount++;
                 console.warn('[Stremio] Supplemental search partial; using returned candidates without confirming absence');
@@ -444,6 +446,7 @@ async function checkStreamsWithUserAddons(
                 const candidates = raw.filter(isMeaningfulStream);
                 let streams = filterPrefs?.languageTags?.length ? filterStreamsByLanguage(candidates, filterPrefs.languageTags) : candidates;
                 let subtitleStreams = filterPrefs?.subtitleFallback && fallbackLanguageTags.length ? filterStreamsByLanguage(candidates, fallbackLanguageTags) : [];
+                if (filterPrefs?.externalSubtitles && addon.id === "supplemental:remix") subtitleStreams = [...new Set([...subtitleStreams,...candidates.filter(s=>s.verifiedExternalSubtitle)])];
                 if (filterPrefs?.minResolution) {
                     streams = filterStreamsByResolution(streams, filterPrefs.minResolution);
                     subtitleStreams = filterStreamsByResolution(subtitleStreams, filterPrefs.minResolution);
@@ -457,7 +460,9 @@ async function checkStreamsWithUserAddons(
         }
     }
     // Fallback uses the same HTTP responses, only when no primary-language release exists.
-    const usingSubtitles = !!filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0 && !observations.some(o => o.streams.length);
+    const usingSubtitles = ((!!filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0) || !!filterPrefs?.externalSubtitles) && !observations.some(o => o.streams.length);
+    const externalUsed = usingSubtitles && observations.some(o=>o.subtitleStreams.some(s=>s.verifiedExternalSubtitle));
+    const translatedUsed = externalUsed && observations.some(o=>o.subtitleStreams.some(s=>s.verifiedExternalSubtitle?.translated));
     const identities = new Set();
     for (const observation of observations) {
         const { addon } = observation;
@@ -520,6 +525,7 @@ async function checkStreamsWithUserAddons(
 
     const result = {
         available: availability.available,
+        ...(subtitlesPending ? {subtitlesPending:true} : {}),
         conclusive,
         checkStatus,
         reason: checkStatus === 'incomplete' ? 'One or more addons could not be verified' : undefined,
@@ -528,7 +534,8 @@ async function checkStreamsWithUserAddons(
         addons: checkedAddons,
         // Snapshot of the filters actually applied, even if settings change before Discord sends.
         appliedFilters: {
-            languageTags: usingSubtitles ? [...fallbackLanguageTags] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
+            ...(externalUsed ? {externalSubtitleLanguage:filterPrefs.externalSubtitleLanguage || "fr",externalSubtitleTranslated:translatedUsed} : {}),
+            languageTags: externalUsed ? [`VO + ST${(filterPrefs.externalSubtitleLanguage || "fr").toUpperCase()}${translatedUsed ? " IA" : ""}`] : usingSubtitles ? [...fallbackLanguageTags] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
             subtitleFallbackUsed: usingSubtitles,
             minResolution: filterPrefs?.minResolution || null
         },

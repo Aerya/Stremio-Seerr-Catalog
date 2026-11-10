@@ -284,7 +284,7 @@ router.get('/:id/stremio/selected-addons', (req, res) => {
 // Save stream filter preferences + direct addon manifests + availability thresholds
 router.put('/:id/stream-filters', (req, res) => {
     const id = parseInt(req.params.id);
-    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount, catalogAvailableOnly, subtitleFallback, fallbackLanguageTags } = req.body;
+    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount, catalogAvailableOnly, subtitleFallback, fallbackLanguageTags, externalSubtitles, externalSubtitleLanguage } = req.body;
 
     const user = db.getUserById(id);
     if (!user) {
@@ -299,6 +299,8 @@ router.put('/:id/stream-filters', (req, res) => {
         return res.status(400).json({ error: 'catalogAvailableOnly must be a boolean' });
     }
 
+    if (externalSubtitles !== undefined && typeof externalSubtitles !== 'boolean') return res.status(400).json({error:'externalSubtitles must be boolean'});
+    if(externalSubtitleLanguage !== undefined && (typeof externalSubtitleLanguage !== 'string' || !/^[a-z]{2,3}(-[a-z]{2})?$/.test(externalSubtitleLanguage))) return res.status(400).json({error:'Invalid subtitle language code'});
     if (subtitleFallback !== undefined && typeof subtitleFallback !== 'boolean') return res.status(400).json({ error: 'subtitleFallback must be a boolean' });
     if (fallbackLanguageTags !== undefined && (!Array.isArray(fallbackLanguageTags) || fallbackLanguageTags.length > 2 || fallbackLanguageTags.some(tag => typeof tag !== 'string' || tag.length > 100))) {
         return res.status(400).json({ error: 'fallbackLanguageTags must be an array with max 2 strings of max 100 characters' });
@@ -332,6 +334,8 @@ router.put('/:id/stream-filters', (req, res) => {
     }
 
     if (cleanedFallbackTags !== undefined) db.setSetting(`stream_fallback_languages_${id}`, JSON.stringify(cleanedFallbackTags));
+    if(externalSubtitles !== undefined) db.setSetting(`stream_external_subtitles_${id}`,String(externalSubtitles));
+    if(externalSubtitleLanguage !== undefined) db.setSetting(`stream_external_subtitle_language_${id}`,externalSubtitleLanguage);
     if (subtitleFallback !== undefined) db.setSetting(`stream_subtitle_fallback_${id}`, String(subtitleFallback));
     if (catalogAvailableOnly !== undefined) {
         db.setSetting(`catalog_available_only_${id}`, String(catalogAvailableOnly));
@@ -382,6 +386,8 @@ router.get('/:id/stream-filters', (req, res) => {
         directManifestUrls: directManifestsJson ? JSON.parse(directManifestsJson) : [],
         fallbackLanguageTags: JSON.parse(db.getSetting(`stream_fallback_languages_${id}`) || '["VOSTFR","SUBFRENCH"]'),
         subtitleFallback: db.getSetting(`stream_subtitle_fallback_${id}`) === 'true',
+        externalSubtitles: db.getSetting(`stream_external_subtitles_${id}`) === 'true',
+        externalSubtitleLanguage: db.getSetting(`stream_external_subtitle_language_${id}`) || 'fr',
         minStreamCount: Math.max(2, Number.parseInt(db.getSetting(`stream_min_count_${id}`) || '2', 10)),
         minAddonCount: Number.parseInt(db.getSetting(`stream_min_addons_${id}`) || '1', 10),
         catalogAvailableOnly: db.getSetting(`catalog_available_only_${id}`) === 'true'

@@ -5,7 +5,7 @@ const manifest = {
     description: 'Catalog of media requested through Seerr with availability tracking',
     logo: 'https://raw.githubusercontent.com/seerr-team/seerr/develop/public/logo_full.svg',
 
-    resources: ['catalog', 'meta'],
+    resources: ['catalog', 'meta', 'subtitles'],
     types: ['movie', 'series'],
 
     idPrefixes: ['tt', 'tmdb:'],

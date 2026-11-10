@@ -636,6 +636,9 @@
                     <input type="text" id="lang-tag-1-${u.id}" placeholder="FRENCH" class="filter-language-input" spellcheck="false">
                     <input type="text" id="lang-tag-2-${u.id}" placeholder="MULTI" class="filter-language-input" spellcheck="false">
                   </div>
+                  <label class="inline-label"><input type="checkbox" id="external-subtitles-${u.id}"><span data-i18n="submaker_accept">Sans source principale : accepter VO + sous-titres SubMaker vérifiés via Remix</span></label>
+                  <label class="config-row-mini language-filter-row"><span data-i18n="submaker_language">Langue des sous-titres (code ISO)</span><input type="text" id="external-subtitle-language-${u.id}" value="fr" maxlength="6" class="filter-language-input" aria-label="Subtitle language"></label>
+                  <p class="hint" data-i18n="submaker_hint">Activez SubMaker et son périmètre dans Remix. Une traduction en attente ne compte pas comme disponible. Les sous-titres sont servis par cet addon ; actualisez son installation Stremio.</p>
                   <label class="inline-label"><input type="checkbox" id="subtitle-fallback-${u.id}"><span data-i18n="subtitle_fallback">Si aucune source ne correspond aux langues principales : utiliser les tags de repli</span></label>
                   <div class="config-row-mini language-filter-row">
                     <span data-i18n="fallback_language_tags">Tags de repli (max 2) :</span>
@@ -955,6 +958,8 @@
         document.getElementById(`min-addon-count-${userId}`).value = data.minAddonCount || 1;
         document.getElementById(`catalog-available-only-${userId}`).checked = data.catalogAvailableOnly === true;
         document.getElementById(`subtitle-fallback-${userId}`).checked = data.subtitleFallback === true;
+        document.getElementById(`external-subtitles-${userId}`).checked = data.externalSubtitles === true;
+        document.getElementById(`external-subtitle-language-${userId}`).value = data.externalSubtitleLanguage || "fr";
         const fallbackTags = data.fallbackLanguageTags || ['VOSTFR', 'SUBFRENCH'];
         document.getElementById(`fallback-tag-1-${userId}`).value = fallbackTags[0] || '';
         document.getElementById(`fallback-tag-2-${userId}`).value = fallbackTags[1] || '';
@@ -1004,6 +1009,8 @@
             minAddonCount,
             fallbackLanguageTags: [1, 2].map(n => document.getElementById(`fallback-tag-${n}-${userId}`).value.trim().toUpperCase()).filter(Boolean),
             subtitleFallback: document.getElementById(`subtitle-fallback-${userId}`).checked,
+            externalSubtitles: document.getElementById(`external-subtitles-${userId}`).checked,
+            externalSubtitleLanguage: document.getElementById(`external-subtitle-language-${userId}`).value.trim().toLowerCase(),
             catalogAvailableOnly: document.getElementById(`catalog-available-only-${userId}`).checked
           })
         });

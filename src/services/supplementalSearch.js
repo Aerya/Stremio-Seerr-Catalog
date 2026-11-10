@@ -77,7 +77,7 @@ async function search(db, media, streamIds, filters = {}) {
     const token = cfg.mode === 'remix' ? setting(db, 'remix_token') : setting(db,'prowlarr_key');
     if (cfg.mode === 'off') return [];
     if (cfg.mode === 'remix' && !token) throw new Error('Configure the dedicated Remix search token');
-    const key = crypto.createHash('sha256').update(JSON.stringify([cfg,token,media.type,media.imdb_id,media.tmdb_id,media.title,media.year,streamIds,filters])).digest('hex');
+    const key = crypto.createHash('sha256').update(JSON.stringify([cfg,token,media.id,media.type,media.imdb_id,media.tmdb_id,media.title,media.year,streamIds,filters])).digest('hex');
     const hit = cache.get(key);
     if (hit && hit.until > Date.now()) return hit.value;
     if (pending.has(key)) return pending.get(key);
@@ -85,6 +85,7 @@ async function search(db, media, streamIds, filters = {}) {
     const work = (async () => {
         const groups = [];
         let complete = true;
+        let subtitlesPending = false;
         const {filterStreamsByLanguage, filterStreamsByResolution} = require('./stremio');
         const matching = (streams, tags) => {
             let found = tags?.length ? filterStreamsByLanguage(streams, tags) : streams;
@@ -98,11 +99,17 @@ async function search(db, media, streamIds, filters = {}) {
             if (cfg.mode === 'remix') {
                 const data = await request(cfg.remixUrl + '/api/integrations/seerrcatalog/v1/search', {
                     method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer ' + token},
-                    body:JSON.stringify({media:{id:media.id,type:media.type,imdbId:media.imdb_id,tmdbId:Number(media.tmdb_id),title:media.title,year:Number(media.year)||0},season,episode})
+                    body:JSON.stringify({externalSubtitles:filters.externalSubtitles === true,subtitleLanguage:filters.externalSubtitleLanguage || "fr",media:{id:media.id,type:media.type,imdbId:media.imdb_id,tmdbId:Number(media.tmdb_id),title:media.title,year:Number(media.year)||0},season,episode})
                 });
                 if (data.schema !== 'seerrcatalog.search.v1' || !Array.isArray(data.streams) || typeof data.conclusive !== 'boolean') throw new Error('Invalid Remix search response');
                 complete = complete && data.conclusive;
-                streams = data.streams;
+                subtitlesPending = subtitlesPending || data.subtitlesPending === true;
+                streams = data.streams.map(stream => {
+                  delete stream.verifiedExternalSubtitle;
+                  if(filters.externalSubtitles) require('./externalSubtitles').accept(db,media,streamId,stream,filters.externalSubtitleLanguage || 'fr');
+                  else delete stream.externalSubtitle;
+                  return stream;
+                });
             } else {
                 const url = new URL(cfg.prowlarrUrl + '/api/v1/search');
                 url.searchParams.set('query', media.title + (media.type === 'series' ? ` S${String(season).padStart(2,'0')}E${String(episode).padStart(2,'0')}` : (media.year ? ' ' + media.year : '')));
@@ -117,12 +124,13 @@ async function search(db, media, streamIds, filters = {}) {
         }
         // Count one checked episode per provider, as for Stremio addons.
         const chosen = groups.find(g => matching(g.streams, filters.languageTags)) ||
+            (filters.externalSubtitles && groups.find(g=>g.streams.some(s=>s.verifiedExternalSubtitle))) ||
             (filters.subtitleFallback && filters.fallbackLanguageTags?.length && groups.find(g => matching(g.streams, filters.fallbackLanguageTags))) || groups[0];
         // Keep positive evidence even when another indexer failed. Never treat
         // missing results from a partial response as confirmed absence.
-        const selected = chosen ? [{...chosen, conclusive: complete}] : [];
+        const selected = chosen ? [{...chosen, conclusive: complete, subtitlesPending}] : [];
         if (cache.size >= 200) cache.delete(cache.keys().next().value);
-        if (complete) cache.set(key,{until:Date.now()+5*60*1000,value:selected});
+        if (complete && !subtitlesPending) cache.set(key,{until:Date.now()+5*60*1000,value:selected});
         return selected;
     })();
     pending.set(key,work);
