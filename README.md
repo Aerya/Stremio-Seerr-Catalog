@@ -60,19 +60,28 @@ Sans compte Stremio lié, les manifests ajoutés manuellement peuvent également
 
 | Fonction | Description |
 |---|---|
-| Catalogue Stremio | Les demandes Jellyseerr deviennent un catalogue personnel accessible depuis Stremio. |
+| Catalogue Stremio | Les demandes Jellyseerr deviennent un catalogue personnel ; option pour n’afficher que les contenus disponibles. |
 | Compatibilité Jellyseerr | Émulation des API Jellyfin, Radarr et Sonarr utilisées par Jellyseerr. |
-| Addons du compte Stremio | Les addons disposant d'une ressource `stream` sont récupérés automatiquement depuis le compte lié. |
-| Addons supplémentaires | Ajout d'URLs `manifest.json` compatibles avec le protocole Stremio. |
+| Multi-utilisateurs | Catalogue, sources, filtres et critères de disponibilité propres à chaque utilisateur. |
+| Addons du compte Stremio | Récupération automatique des addons proposant une ressource `stream` depuis le compte lié. |
+| Addons supplémentaires | Ajout de manifests compatibles, utilisables avec ou sans compte Stremio connecté. |
 | Compatibilité addons | Fonctionne notamment avec AIOStreams, Lumio, StreamFusion, StreamNZB, LooStream et WaStream. |
-| Filtres | Filtrage par tags de langue et résolution minimale. |
-| Disponibilité configurable | Nombre minimum de releases et nombre minimum d'addons distincts configurables par utilisateur. |
-| Multi-utilisateurs | Catalogue, sources, filtres et règles de disponibilité propres à chaque utilisateur. |
-| Retry automatique | Nouvelle vérification quotidienne des médias sans source. |
-| Synchronisation regardé | Les contenus regardés à au moins 90 % peuvent être automatiquement nettoyés du catalogue. |
-| Notifications Discord | Sources trouvées, absence confirmée de sources et retraits du catalogue. |
-| WebUI | Interface responsive en français et en anglais. |
-| Ether Remix (facultatif) | Export sécurisé des disponibilités et des releases récemment découvertes, sans nouveau contrôle des addons. |
+| Langues et résolution | Tags de langues principales et résolution minimale configurables par utilisateur. |
+| Repli sous-titré | Sans résultat dans les langues principales, repli facultatif sur des tags modifiables ; `VOSTFR` et `SUBFRENCH` sont des exemples préremplis. |
+| Disponibilité définitive | Au moins deux releases distinctes pour la validation automatique, avec seuils de releases et d’addons configurables. Un média confirmé reste disponible jusqu’à sa suppression. |
+| Recherche progressive | Une release : contrôles à J+1 puis J+3, puis quotidiens. Zéro release : recherche quotidienne jusqu’à trouver. Pas de recontrôle automatique des médias déjà disponibles. |
+| Validation manuelle | Possibilité de confirmer définitivement un média dès qu’une seule release répond aux filtres. |
+| Alertes de validation | Après J+1/J+3 avec une seule release, notification Discord et/ou Apprise, avec mention Discord facultative. |
+| Recherche Prowlarr | Connecteur autonome facultatif pour compléter les recherches, sans nécessiter Remix. |
+| Recherche via Ether Remix | Recherche complémentaire authentifiée dans les sources de [Remix](https://github.com/Aerya/Ether-Remix), notamment Prowlarr. |
+| Partage avec Ether Remix | Export des disponibilités confirmées et des releases récentes, pour éviter une nouvelle recherche de disponibilité. Activation et clé indépendantes de la recherche via Remix. |
+| Sous-titres SubMaker | Via Remix, recherche et traduction facultatives sur une instance [SubMaker](https://github.com/xtremexq/StremioSubMaker) publique ou auto-hébergée ; langue cible configurable et validation seulement après réception du SRT correspondant à la release. |
+| Sous-titres dans Stremio | Distribution des SRT conservés pour les médias disponibles, lorsque le lecteur transmet le nom correspondant de la vidéo. |
+| Repérage des versions sous-titrées | Badge sur les affiches, filtre dédié et indication des traductions IA ; relance manuelle possible avec les seuls tags de langues principales. |
+| Suivi du catalogue | Compteurs films, séries, disponibles et en recherche ; filtres par disponibilité, type de média et utilisateur. |
+| Synchronisation regardé | Nettoyage facultatif du catalogue pour les contenus regardés à au moins 90 %. |
+| Notifications Discord | Notifications de sources trouvées et de retraits du catalogue, en plus des alertes de validation. |
+| WebUI personnalisable | Interface responsive en français et en anglais, modes Jour/Nuit/Auto et cinq palettes de couleurs. |
 
 ## Installation
 
