@@ -181,7 +181,7 @@ Two distinct qualifying releases with checked subtitles can confirm availability
 
 The manifest now exposes `subtitles`; reinstall the addon if the client caches its old resource list. The player must send the matching video `filename` to retrieve the stored SRT. Without it, no subtitle is served. Deleting the media removes subtitle access. Remix retains the private SubMaker manifest; only the SRT result is sent through authenticated search.
 
-[Remix setup, scopes and limits](https://github.com/Aerya/Ether-Remix/blob/feat/submaker-integration/docs/pse/SUBMAKER.en.md). Tests use a simulated provider; real translation and synchronized playback still need verification with a personal configuration before production activation.
+[Remix setup, scopes and limits](https://github.com/Aerya/Ether-Remix/blob/feat/submaker-integration/docs/pse/SUBMAKER.en.md). SeerrCatalog tests use a simulated provider. The Remix connector also retrieved a real SRT, and a short English-to-French translation succeeded; the complete SeerrCatalog flow and synchronized playback still need verification before production activation.
 
 ### v1 API contract
 

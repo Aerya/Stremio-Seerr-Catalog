@@ -210,7 +210,7 @@ Deux releases distinctes avec sous-titres validés peuvent confirmer le média ;
 
 Le manifeste expose désormais la ressource `subtitles` : réinstallez l’addon si le client conserve l’ancienne liste. Pour obtenir le SRT associé, le lecteur doit transmettre le `filename` exact de la vidéo. Sans nom correspondant, aucun sous-titre n’est servi. Supprimer le média retire l’accès aux SRT associés. Le manifeste privé SubMaker reste dans Remix ; seul le résultat SRT transite par la recherche authentifiée.
 
-[Guide Remix : configuration, périmètres et limites](https://github.com/Aerya/Ether-Remix/blob/feat/submaker-integration/docs/pse/SUBMAKER.fr.md). Les tests utilisent un fournisseur simulé ; traduction réelle et lecture synchronisée restent à valider avec une configuration personnelle avant activation en production.
+[Guide Remix : configuration, périmètres et limites](https://github.com/Aerya/Ether-Remix/blob/feat/submaker-integration/docs/pse/SUBMAKER.fr.md). Les tests SeerrCatalog utilisent un fournisseur simulé. Le connecteur Remix a aussi récupéré un SRT réel et une courte traduction anglais → français a réussi ; le parcours complet SeerrCatalog et la lecture synchronisée restent à valider avant activation en production.
 
 ### Contrat d'échange v1
 
