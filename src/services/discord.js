@@ -468,7 +468,22 @@ async function sendTestNotification() {
     await sendToAllWebhooks(embed);
 }
 
+async function sendReviewNotification(title, content, mention) {
+    let delivered = false;
+    for (const url of getWebhookUrls()) {
+        try {
+            const response = await fetch(url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(10000),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, embeds: [{ title, color: 0xf59e0b }],
+                    allowed_mentions: { parse: [], users: mention ? [mention] : [] } }) });
+            delivered = response.ok || delivered;
+        } catch (_) { /* Retry the review alert on the next scheduled search. */ }
+    }
+    return delivered;
+}
+
 module.exports = {
+    sendReviewNotification,
     getWebhookUrls,
     addWebhookUrl,
     removeWebhookUrl,

@@ -7,13 +7,8 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
 const { getTVShowSeasons } = require('../services/tmdb');
-const { checkStreamsAvailable } = require('../services/streamChecker');
-const { recordStreamCheck } = require('../services/mediaEvents');
 
 const router = express.Router();
-
-// Re-verification interval: 1 hour in milliseconds
-const REVERIFY_INTERVAL = 60 * 60 * 1000;
 
 // Generate a Jellyfin-style UUID
 function generateJellyfinId() {
@@ -930,7 +925,6 @@ router.get('/Items/Latest', (req, res) => {
     console.log('[Jellyfin] GET /Items/Latest', { ParentId, Limit: limit, IncludeItemTypes });
 
     let items = [];
-    let mediaToReverify = []; // Track items that need re-verification
 
     // Get movies with available streams
     if (!ParentId || ParentId === MOVIES_LIBRARY_ID || IncludeItemTypes?.includes('Movie')) {
@@ -938,14 +932,6 @@ router.get('/Items/Latest', (req, res) => {
             .filter(m => m.streams_available) // Only return media with streams
             .sort((a, b) => new Date(b.added_at) - new Date(a.added_at)) // Most recent first
             .slice(0, limit);
-
-        // Check which movies need re-verification (last check > 1 hour ago)
-        for (const m of movies) {
-            const lastCheck = m.last_stream_check ? new Date(m.last_stream_check).getTime() : 0;
-            if (Date.now() - lastCheck > REVERIFY_INTERVAL) {
-                mediaToReverify.push(m);
-            }
-        }
 
         items.push(...movies.map(m => ({
             Name: m.title,
@@ -983,14 +969,6 @@ router.get('/Items/Latest', (req, res) => {
             .filter(s => s.streams_available) // Only return media with streams
             .sort((a, b) => new Date(b.added_at) - new Date(a.added_at)) // Most recent first
             .slice(0, limit);
-
-        // Check which series need re-verification
-        for (const s of series) {
-            const lastCheck = s.last_stream_check ? new Date(s.last_stream_check).getTime() : 0;
-            if (Date.now() - lastCheck > REVERIFY_INTERVAL) {
-                mediaToReverify.push(s);
-            }
-        }
 
         items.push(...series.map(s => ({
             Name: s.title,
@@ -1034,37 +1012,6 @@ router.get('/Items/Latest', (req, res) => {
 
     // Send response immediately (no blocking)
     res.json(items);
-
-    // Trigger background re-verification for items that need it
-    if (mediaToReverify.length > 0) {
-        console.log(`[Jellyfin] 🔄 Triggering background re-verification for ${mediaToReverify.length} items...`);
-
-        setImmediate(async () => {
-            for (const media of mediaToReverify) {
-                try {
-                    console.log(`[Jellyfin] Re-verifying streams for: ${media.title}`);
-                    const result = await checkStreamsAvailable(media, db);
-                    if (!result.conclusive) {
-                        console.warn(`[Jellyfin] Verification incomplete for ${media.title}; preserving previous status`);
-                        continue;
-                    }
-                    await recordStreamCheck(db, media, result);
-
-                    if (result.available) {
-                        console.log(`[Jellyfin] ✅ Re-check passed for: ${media.title} (${result.streamCount} streams)`);
-                    } else {
-                        console.log(`[Jellyfin] ⚠️ Re-check FAILED for: ${media.title} - marking unavailable`);
-                    }
-                } catch (e) {
-                    console.error(`[Jellyfin] Re-verification error for ${media.title}:`, e.message);
-                }
-
-                // Small delay between checks to avoid rate limiting
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            console.log(`[Jellyfin] 🔄 Background re-verification complete`);
-        });
-    }
 });
 
 // ============== Catch-all for unsupported endpoints ==============

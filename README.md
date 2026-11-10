@@ -144,27 +144,32 @@ Deux valeurs indépendantes déterminent quand un média est considéré comme d
 
 | Releases minimum | Addons minimum | Exemple de règle |
 |---:|---:|---|
-| 1 | 1 | Au moins une release sur une source. |
-| 2 | 1 | Au moins deux releases, même depuis un seul addon. |
-| 1 | 2 | Au moins deux addons différents doivent trouver une release. |
-| 3 | 2 | Au moins trois releases au total, provenant d'au moins deux addons. |
+| 2 | 1 | Valeur par défaut : deux releases distinctes, même depuis un seul addon. |
+| 2 | 2 | Deux releases distinctes, provenant d’au moins deux addons. |
+| 3 | 2 | Trois releases distinctes, provenant d’au moins deux addons. |
 
-Par défaut, les deux valeurs sont à `1`, ce qui conserve le comportement historique.
+La validation automatique nécessite **au moins deux releases**. Les anciennes valeurs à `1` sont relevées à `2` pour les titres encore en recherche. Un même hash torrent, nom de fichier ou une même URL renvoyée plusieurs fois ne compte qu’une fois. Les critères plus stricts restent possibles. Les titres déjà disponibles sont conservés.
 
-### Fiabilité des vérifications et notifications
+### Disponibilité définitive et recherche progressive
 
-- Lors d'un ajout Radarr/Sonarr, SeerrCatalog vérifie les sources en arrière-plan puis effectue **une seconde tentative après 60 secondes** si la disponibilité n'est pas confirmée. L'ajout Jellyseerr reste immédiat.
-- Les erreurs réseau, délais d'attente, addons indisponibles ou identifiants IMDB manquants sont considérés comme des **vérifications incomplètes**, pas comme une preuve d'absence de sources. Le résultat précédemment enregistré est conservé en cas de vérification incomplète.
-- Une notification Discord **« Aucune source trouvée »** est envoyée uniquement si deux vérifications concluantes ne trouvent **aucune release correspondant aux filtres**. Si des releases existent mais n'atteignent pas les seuils minimum définis, le média reste indisponible **sans fausse alerte « Aucune source »**.
-- Pour les séries, la recherche teste prioritairement les saisons suivies (jusqu'à deux saisons récentes) puis `S01E01` comme solution de repli, au lieu de se limiter à `S01E01`.
-- Les manifests directs et les addons du compte Stremio sont mémorisés brièvement (60 secondes) pour réduire les requêtes lors des ajouts groupés. Les vérifications de sources sont limitées à 4 requêtes simultanées, sans changer la configuration.
-- Les boutons de copie affichent simplement une coche, sans popup. Une vérification manuelle incomplète s'affiche dans la fiche du média et ne remplace pas les résultats antérieurs.
+- Dès qu’un titre atteint les critères, il est **disponible jusqu’à sa suppression**. Aucun recontrôle ne peut lui retirer ce statut : ni la tâche planifiée, ni une consultation Jellyfin, ni Remix, ni un changement de filtres. Il n’y a pas de recherche d’une meilleure version.
+- Avec **une release**, nouvelles vérifications à **J+1 puis J+3**, depuis la première détection de cette release unique. Les échéances sont enregistrées en SQLite et survivent au redémarrage. Le planificateur se réveille chaque heure ; une coupure peut donc retarder une échéance. Les contrôles manuels restent possibles sans avancer prématurément les étapes.
+- Si une seule release subsiste après ces deux contrôles, une **alerte de validation** est envoyée sur Discord et/ou Apprise. Elle peut mentionner l’identifiant Discord configuré. La recherche continue ensuite quotidiennement, sans répéter une alerte déjà livrée.
+- Dans la fiche du titre, **Valider cette release** permet de confirmer définitivement sa disponibilité. Cette action est impossible avec zéro release ; elle est disponible dès la première release, sans attendre J+3.
+- Avec **zéro release**, le titre reste **En recherche**, avec une vérification quotidienne, sans notification d’échec définitif. Si aucune release n’est de nouveau trouvée, le cycle d’une release unique repart à sa prochaine détection.
+- L’option par utilisateur **Si aucune source FR : chercher en VOSTFR / SUBFRENCH** utilise les mêmes réponses d’addons, sans doubler les appels. Elle s’applique seulement si aucun résultat ne passe les filtres principaux de langue et de résolution ; une release FR empêche ce repli. Les nouveaux profils utilisent `FRENCH` et `MULTI` par défaut. Les critères de validation sont identiques pour le repli sous-titré.
+- Une erreur réseau ou d’addon est une vérification **incomplète** : elle conserve le résultat précédent et ne déclenche pas l’alerte d’une release unique. Le planificateur réessaie à son prochain passage.
+- Pour les séries, seules les saisons suivies (jusqu’à deux saisons récentes, puis `S01E01` en repli) sont sondées. Une disponibilité de série ne garantit pas tous les épisodes. Les manifests sont mémorisés 60 secondes et les requêtes de flux limitées à quatre simultanées.
+
+### Apparence
+
+Le bandeau propose les modes **Jour**, **Nuit** et **Auto** (préférence du système), ainsi que cinq palettes : **Violet, Océan, Forêt, Rose et Ambre**. Les choix sont conservés dans ce navigateur, y compris sur l’écran de connexion. Les boutons sont plus fins et les blocs Jellyseerr/Discord restent alignés côte à côte sur ordinateur, puis empilés sur mobile.
 
 ### Afficher uniquement les contenus disponibles dans Stremio
 
 Par défaut, le catalogue affiche toutes les demandes, même sans source. Dans **Utilisateurs → Sources et filtres → Critères de disponibilité**, cochez **Afficher uniquement les contenus disponibles dans le catalogue Stremio personnel**, puis cliquez sur **Enregistrer**. Utilisez l’URL d’addon personnelle `/user/<id>/manifest.json` proposée dans la fiche de cet utilisateur ; le manifeste global `/manifest.json` continue d’afficher toutes les demandes.
 
-Le filtre concerne les films, les séries et la recherche, avant pagination. Il utilise le dernier résultat des vérifications, après les filtres de langue, résolution et seuils de sources/addons. Les contenus indisponibles ou jamais vérifiés sont masqués, sans supprimer les demandes ni modifier les API compatibles Radarr/Sonarr. Actualisez Stremio pour renouveler son cache ; après un changement des critères de sources, relancez une vérification. Une source trouvée ne garantit pas la lecture et une série disponible ne signifie pas que tous ses épisodes le sont.
+Le filtre concerne les films, les séries et la recherche, avant pagination. Il utilise la décision de disponibilité confirmée, automatique ou manuelle. Les contenus indisponibles ou jamais vérifiés sont masqués, sans supprimer les demandes ni modifier les API compatibles Radarr/Sonarr. Actualisez Stremio pour renouveler son cache ; un changement des critères ne remet pas en cause les titres déjà validés. Une source trouvée ne garantit pas la lecture et une série disponible ne signifie pas que tous ses épisodes le sont.
 
 ## Intégration Ether Remix
 
@@ -172,11 +177,11 @@ L'intégration est **désactivée par défaut**. [Ether Remix](https://github.co
 
 1. Dans **Paramètres → Intégration Ether Remix**, générez une clé partagée, puis copiez-la dans Remix.
 2. Activez l'export et enregistrez. L’adresse de base à copier dans Remix figure dans cette rubrique, sans chemin `/api/…`. Aucun point de réception Remix n’est à renseigner.
-3. Les contenus vérifiés **avant activation** doivent être revérifiés pour disposer des données exportables. L'activation ne déclenche aucune recherche globale.
+3. Les titres déjà disponibles sont exportés automatiquement, sans recherche supplémentaire et sans renouveler leurs anciens liens de lecture.
 
 Dans [Ether Remix](https://github.com/Aerya/Ether-Remix), ouvrez **Sources → Stremio → SeerrCatalog → Ether Remix**, renseignez l’adresse de base de SeerrCatalog et la même clé, puis activez et enregistrez. Remix synchronise chaque minute et fait confiance aux critères de disponibilité de SeerrCatalog pour ces titres, y compris avec « lisible uniquement ». Les autres règles de visibilité et les règles de lecture du spectateur restent appliquées.
 
-Tant que l’export est actif, SeerrCatalog revérifie aussi les contenus déjà disponibles après 24 h (réveil horaire). La durée de validité de 26 h laisse une marge au cycle ; une panne prolongée laisse expirer l’observation, sans prétendre que le titre est encore disponible. Les échecs de vérification ne renouvellent pas cette durée. Désactiver l’option rétablit les seuls contrôles habituels des contenus indisponibles.
+Les disponibilités confirmées portent `availabilityConfirmed: true` et restent valides jusqu’à suppression du titre. **Mettez à jour SeerrCatalog et Ether Remix** pour activer ce comportement : les anciennes versions de Remix continuent à expirer les observations après 26 h. Les liens de lecture restent limités à 30 minutes ; cette expiration ne retire pas le titre du catalogue.
 
 La clé donne accès aux résultats de tous les utilisateurs de cette instance : reliez uniquement vos instances de confiance. Les sources HTTP récentes et les hash torrent sont réutilisés à la lecture ; sinon, ou en cas d’échec, Remix retrouve ses recherches habituelles. Les droits, le réseau et les restrictions du fournisseur doivent permettre la lecture depuis Remix.
 
@@ -199,6 +204,7 @@ Exemple de réponse (URL fictive) :
     "schema": "seerrcatalog.availability.v1",
     "media": { "id": 7, "userId": 3, "type": "movie", "imdbId": "tt0133093", "tmdbId": 603, "title": "The Matrix", "year": 1999 },
     "available": true,
+    "availabilityConfirmed": true,
     "checkStatus": "available",
     "checkedAt": "2026-11-09T17:00:00.000Z",
     "expiresAt": "2026-11-10T19:00:00.000Z",
@@ -213,7 +219,7 @@ Exemple de réponse (URL fictive) :
 }
 ```
 
-`after` est le dernier identifiant numérique reçu, `limit` va de 1 à 100 et `nextCursor` permet de parcourir les pages. Seules les vérifications **concluantes** non périmées sont renvoyées. Les URL et en-têtes de lecture sont retirés de l’export après **30 minutes** au maximum (ils peuvent cesser de fonctionner plus tôt ; les hash torrent restent exploitables) ; les observations de disponibilité au bout de **26 heures**. Les liens potentiellement sensibles restent hors des API publiques de catalogue.
+`after` est le dernier identifiant reçu, `limit` va de 1 à 100, et `nextCursor` parcourt les pages. Les disponibilités **confirmées** sont renvoyées même après `expiresAt` : ce champ conserve la fenêtre historique de 26 h pour les anciens clients. Une observation non confirmée expire normalement. Les URL et en-têtes de lecture sont retirés après **30 minutes** au maximum ; les hash torrent stables restent exploitables. La confirmation ne prolonge jamais les liens sensibles, qui restent hors des API publiques de catalogue.
 
 Chaque synchronisation repart de `after=0`. Conservez la `revision` renvoyée sur chaque page suivante (`&revision=12`) ; un HTTP 409 impose de recommencer. Remplacez les données locales uniquement après le parcours complet : les médias absents sont retirés. Le curseur est un identifiant de média, **pas un journal incrémental**. Les suppressions manquées sont rattrapées par cette comparaison complète.
 
@@ -221,11 +227,21 @@ Si une URL de réception est renseignée, SeerrCatalog envoie un `POST` authenti
 
 Pour les séries, une release porte l'identifiant Stremio précis de l'épisode contrôlé (`tt1234567:3:1` par exemple). **Une source trouvée n'est pas une lecture testée** : Remix doit respecter ses propres règles et prévoir un recours à la recherche ordinaire si le lien ne fonctionne plus. Export limité à 10 releases par addon et 50 par média. Les URL et en-têtes des streams peuvent contenir des accès privés : réservez cette intégration à un Remix de confiance et utilisez HTTPS hors du réseau privé. La désactivation supprime les instantanés enregistrés ; renouveler la clé invalide immédiatement l'ancienne.
 
-## Notifications Discord
+## Notifications Discord et Apprise
 
-Les webhooks Discord sont utilisés pour les **sources trouvées** (ajout, vérification manuelle ou automatique), les **sources absentes confirmées** à l'ajout et les **retraits de contenus** (visionné, suppression WebUI, retrait Radarr/Sonarr). Les recherches répétées sans changement d'état n'envoient pas de doublon. Les notifications **« Sources trouvées »** détaillent les **filtres réellement appliqués** (langues et résolution minimale), le nombre de sources, les addons et les **releases regroupées par addon** (nom, qualité et taille si disponibles). La recherche conserve jusqu’à 50 noms par addon ; Discord répartit les résultats sur plusieurs champs et indique combien de releases ne sont pas affichées lorsque ses limites sont atteintes. Les notifications incluent les liens IMDb/TMDB. Un média simplement marqué visionné mais conservé n'est pas considéré comme retiré. L’activation et la langue des notifications se règlent dans les paramètres.
+Dans **Paramètres → Apprise et alertes de validation**, renseignez l’identifiant numérique de l’utilisateur Discord à mentionner (mode développeur Discord → Copier l’identifiant). Les webhooks Discord directs autorisent uniquement cette mention, jamais `@everyone` ni les rôles.
+
+L’intégration [Apprise API](https://github.com/caronc/apprise-api) est facultative : activez-la, renseignez une URL complète `https://apprise.example/notify/clé` pour une configuration existante, ou `/notify/` avec vos URL de destination. Sans destinations explicites, Apprise utilise sa configuration serveur. Enregistrez avant **Tester Apprise**. Les destinations sensibles restent masquées ; le champ vide les conserve et une case permet de les effacer. Disponibilité, retrait et alerte de validation sont envoyés. La mention est incluse dans le texte Apprise ; son déclenchement dépend du service destinataire et de sa configuration de mentions.
+
+
+Discord annonce les disponibilités confirmées, les retraits et les titres restant à une seule release après J+3. Les notifications de disponibilité conservent les détails de releases, les filtres appliqués et les liens IMDb/TMDB. Un titre marqué visionné mais conservé n’est pas un retrait. Une disponibilité déjà confirmée ne déclenche pas de nouvelle alerte.
 
 <!-- screenshots:start -->
+
+### Thèmes jour et nuit
+
+<p><img src="screens/settings-light.png" alt="SeerrCatalog light" width="48%"> <img src="screens/settings-dark.png" alt="SeerrCatalog dark" width="48%"></p>
+
 ## Captures d'écran
 
 ### WebUI SeerrCatalog

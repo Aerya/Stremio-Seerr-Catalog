@@ -79,6 +79,22 @@ router.post('/api/media/:id/check-streams', async (req, res) => {
     }
 });
 
+// Approve an observed single release; never manufacture availability for zero sources.
+router.post('/api/media/:id/approve', async (req, res) => {
+    const media = db.getMediaById(parseInt(req.params.id));
+    if (!media) return res.status(404).json({ error: 'Not found' });
+    if (media.streams_available) return res.json(media);
+    if (media.stream_count < 1) return res.status(409).json({ error: 'Aucune release vérifiée à valider.' });
+    const result = { available: true, conclusive: true, manualApproval: true,
+        streamCount: media.stream_count, lastChecked: media.last_stream_check, addons: media.streams_detail || [],
+        appliedFilters: media.stream_filters_detail || undefined };
+    const stored = db.db.prepare('SELECT payload FROM remix_snapshots WHERE media_id = ?').get(media.id);
+    const prior = stored ? JSON.parse(stored.payload) : null;
+    if (prior?.checkedAt === media.last_stream_check) Object.defineProperty(result, 'remixReleases', { value: prior.releases });
+    await recordStreamCheck(db, media, result);
+    res.json(db.getMediaById(media.id));
+});
+
 // API: Delete media
 router.delete('/api/media/:id', (req, res) => {
     const id = parseInt(req.params.id);
@@ -108,13 +124,13 @@ router.get('/api/users', (req, res) => {
 
 // API: Get/Set settings
 router.get('/api/settings/:key', (req, res) => {
-    if (req.params.key.startsWith('ether_remix_')) return res.status(403).json({ error: 'Use integration settings' });
+    if ((req.params.key.startsWith('ether_remix_') || req.params.key.startsWith('apprise_') || req.params.key === 'review_mention')) return res.status(403).json({ error: 'Use integration settings' });
     const value = db.getSetting(req.params.key);
     res.json({ key: req.params.key, value });
 });
 
 router.put('/api/settings/:key', (req, res) => {
-    if (req.params.key.startsWith('ether_remix_')) return res.status(403).json({ error: 'Use integration settings' });
+    if ((req.params.key.startsWith('ether_remix_') || req.params.key.startsWith('apprise_') || req.params.key === 'review_mention')) return res.status(403).json({ error: 'Use integration settings' });
     const { value } = req.body;
     db.setSetting(req.params.key, value);
     res.json({ success: true });
@@ -123,7 +139,7 @@ router.put('/api/settings/:key', (req, res) => {
 router.get('/api/settings', (req, res) => {
     const settings = db.getAllSettings();
     for (const key of Object.keys(settings)) {
-        if (key.startsWith('ether_remix_')) delete settings[key];
+        if (key.startsWith('ether_remix_') || key.startsWith('apprise_') || key === 'review_mention') delete settings[key];
     }
     res.json(settings);
 });
@@ -131,6 +147,18 @@ router.get('/api/settings', (req, res) => {
 // ============== Discord Webhook API ==============
 
 const discord = require('../services/discord');
+const notifications = require('../services/notifications');
+router.get('/api/notifications', (req, res) => res.json(notifications.settings()));
+router.put('/api/notifications', (req, res) => {
+    try { notifications.save(req.body); res.json({ success: true }); }
+    catch (error) { res.status(400).json({ error: error.message }); }
+});
+router.post('/api/notifications/test', async (req, res) => {
+    try {
+        const sent = await notifications.sendApprise('SeerrCatalog', 'Notification de test', 'success');
+        res.status(sent ? 200 : 400).json(sent ? { success: true } : { error: 'Apprise désactivé ou non configuré' });
+    } catch (_) { res.status(502).json({ error: 'Échec de livraison Apprise. Vérifiez l’adresse et les destinations.' }); }
+});
 
 // Get all webhooks (masked for security)
 router.get('/api/discord/webhooks', (req, res) => {

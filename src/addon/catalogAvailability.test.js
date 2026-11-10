@@ -49,7 +49,7 @@ test('personal availability preference filters catalogue/search before paginatio
     await put({ minStreamCount: 2 }); // Older API clients must not reset the preference.
     assert.equal((await (await fetch(url)).json()).catalogAvailableOnly, true);
     db.updateStreamStatus(movie.id, false, 0, new Date().toISOString());
-    assert.equal((await catalog('movie')).metas.length, 0);
+    assert.equal((await catalog('movie')).metas.length, 1); // Confirmed availability cannot regress.
     await put({ catalogAvailableOnly: false });
     assert.equal((await catalog('movie')).metas.length, 100);
     assert.equal(db.getFilteredMedia({ userId: alice.id, type: 'movie' }).length, 107);

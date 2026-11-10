@@ -64,9 +64,10 @@ test('snapshots preserve status but expire credentials before status, and skip i
     const later = remix.activeSnapshot(payload, Date.parse('2026-11-09T17:31:00Z'));
     assert.equal(later.available, true);
     assert.deepEqual(later.releases, []);
-    assert.equal(remix.activeSnapshot(payload, Date.parse('2026-11-10T19:00:01Z')), null);
+    assert.equal(remix.activeSnapshot(payload, Date.parse('2026-12-10T19:00:01Z')).available, true);
+    assert.equal(remix.activeSnapshot({ ...payload, availabilityConfirmed: false }, Date.parse('2026-11-10T19:00:01Z')), null);
     assert.equal(remix.snapshot(media, { ...check, conclusive: false }), null);
-    assert.deepEqual(remix.snapshot(media, { ...check, available: false, remixReleases: [{}] }).releases, []);
+    assert.deepEqual(remix.activeSnapshot(remix.snapshot(media, { ...check, available: false, remixReleases: [{}] }), Date.parse(check.lastChecked)).releases, []);
 });
 
 test('stable torrent hashes remain reusable after a signed URL expires', () => {

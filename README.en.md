@@ -137,34 +137,25 @@ The test checks Seerr availability and, when a key is provided, access to its pr
 
 ## Availability rules
 
-Two independent values determine when media is considered available:
+Automatic confirmation requires **at least two distinct releases** (default: two releases from one addon). Higher release/addon thresholds remain available. Previously configured thresholds of one become two for pending titles; already available titles stay confirmed. Identical torrent hash, filename or URL results count once.
 
-- **Min releases**: total number of releases matching the filters.
-- **Min distinct addons**: number of different sources that must return at least one release.
+- **Confirmed availability is permanent until deletion.** Background jobs, manual checks, Jellyfin reads, Remix and filter changes cannot revoke it. There is no search for a better version.
+- **One release:** check again on **day 1 and day 3**, measured from the first single-release observation. SQLite persists deadlines across restarts. The scheduler wakes hourly; downtime can delay checks. Manual checks do not prematurely advance stages.
+- After both checks still yield one release, send one review alert through Discord and/or Apprise, optionally mentioning a configured Discord user. Continue searching daily without repeating a successfully delivered alert.
+- **Approve this release** in the title details confirms a single release permanently, immediately if desired. Zero releases cannot be approved.
+- **Zero releases:** remain searching, checking daily indefinitely, without a final failure alert. Returning to zero resets the single-release timetable for its next discovery.
+- The per-user **VOSTFR / SUBFRENCH fallback** reuses existing addon responses only when no primary-language release passes the language/resolution filters. One FR release prevents fallback. New profiles default to `FRENCH` and `MULTI`; subtitles follow the same confirmation rules.
+- Network/addon errors preserve previous results and do not trigger review alerts. They are retried on the next scheduler wake. Series checks cover monitored seasons (up to two recent seasons, then `S01E01`); availability does not guarantee every episode. Manifest caching lasts 60 seconds and stream concurrency is limited to four.
 
-| Min releases | Min addons | Example |
-|---:|---:|---|
-| 1 | 1 | At least one release from one source. |
-| 2 | 1 | At least two releases, even from a single addon. |
-| 1 | 2 | At least two different addons must return a release. |
-| 3 | 2 | At least three releases in total from at least two addons. |
+### Appearance
 
-Both values default to `1`, preserving the previous behavior.
-
-### Check reliability and notifications
-
-- Following a Radarr/Sonarr addition, SeerrCatalog checks streams in the background and makes **one confirmation attempt after 60 seconds** if availability is not confirmed. The Jellyseerr creation response remains immediate.
-- Network errors, timeouts, unavailable addons and missing IMDB IDs are **incomplete checks**, not evidence of missing streams. A failed check does not overwrite previously saved results.
-- A Discord **“No Source Found”** alert is sent only after two conclusive checks find **zero releases matching the filters**. Releases that fail the configured minimum thresholds keep the media unavailable **without a misleading “No Source” alert**.
-- Series checks try monitored seasons (up to two recent seasons) before falling back to `S01E01`, instead of always using `S01E01`.
-- Direct addon manifests and Stremio account addon lists are cached for 60 seconds to reduce repeated requests during bulk additions. Stream lookups are limited to 4 concurrent requests, without configuration changes.
-- Copy buttons show an inline check mark instead of a popup. Incomplete manual checks are shown in the media details without overwriting earlier results.
+Choose **Day**, **Night** or **Auto** (system preference), with **Violet, Ocean, Forest, Rose or Amber** palettes. Preferences persist in this browser, including the login page. Slimmer buttons and aligned Jellyseerr/Discord panels adapt to mobile screens.
 
 ### Show only available content in Stremio
 
 By default, the catalogue shows all requests, even without sources. Under **Users → Sources & filters → Availability criteria**, select **Show only available content in the personal Stremio catalog**, then **Save**. Install the personal addon URL `/user/<id>/manifest.json` from that user’s card; the global `/manifest.json` still shows all requests.
 
-This filters movies, series and search results before pagination, using the latest checks after language, resolution and source/addon thresholds. Unavailable and unchecked items are hidden without deleting requests or changing the Radarr/Sonarr-compatible APIs. Refresh Stremio to renew its cache; rerun checks after changing source criteria. Finding a source does not guarantee playback, and an available series does not mean every episode is available.
+This filters movies, series and search results before pagination, using permanent automatic or manual confirmation. Unavailable and unchecked items are hidden without deleting requests or changing the Radarr/Sonarr-compatible APIs. Refresh Stremio to renew its cache; changing criteria does not revoke previously confirmed titles. Finding a source does not guarantee playback, and an available series does not mean every episode is available.
 
 ## Ether Remix integration
 
@@ -172,11 +163,11 @@ The integration is **disabled by default**. [Ether Remix](https://github.com/Aer
 
 1. Open **Settings → Ether Remix integration**, generate a shared token, and copy it into Remix.
 2. Enable and save the export. This section displays the base address to copy into Remix, without an `/api/…` path. No Remix receiving endpoint is required.
-3. Items checked **before enablement** need another check for exportable data. Enabling does not trigger a bulk lookup.
+3. Previously confirmed titles are exported automatically, without new searches or renewing old playback links.
 
 In [Ether Remix](https://github.com/Aerya/Ether-Remix), open **Sources → Stremio → SeerrCatalog → Ether Remix**, enter the SeerrCatalog base address and the same token, then enable and save. Remix synchronizes every minute and trusts SeerrCatalog availability criteria for these titles, including “playable only”. Other visibility rules and viewer playback policies remain in force.
 
-While export is enabled, SeerrCatalog also rechecks already available items after 24 h (hourly wake-up). The 26 h validity allows for scheduling; prolonged outages let observations expire. Inconclusive checks do not extend their lifetime. Disabling restores normal checks of unavailable items only.
+Confirmed availability carries `availabilityConfirmed: true` and persists until deletion. **Update both SeerrCatalog and Ether Remix**; older Remix versions continue to expire observations after 26 hours. Playback URLs still expire after 30 minutes without removing catalogue availability.
 
 The token accesses results for all users of this instance: connect only your trusted instances. Recent HTTP sources and torrent hashes are reused for playback; otherwise, or after failure, Remix falls back to ordinary discovery. Provider permissions, network access and restrictions must allow playback from Remix.
 
@@ -192,11 +183,11 @@ Authorization: Bearer <integration-token>
 The response is `{ "schema": "seerrcatalog.availability.v1", "revision": 12, "items": [<snapshot>], "nextCursor": null }`. `after` is the last numeric media ID, with a page size between 1 and 100. Each snapshot includes:
 
 - `media: { id, userId, type, imdbId, tmdbId, title, year }`;
-- `available`, `checkStatus`, `checkedAt`, `expiresAt` and `releasesExpireAt`;
+- `available`, `availabilityConfirmed`, `checkStatus`, `checkedAt`, `expiresAt` and `releasesExpireAt`;
 - `streamCount`, `addonsCount`, `appliedFilters`, `requirements`;
 - `releases` containing `addonId`, `addonName`, exact Stremio `streamId` (series include season and episode), `name`, `title`, `quality`, `size`, and a limited `stream` descriptor (`url`, `infoHash`, etc.).
 
-Only conclusive, non-expired checks are exported. Signed stream URLs and headers are removed from the export after at most **30 minutes** (they may stop working earlier), while stable torrent hashes can remain until the availability observation expires after **26 hours**. Stream links potentially containing credentials are kept out of the ordinary catalogue/media APIs.
+Confirmed availability remains in the feed beyond `expiresAt`; that field retains the legacy 26-hour window for old clients. Unconfirmed observations expire normally. Playback URLs and headers are removed after **30 minutes** at most, while stable torrent hashes remain reusable. Confirmation never refreshes sensitive links, which stay outside public catalogue/media APIs.
 
 Every synchronization starts at `after=0`. Pass the returned `revision` on subsequent pages (`&revision=12`); HTTP 409 means restart. Replace local observations only after completing every page, removing absent media. The cursor is a media ID, **not an incremental change log**. This full reconciliation recovers missed deletions.
 
@@ -204,11 +195,21 @@ With a receiver configured, SeerrCatalog sends an authenticated `POST` to the **
 
 For a series, a result for an episode is **not** proof that the whole series is playable. Addon results are source observations, not guaranteed playback; Remix must apply its own policies and fall back to normal discovery when streams are expired or unusable. At most 10 releases per addon and 50 per media are exported. Stream URLs and headers may contain private access tokens: only connect a trusted Remix instance and use HTTPS outside a private network. Disabling clears stored snapshots; rotating the token invalidates the previous one immediately.
 
-## Discord notifications
+## Discord and Apprise notifications
 
-Discord webhooks report **sources found** (initial, manual or automatic checks), **confirmed missing sources** on addition, and **content removals** (watched cleanup, WebUI deletion, Radarr/Sonarr removal). Repeated checks without a status transition do not trigger duplicates. **Sources Found** alerts show the **filters actually applied** (languages and minimum resolution), source count, addons, and **releases grouped by addon** (name, quality and size when available). Checks retain up to 50 release names per addon; Discord splits the list over fields and reports how many releases could not be displayed due to embed limits. Notifications include IMDb/TMDB links. Marking an item as watched without removing it is not a removal. Enable notifications and choose their language in settings.
+Under **Settings → Apprise and review alerts**, enter the numeric Discord user ID to mention (Discord developer mode → Copy user ID). Direct webhooks allow only that user mention, never roles or `@everyone`.
+
+[Apprise API](https://github.com/caronc/apprise-api) is optional. Enable it and enter the full `https://apprise.example/notify/key` endpoint for a saved configuration, or `/notify/` with notification destination URLs. Omit targets to use the server configuration. Save before **Test Apprise**. Sensitive destinations remain masked; an empty field preserves them and a checkbox clears them. Availability, removal and review events are sent. Apprise receives the mention in the message text; actual ping behavior depends on the target service and its mention configuration.
+
+
+Discord reports confirmed availability, removals and single-release review after day 3. Availability alerts retain release details, applied filters and IMDb/TMDB links. Marking a title watched without deleting it is not a removal. Already confirmed titles do not generate another availability alert.
 
 <!-- screenshots:start -->
+
+### Day and night themes
+
+<p><img src="screens/settings-light.png" alt="SeerrCatalog light" width="48%"> <img src="screens/settings-dark.png" alt="SeerrCatalog dark" width="48%"></p>
+
 ## Screenshots
 
 ### SeerrCatalog WebUI
