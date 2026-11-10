@@ -157,7 +157,7 @@ La validation automatique nécessite **au moins deux releases**. Les anciennes v
 - Si une seule release subsiste après ces deux contrôles, une **alerte de validation** est envoyée sur Discord et/ou Apprise. Elle peut mentionner l’identifiant Discord configuré. La recherche continue ensuite quotidiennement, sans répéter une alerte déjà livrée.
 - Dans la fiche du titre, **Valider cette release** permet de confirmer définitivement sa disponibilité. Cette action est impossible avec zéro release ; elle est disponible dès la première release, sans attendre J+3.
 - Avec **zéro release**, le titre reste **En recherche**, avec une vérification quotidienne, sans notification d’échec définitif. Si aucune release n’est de nouveau trouvée, le cycle d’une release unique repart à sa prochaine détection.
-- L’option par utilisateur **Si aucune source FR : chercher en VOSTFR / SUBFRENCH** utilise les mêmes réponses d’addons, sans doubler les appels. Elle s’applique seulement si aucun résultat ne passe les filtres principaux de langue et de résolution ; une release FR empêche ce repli. Les nouveaux profils utilisent `FRENCH` et `MULTI` par défaut. Les critères de validation sont identiques pour le repli sous-titré.
+- L’option par utilisateur **Si aucune source ne correspond aux langues principales : utiliser les tags de repli** utilise les mêmes réponses d’addons, sans doubler les appels. Elle s’applique seulement si aucun résultat ne passe les filtres principaux de langue et de résolution ; une release correspondant aux langues principales empêche ce repli. Les deux tags de repli sont modifiables par utilisateur, avec `VOSTFR` et `SUBFRENCH` préremplis comme exemples ; deux champs vides désactivent le repli. Les nouveaux profils utilisent `FRENCH` et `MULTI` par défaut. Les critères de validation sont identiques pour le repli sous-titré.
 - Une erreur réseau ou d’addon est une vérification **incomplète** : elle conserve le résultat précédent et ne déclenche pas l’alerte d’une release unique. Le planificateur réessaie à son prochain passage.
 - Pour les séries, seules les saisons suivies (jusqu’à deux saisons récentes, puis `S01E01` en repli) sont sondées. Une disponibilité de série ne garantit pas tous les épisodes. Les manifests sont mémorisés 60 secondes et les requêtes de flux limitées à quatre simultanées.
 
@@ -170,6 +170,19 @@ Le bandeau propose les modes **Jour**, **Nuit** et **Auto** (préférence du sys
 Par défaut, le catalogue affiche toutes les demandes, même sans source. Dans **Utilisateurs → Sources et filtres → Critères de disponibilité**, cochez **Afficher uniquement les contenus disponibles dans le catalogue Stremio personnel**, puis cliquez sur **Enregistrer**. Utilisez l’URL d’addon personnelle `/user/<id>/manifest.json` proposée dans la fiche de cet utilisateur ; le manifeste global `/manifest.json` continue d’afficher toutes les demandes.
 
 Le filtre concerne les films, les séries et la recherche, avant pagination. Il utilise la décision de disponibilité confirmée, automatique ou manuelle. Les contenus indisponibles ou jamais vérifiés sont masqués, sans supprimer les demandes ni modifier les API compatibles Radarr/Sonarr. Actualisez Stremio pour renouveler son cache ; un changement des critères ne remet pas en cause les titres déjà validés. Une source trouvée ne garantit pas la lecture et une série disponible ne signifie pas que tous ses épisodes le sont.
+
+### Recherche complémentaire : Remix ou Prowlarr
+
+Dans **Paramètres → Recherche complémentaire**, choisissez un seul fournisseur (désactivé par défaut) et enregistrez avant **Tester la connexion** :
+
+- **Ether Remix** : indiquez son adresse de base. Activez le partage SeerrCatalog dans les deux applications avec la même clé, puis le repli de langue dans les préférences utilisateur. Après les addons, si aucune release ne correspond aux langues principales, Remix recherche via ses indexeurs configurés, dont Prowlarr. Les budgets d’indexation restent appliqués.
+- **Prowlarr autonome** : indiquez son adresse de base et sa clé API. Aucun Remix ni compte Stremio n’est nécessaire. Prowlarr complète les addons lorsqu’ils n’ont aucun résultat principal, ou sert seul. Les langues principales sont prioritaires ; les tags de repli personnalisés s’appliquent seulement si le repli est activé et qu’aucune source principale ne convient.
+
+Les résultats sont dédupliqués avec ceux des addons. Deux releases distinctes confirment définitivement le média ; une seule suit J+1/J+3 avec notification et validation manuelle possible. Les échecs réseau ne concluent pas à une absence de sources. Un cache de cinq minutes partage les recherches identiques ; aucune recherche complémentaire n’est lancée pour les titres confirmés.
+
+Le connecteur compte uniquement les torrents accompagnés d’un **infoHash** (ou magnet avec hash) et les vrais flux HTTP renvoyés par Remix. Les résultats NZB et les torrents sans hash exploitable ne sont pas comptés ; aucun téléchargement n’est déclenché. La présence d’une release n’est pas une garantie de lecture ni de cache débridé. Prowlarr n’ajoute pas automatiquement ces sources aux addons de lecture Stremio : SeerrCatalog reste un addon de catalogue. Un fournisseur complémentaire compte comme une source pour le seuil minimal de sources.
+
+La clé Prowlarr reste côté serveur et n’est pas renvoyée par les API de paramètres. Le test utilise la configuration enregistrée. Le retour de recherche nécessite une version de [Remix](https://github.com/Aerya/Ether-Remix) prenant en charge `/api/integrations/seerrcatalog/v1/search`.
 
 ## Intégration Ether Remix
 

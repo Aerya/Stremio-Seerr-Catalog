@@ -284,7 +284,7 @@ router.get('/:id/stremio/selected-addons', (req, res) => {
 // Save stream filter preferences + direct addon manifests + availability thresholds
 router.put('/:id/stream-filters', (req, res) => {
     const id = parseInt(req.params.id);
-    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount, catalogAvailableOnly, subtitleFallback } = req.body;
+    const { languageTags, minResolution, directManifestUrls, minStreamCount, minAddonCount, catalogAvailableOnly, subtitleFallback, fallbackLanguageTags } = req.body;
 
     const user = db.getUserById(id);
     if (!user) {
@@ -300,6 +300,10 @@ router.put('/:id/stream-filters', (req, res) => {
     }
 
     if (subtitleFallback !== undefined && typeof subtitleFallback !== 'boolean') return res.status(400).json({ error: 'subtitleFallback must be a boolean' });
+    if (fallbackLanguageTags !== undefined && (!Array.isArray(fallbackLanguageTags) || fallbackLanguageTags.length > 2 || fallbackLanguageTags.some(tag => typeof tag !== 'string' || tag.length > 100))) {
+        return res.status(400).json({ error: 'fallbackLanguageTags must be an array with max 2 strings of max 100 characters' });
+    }
+    const cleanedFallbackTags = fallbackLanguageTags === undefined ? undefined : [...new Set(fallbackLanguageTags.map(tag => tag.trim().toUpperCase()).filter(Boolean))];
     let cleanedDirectManifestUrls;
     if (directManifestUrls !== undefined) {
         if (!Array.isArray(directManifestUrls) || directManifestUrls.length > 20) {
@@ -327,6 +331,7 @@ router.put('/:id/stream-filters', (req, res) => {
         return res.status(400).json({ error: 'minAddonCount must be an integer between 1 and 20' });
     }
 
+    if (cleanedFallbackTags !== undefined) db.setSetting(`stream_fallback_languages_${id}`, JSON.stringify(cleanedFallbackTags));
     if (subtitleFallback !== undefined) db.setSetting(`stream_subtitle_fallback_${id}`, String(subtitleFallback));
     if (catalogAvailableOnly !== undefined) {
         db.setSetting(`catalog_available_only_${id}`, String(catalogAvailableOnly));
@@ -375,6 +380,7 @@ router.get('/:id/stream-filters', (req, res) => {
         languageTags: languageTagsJson ? JSON.parse(languageTagsJson) : ['FRENCH', 'MULTI'],
         minResolution: minResolution || null,
         directManifestUrls: directManifestsJson ? JSON.parse(directManifestsJson) : [],
+        fallbackLanguageTags: JSON.parse(db.getSetting(`stream_fallback_languages_${id}`) || '["VOSTFR","SUBFRENCH"]'),
         subtitleFallback: db.getSetting(`stream_subtitle_fallback_${id}`) === 'true',
         minStreamCount: Math.max(2, Number.parseInt(db.getSetting(`stream_min_count_${id}`) || '2', 10)),
         minAddonCount: Number.parseInt(db.getSetting(`stream_min_addons_${id}`) || '1', 10),

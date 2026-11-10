@@ -79,3 +79,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .settings-panel-grid :is(input:not([type="checkbox"]), select, .btn) { min-height: 34px; }
 .settings-panel-grid a { color: var(--accent); }
 #discord-webhooks-list > div { background: var(--bg-input) !important; color: var(--text-primary); border: 1px solid var(--border); }
+
+#supplemental-settings .settings-item label { display:block; font-size:13px; font-weight:600; margin:0 0 8px; }
+#supplemental-settings .settings-item input { display:block; width:100%; max-width:680px; margin-bottom:16px; }
+#supplemental-settings .settings-item select { width:100%; max-width:320px; }
+#supplemental-settings [hidden] { display:none; }

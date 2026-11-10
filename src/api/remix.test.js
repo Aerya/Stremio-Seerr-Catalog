@@ -26,6 +26,7 @@ function fixture() {
     const context = { module: { exports: {} }, require(spec) {
         if (spec === 'express') return fakeExpress;
         if (spec === '../services/remixIntegration') return remix;
+        if (spec === '../services/supplementalSearch') return require('../services/supplementalSearch');
         throw new Error(spec);
     } };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'remix.js'), 'utf8'), context, { filename: 'remix.js' });
@@ -94,4 +95,19 @@ test('only administrator sessions may edit settings or rotate tokens', async () 
     assert.equal(config.payload.tokenConfigured, true);
     assert.equal(JSON.stringify(config.payload).includes(token), false);
     assert.equal(db.getSetting('ether_remix_token'), token);
+});
+
+
+test('supplemental settings and test are administrator-only and never disclose the Prowlarr key', async () => {
+    const {db,call}=fixture();
+    for (const [method,route] of [['GET','/search-settings'],['PUT','/search-settings'],['POST','/search-test']]) {
+        assert.equal((await call(method,route,{user:{is_admin:0}})).statusCode,403);
+    }
+    const user={is_admin:1};
+    const saved=await call('PUT','/search-settings',{user,body:{mode:'prowlarr',prowlarrUrl:'http://prowlarr:9696',prowlarrKey:'private-key'}});
+    assert.equal(saved.statusCode,200);
+    assert.equal(db.getSetting('supplemental_prowlarr_key'),'private-key');
+    const read=await call('GET','/search-settings',{user});
+    assert.equal(read.payload.hasProwlarrKey,true);
+    assert.equal(JSON.stringify(read.payload).includes('private-key'),false);
 });

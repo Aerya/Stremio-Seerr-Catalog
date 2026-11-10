@@ -144,7 +144,7 @@ Automatic confirmation requires **at least two distinct releases** (default: two
 - After both checks still yield one release, send one review alert through Discord and/or Apprise, optionally mentioning a configured Discord user. Continue searching daily without repeating a successfully delivered alert.
 - **Approve this release** in the title details confirms a single release permanently, immediately if desired. Zero releases cannot be approved.
 - **Zero releases:** remain searching, checking daily indefinitely, without a final failure alert. Returning to zero resets the single-release timetable for its next discovery.
-- The per-user **VOSTFR / SUBFRENCH fallback** reuses existing addon responses only when no primary-language release passes the language/resolution filters. One FR release prevents fallback. New profiles default to `FRENCH` and `MULTI`; subtitles follow the same confirmation rules.
+- The per-user **Configurable language fallback** reuses existing addon responses only when no primary-language release passes the language/resolution filters. One matching primary-language release prevents fallback. Each user can edit up to two fallback tags, prefilled with `VOSTFR` and `SUBFRENCH` as examples; leaving both empty disables fallback. New profiles default to `FRENCH` and `MULTI`; subtitles follow the same confirmation rules.
 - Network/addon errors preserve previous results and do not trigger review alerts. They are retried on the next scheduler wake. Series checks cover monitored seasons (up to two recent seasons, then `S01E01`); availability does not guarantee every episode. Manifest caching lasts 60 seconds and stream concurrency is limited to four.
 
 ### Appearance
@@ -343,3 +343,16 @@ If SeerrCatalog is useful to you, you can support the project by starring the re
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+### Complementary search: Remix or Prowlarr
+
+Under **Settings → Complementary search**, choose one provider (disabled by default), save, then **Test connection**:
+
+- **Ether Remix**: enter its base URL. Enable SeerrCatalog sharing in both applications with the same token, and language fallback in user preferences. If addons return no primary-language release, Remix searches its configured indexers, including Prowlarr, while respecting availability search budgets.
+- **Standalone Prowlarr**: enter its base URL and API key. Neither Remix nor a Stremio account is required. Prowlarr complements addons with no primary-language result, or operates alone. Primary languages take precedence; custom fallback tags apply only when enabled and no primary source matches.
+
+Results are deduplicated across providers. Two distinct releases permanently confirm availability; one follows J+1/J+3 with notification and optional manual approval. Network errors never prove absence. A five-minute cache shares identical searches; confirmed titles are never searched again.
+
+Only torrents with a usable **infoHash** (or magnet hash) and actual HTTP streams from Remix are counted. NZB results and torrents without usable hashes are excluded; no downloads are triggered. Release discovery does not guarantee playback or debrid cache availability. Prowlarr does not automatically add these sources to Stremio playback addons: SeerrCatalog remains a catalogue addon. A complementary provider counts as one source toward the minimum source threshold.
+
+Prowlarr credentials remain server-side and are never returned by settings APIs. Connection tests use saved settings. Delegation requires a version of [Remix](https://github.com/Aerya/Ether-Remix) supporting `/api/integrations/seerrcatalog/v1/search`.

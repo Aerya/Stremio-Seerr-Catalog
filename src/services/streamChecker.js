@@ -1,3 +1,4 @@
+const supplemental = require('./supplementalSearch');
 /**
  * Stream checker service
  * Checks if streams are available for media items using user's Stremio addons
@@ -25,6 +26,7 @@ function parseSettingArray(json, fallback = []) {
 function getFilterPrefs(db, userId) {
     return {
         languageTags: parseSettingArray(db.getSetting(`stream_filter_languages_${userId}`), ['FRENCH', 'MULTI']),
+        fallbackLanguageTags: parseSettingArray(db.getSetting(`stream_fallback_languages_${userId}`), ['VOSTFR', 'SUBFRENCH']),
         subtitleFallback: db.getSetting(`stream_subtitle_fallback_${userId}`) === 'true',
         minResolution: db.getSetting(`stream_filter_resolution_${userId}`) || null
     };
@@ -56,7 +58,9 @@ async function performStreamCheck(media, db) {
 
     const directManifestUrls = parseSettingArray(db.getSetting(`stremio_direct_manifests_${user.id}`));
 
-    if (!user.stremio_auth_key && directManifestUrls.length === 0) {
+    const searchMode = supplemental.getSettings(db).mode;
+    const supplementalEnabled = searchMode === 'prowlarr' || (searchMode === 'remix' && getFilterPrefs(db, user.id).subtitleFallback && getFilterPrefs(db, user.id).fallbackLanguageTags.length > 0);
+    if (!user.stremio_auth_key && directManifestUrls.length === 0 && !supplementalEnabled) {
         console.log(`[StreamChecker] No Stremio account or direct addons for media owner: ${media.title}`);
         return {
             available: false,
@@ -114,7 +118,8 @@ async function performStreamCheck(media, db) {
         filterPrefs,
         directManifestUrls,
         availabilityPrefs,
-        remix.getSettings(db).enabled
+        remix.getSettings(db).enabled,
+        supplementalEnabled ? ids => supplemental.search(db, media, ids, filterPrefs) : null
     );
 }
 

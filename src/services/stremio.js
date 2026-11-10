@@ -293,7 +293,8 @@ async function checkStreamsWithUserAddons(
     filterPrefs = null,
     directManifestUrls = [],
     availabilityPrefs = null,
-    exportForRemix = false
+    exportForRemix = false,
+    supplementalSearch = null
 ) {
     let imdbId = media.imdb_id;
 
@@ -340,7 +341,7 @@ async function checkStreamsWithUserAddons(
         addons.push(addon);
     }
 
-    if (addons.length === 0) {
+    if (addons.length === 0 && !supplementalSearch) {
         return {
             available: false,
             streamCount: 0,
@@ -352,6 +353,7 @@ async function checkStreamsWithUserAddons(
         };
     }
 
+    const fallbackLanguageTags = Array.isArray(filterPrefs?.fallbackLanguageTags) ? filterPrefs.fallbackLanguageTags : ['VOSTFR', 'SUBFRENCH'];
     let totalStreams = 0;
     const type = media.type === 'movie' ? 'movie' : 'series';
     const checkedAddons = [];
@@ -398,8 +400,8 @@ async function checkStreamsWithUserAddons(
                 if (!Array.isArray(data?.streams)) throw new Error('Invalid stream response');
                 addonSucceeded = true;
                 const candidates = data.streams.filter(isMeaningfulStream);
-                if (filterPrefs?.subtitleFallback && !subtitleStreams.length) {
-                    subtitleStreams = filterStreamsByLanguage(candidates, ['VOSTFR', 'SUBFRENCH']);
+                if (filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0 && !subtitleStreams.length) {
+                    subtitleStreams = filterStreamsByLanguage(candidates, fallbackLanguageTags);
                     if (filterPrefs.minResolution) subtitleStreams = filterStreamsByResolution(subtitleStreams, filterPrefs.minResolution);
                     if (subtitleStreams.length) subtitleStreamId = streamId;
                 }
@@ -428,8 +430,31 @@ async function checkStreamsWithUserAddons(
         if (addonFailed) failedAddonCount++;
         observations.push({ addon, streams, matchedStreamId, subtitleStreams, subtitleStreamId });
     }
+    // The complementary provider is consulted only when the addons have no
+    // primary-language result. All candidates then share filtering/deduplication.
+    if (supplementalSearch && !observations.some(o => o.streams.length)) {
+        eligibleAddonCount++;
+        try {
+            const groups = await supplementalSearch(buildStreamIds(media, imdbId));
+            successfulAddonCount++;
+            for (const { addon, streams: raw, streamId } of groups) {
+                const candidates = raw.filter(isMeaningfulStream);
+                let streams = filterPrefs?.languageTags?.length ? filterStreamsByLanguage(candidates, filterPrefs.languageTags) : candidates;
+                let subtitleStreams = filterPrefs?.subtitleFallback && fallbackLanguageTags.length ? filterStreamsByLanguage(candidates, fallbackLanguageTags) : [];
+                if (filterPrefs?.minResolution) {
+                    streams = filterStreamsByResolution(streams, filterPrefs.minResolution);
+                    subtitleStreams = filterStreamsByResolution(subtitleStreams, filterPrefs.minResolution);
+                }
+                observations.push({addon,streams,matchedStreamId:streamId,subtitleStreams,subtitleStreamId:streamId});
+            }
+        } catch (_) {
+            // Never log credentials, query URLs or upstream response bodies.
+            failedAddonCount++;
+            console.warn('[Stremio] Supplemental search failed; check provider connection');
+        }
+    }
     // Fallback uses the same HTTP responses, only when no primary-language release exists.
-    const usingSubtitles = !!filterPrefs?.subtitleFallback && !observations.some(o => o.streams.length);
+    const usingSubtitles = !!filterPrefs?.subtitleFallback && fallbackLanguageTags.length > 0 && !observations.some(o => o.streams.length);
     const identities = new Set();
     for (const observation of observations) {
         const { addon } = observation;
@@ -500,7 +525,7 @@ async function checkStreamsWithUserAddons(
         addons: checkedAddons,
         // Snapshot of the filters actually applied, even if settings change before Discord sends.
         appliedFilters: {
-            languageTags: usingSubtitles ? ['VOSTFR', 'SUBFRENCH'] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
+            languageTags: usingSubtitles ? [...fallbackLanguageTags] : (Array.isArray(filterPrefs?.languageTags) ? [...filterPrefs.languageTags] : []),
             subtitleFallbackUsed: usingSubtitles,
             minResolution: filterPrefs?.minResolution || null
         },
