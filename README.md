@@ -148,7 +148,7 @@ Deux valeurs indépendantes déterminent quand un média est considéré comme d
 | 2 | 2 | Deux releases distinctes, provenant d’au moins deux addons. |
 | 3 | 2 | Trois releases distinctes, provenant d’au moins deux addons. |
 
-La validation automatique nécessite **au moins deux releases**. Les anciennes valeurs à `1` sont relevées à `2` pour les titres encore en recherche. Un même hash/fichier torrent ou une même URL renvoyée plusieurs fois ne compte qu’une fois. Les critères plus stricts restent possibles. Les titres déjà disponibles sont conservés.
+La validation automatique nécessite **au moins deux releases**. Les anciennes valeurs à `1` sont relevées à `2` pour les titres encore en recherche. Un même hash torrent, nom de fichier ou une même URL renvoyée plusieurs fois ne compte qu’une fois. Les critères plus stricts restent possibles. Les titres déjà disponibles sont conservés.
 
 ### Disponibilité définitive et recherche progressive
 

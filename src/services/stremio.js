@@ -438,8 +438,9 @@ async function checkStreamsWithUserAddons(
         const streamCount = streams.length;
         if (streamCount > 0) {
             for (const stream of streams) {
-                // Identical torrent/file or URL returned by several addons counts once.
-                const key = stream.infoHash ? `${stream.infoHash.toLowerCase()}:${stream.fileIdx ?? ''}`
+                // Identical torrent, filename or URL returned by several addons counts once.
+                const key = stream.infoHash ? `hash:${stream.infoHash.toLowerCase()}`
+                    : stream.behaviorHints?.filename ? `file:${stream.behaviorHints.filename.trim().toLowerCase()}`
                     : stream.url || stream.externalUrl || JSON.stringify(stream);
                 identities.add(key);
             }

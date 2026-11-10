@@ -137,7 +137,7 @@ The test checks Seerr availability and, when a key is provided, access to its pr
 
 ## Availability rules
 
-Automatic confirmation requires **at least two distinct releases** (default: two releases from one addon). Higher release/addon thresholds remain available. Previously configured thresholds of one become two for pending titles; already available titles stay confirmed. Identical torrent hash/file or URL results count once.
+Automatic confirmation requires **at least two distinct releases** (default: two releases from one addon). Higher release/addon thresholds remain available. Previously configured thresholds of one become two for pending titles; already available titles stay confirmed. Identical torrent hash, filename or URL results count once.
 
 - **Confirmed availability is permanent until deletion.** Background jobs, manual checks, Jellyfin reads, Remix and filter changes cannot revoke it. There is no search for a better version.
 - **One release:** check again on **day 1 and day 3**, measured from the first single-release observation. SQLite persists deadlines across restarts. The scheduler wakes hourly; downtime can delay checks. Manual checks do not prematurely advance stages.

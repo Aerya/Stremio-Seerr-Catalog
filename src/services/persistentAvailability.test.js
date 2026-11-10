@@ -78,6 +78,8 @@ test('VOSTFR fallback reuses fetched streams, never overrides one FR release, an
     streams.push({title:'Title.FRENCH.1080p',url:'https://video.test/fr'});
     r=await check(); assert.equal(r.streamCount,1); assert.equal(r.available,false); assert.equal(r.appliedFilters.subtitleFallbackUsed,false); assert.equal(requests,2);
     streams.push(streams[2]); r=await check(); assert.equal(r.streamCount,1); assert.equal(r.available,false);
+    streams=[1,2].map(i=>({title:'Title.FRENCH.1080p',url:`https://provider${i}.test/file`,behaviorHints:{filename:'Title.FRENCH.1080p.mkv'}}));
+    r=await check(); assert.equal(r.streamCount,1); assert.equal(r.available,false);
 });
 
 test('manual approval rejects zero sources and freezes a single release; old available media backfills Remix without fresh links', async t => {
