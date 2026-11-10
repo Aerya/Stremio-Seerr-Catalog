@@ -37,6 +37,7 @@
           <span class="stat-item"><strong id="stat-series">0</strong> <span id="stat-series-label">Series</span></span>
           <span class="stat-item"><strong id="stat-available">0</strong> <span
               id="stat-available-label">Available</span></span>
+          <span class="stat-item"><strong id="stat-searching">0</strong> <span data-i18n="filter_unavailable">Searching</span></span>
         </div>
 
         <div class="theme-controls">
@@ -519,6 +520,7 @@
       document.getElementById('stat-movies').textContent = data.movies;
       document.getElementById('stat-series').textContent = data.series;
       document.getElementById('stat-available').textContent = data.available;
+      document.getElementById('stat-searching').textContent = data.unavailable;
 
       document.getElementById('stat-movies-label').textContent = data.movies <= 1 ? t('movie') : t('movies');
       document.getElementById('stat-series-label').textContent = data.series <= 1 ? t('serie') : t('series');
