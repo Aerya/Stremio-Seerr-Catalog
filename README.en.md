@@ -60,19 +60,28 @@ Without a connected Stremio account, manually configured manifests can also be u
 
 | Feature | Description |
 |---|---|
-| Stremio catalog | Jellyseerr requests become a personal catalog available in Stremio. |
+| Stremio catalog | Jellyseerr requests become a personal catalog, with an option to show only available content. |
 | Jellyseerr compatibility | Emulates the Jellyfin, Radarr and Sonarr APIs used by Jellyseerr. |
-| Stremio account addons | Addons exposing a `stream` resource are automatically loaded from the connected account. |
-| Additional addons | Add compatible Stremio `manifest.json` URLs manually. |
+| Multi-user | Each user has their own catalog, sources, filters and availability criteria. |
+| Stremio account addons | Automatically loads addons exposing a `stream` resource from the linked account. |
+| Additional addons | Add compatible manifests, with or without a connected Stremio account. |
 | Addon compatibility | Works with addons such as AIOStreams, Lumio, StreamFusion, StreamNZB, LooStream and WaStream. |
-| Filters | Filter releases by language tags and minimum resolution. |
-| Configurable availability | Set the minimum release count and minimum distinct addon count per user. |
-| Multi-user | Catalog, sources, filters and availability rules are isolated per user. |
-| Automatic retry | Media without sources is checked again daily. |
-| Watched synchronization | Content watched at 90% or more can be automatically removed from the catalog. |
-| Discord notifications | Sources found, confirmed missing sources and catalog removals. |
-| WebUI | Responsive French and English interface. |
-| Ether Remix (opt-in) | Secure export of recently checked availability and stream descriptors without another addon lookup. |
+| Languages and resolution | Configurable primary-language tags and minimum resolution per user. |
+| Subtitle fallback | When no primary-language result exists, optionally use editable fallback tags; `VOSTFR` and `SUBFRENCH` are prefilled examples. |
+| Permanent availability | Automatic confirmation requires at least two distinct releases, with configurable release and addon thresholds. Confirmed media remains available until deletion. |
+| Progressive search | One release: checks at J+1 and J+3, then daily. Zero releases: daily searches until found. Available media is not automatically rechecked. |
+| Manual approval | Permanently confirm media as soon as one release meets the filters. |
+| Review alerts | After J+1/J+3 with only one release, send a Discord and/or Apprise alert, with an optional Discord mention. |
+| Prowlarr search | Optional standalone connector for complementary searches, without requiring Remix. |
+| Search via Ether Remix | Authenticated complementary search through [Remix](https://github.com/Aerya/Ether-Remix) sources, including Prowlarr. |
+| Sharing with Ether Remix | Export confirmed availability and recent releases to avoid another availability search. Its switch and token are independent of search via Remix. |
+| SubMaker subtitles | Optional subtitle search and translation via Remix using public or self-hosted [SubMaker](https://github.com/xtremexq/StremioSubMaker), with a configurable target language; a matching SRT must be received before its release qualifies. |
+| Subtitles in Stremio | Serve stored SRTs for available media when the player sends the matching video filename. |
+| Subtitle version indicators | Poster badge, dedicated filter and AI translation indicator; manually rerun a search using primary-language tags only. |
+| Catalog tracking | Movie, series, available and searching totals; filters by availability, media type and user. |
+| Watched synchronization | Optionally remove content watched at 90% or more from the catalog. |
+| Discord notifications | Sources-found and catalog-removal notifications, in addition to review alerts. |
+| Customizable WebUI | Responsive French and English interface, Day/Night/Auto modes and five color palettes. |
 
 ## Installation
 
