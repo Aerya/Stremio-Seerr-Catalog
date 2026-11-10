@@ -89,13 +89,16 @@ test('manual approval rejects zero sources and freezes a single release; old ava
     const base=`http://127.0.0.1:${server.address().port}`;
     const media=add();
     assert.equal((await fetch(`${base}/api/media/${media.id}/approve`,{method:'POST'})).status,409);
-    await recordStreamCheck(db,media,result(1,Date.now()-40*day));
+    const filters = {languageTags:['VOSTFR','SUBFRENCH'],subtitleFallbackUsed:true,minResolution:'1080p'};
+    await recordStreamCheck(db,media,{...result(1,Date.now()-40*day),appliedFilters:filters});
     assert.equal((await fetch(`${base}/api/media/${media.id}/approve`,{method:'POST'})).status,200);
     assert.equal(db.getMediaById(media.id).availability_manual,1);
     remix.generateToken(db); remix.updateSettings(db,{enabled:true});
     remix.ensureConfirmedSnapshots(db);
     const value=db.getRemixSnapshotsAfter(0,100).find(x=>x.id===media.id).payload;
     assert.equal(value.availabilityConfirmed,true);
+    assert.deepEqual(value.appliedFilters,filters);
+    assert.deepEqual(db.getMediaById(media.id).stream_filters_detail,filters);
     assert.equal(remix.activeSnapshot(value).available,true);
     assert.deepEqual(remix.activeSnapshot(value).releases,[]);
     assert.ok(Date.parse(value.releasesExpireAt)<Date.now());

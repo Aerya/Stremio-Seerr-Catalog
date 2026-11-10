@@ -86,7 +86,8 @@ router.post('/api/media/:id/approve', async (req, res) => {
     if (media.streams_available) return res.json(media);
     if (media.stream_count < 1) return res.status(409).json({ error: 'Aucune release vérifiée à valider.' });
     const result = { available: true, conclusive: true, manualApproval: true,
-        streamCount: media.stream_count, lastChecked: media.last_stream_check, addons: media.streams_detail || [] };
+        streamCount: media.stream_count, lastChecked: media.last_stream_check, addons: media.streams_detail || [],
+        appliedFilters: media.stream_filters_detail || undefined };
     const stored = db.db.prepare('SELECT payload FROM remix_snapshots WHERE media_id = ?').get(media.id);
     const prior = stored ? JSON.parse(stored.payload) : null;
     if (prior?.checkedAt === media.last_stream_check) Object.defineProperty(result, 'remixReleases', { value: prior.releases });

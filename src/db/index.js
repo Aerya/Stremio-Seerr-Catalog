@@ -118,7 +118,7 @@ try {
 } catch (e) { /* Column already exists */ }
 
 // Persist the search timetable across restarts. Existing available titles remain confirmed.
-for (const column of ['search_started_at TEXT', 'next_search_at TEXT', 'review_notified INTEGER DEFAULT 0', 'availability_manual INTEGER DEFAULT 0', 'search_stage INTEGER DEFAULT 0']) {
+for (const column of ['search_started_at TEXT', 'next_search_at TEXT', 'review_notified INTEGER DEFAULT 0', 'availability_manual INTEGER DEFAULT 0', 'search_stage INTEGER DEFAULT 0', 'stream_filters_detail TEXT']) {
   if (!db.pragma('table_info(media)').some(c => c.name === column.split(' ')[0])) db.exec(`ALTER TABLE media ADD COLUMN ${column}`);
 }
 
@@ -208,6 +208,7 @@ function parseMediaFields(media) {
   if (!media) return media;
   if (media.genres && typeof media.genres === 'string') media.genres = JSON.parse(media.genres);
   if (media.streams_detail && typeof media.streams_detail === 'string') media.streams_detail = JSON.parse(media.streams_detail);
+  if (media.stream_filters_detail && typeof media.stream_filters_detail === 'string') media.stream_filters_detail = JSON.parse(media.stream_filters_detail);
   return media;
 }
 

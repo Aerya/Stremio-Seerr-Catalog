@@ -229,7 +229,8 @@ function ensureConfirmedSnapshots(db) {
         if (previous?.availabilityConfirmed && previous.available) continue;
         const value = previous?.available ? { ...previous, availabilityConfirmed: true } : snapshot(media, {
             available: true, conclusive: true, streamCount: media.stream_count,
-            lastChecked: media.last_stream_check || media.added_at
+            lastChecked: media.last_stream_check || media.added_at,
+            appliedFilters: media.stream_filters_detail ? JSON.parse(media.stream_filters_detail) : null
         });
         if (value) db.saveRemixSnapshot(media.id, value);
     }

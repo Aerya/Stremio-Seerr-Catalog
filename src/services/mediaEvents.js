@@ -44,8 +44,8 @@ async function recordStreamCheck(db, media, result, onAvailable = notifySourcesF
         const next = result.available ? null : new Date(result.streamCount === 1 && stage === 0
             ? started + day : result.streamCount === 1 && stage === 1
                 ? Math.max(started + 3 * day, now + 3600000) : now + day).toISOString();
-        db.db.prepare('UPDATE media SET search_started_at = ?, next_search_at = ?, availability_manual = ?, search_stage = ? WHERE id = ?')
-            .run(result.streamCount === 0 ? null : new Date(started).toISOString(), next, result.manualApproval ? 1 : 0, result.streamCount === 0 ? 0 : stage, media.id);
+        db.db.prepare('UPDATE media SET search_started_at = ?, next_search_at = ?, availability_manual = ?, search_stage = ?, stream_filters_detail = ? WHERE id = ?')
+            .run(result.streamCount === 0 ? null : new Date(started).toISOString(), next, result.manualApproval ? 1 : 0, result.streamCount === 0 ? 0 : stage, JSON.stringify(result.appliedFilters || null), media.id);
         if (!result.available && result.streamCount === 1 && stage >= 2 && !previous.review_notified) {
             // Claim before asynchronous delivery to avoid duplicate simultaneous checks.
             const claimed = db.db.prepare('UPDATE media SET review_notified = 2 WHERE id = ? AND review_notified = 0').run(media.id);
