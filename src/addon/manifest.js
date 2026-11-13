@@ -1,6 +1,7 @@
 const manifest = {
     id: 'community.seerrcatalog',
-    version: '1.1.0',
+    // Bump when advertised capabilities change; keep addon/catalog IDs stable.
+    version: '1.2.0',
     name: 'Seerr Catalog',
     description: 'Catalog of media requested through Seerr with availability tracking',
     logo: 'https://raw.githubusercontent.com/seerr-team/seerr/develop/public/logo_full.svg',

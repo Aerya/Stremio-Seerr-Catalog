@@ -101,7 +101,7 @@ const manifest = getManifest(BASE_URL);
 
 // Manual Stremio routes for more control
 app.get('/manifest.json', (req, res) => {
-    res.json(manifest);
+    res.set('Cache-Control', 'no-cache').json(manifest);
 });
 
 app.get('/catalog/:type/:id.json', async (req, res) => {
@@ -172,7 +172,7 @@ app.get('/user/:userId/manifest.json', (req, res) => {
         name: `SeerrCatalog - ${user.display_name || user.username}`
     };
 
-    res.json(userManifest);
+    res.set('Cache-Control', 'no-cache').json(userManifest);
 });
 
 app.get('/user/:userId/catalog/:type/:id.json', async (req, res) => {
