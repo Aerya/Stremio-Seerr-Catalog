@@ -126,6 +126,18 @@ docker compose up -d
 6. Configure Jellyseerr avec les informations Radarr / Sonarr affichées par SeerrCatalog.
 7. Installe le manifest SeerrCatalog dans Stremio.
 
+### Catalogues absents après une mise à jour (Stremio / Lite)
+
+Installez le **manifest personnel** affiché dans **Utilisateurs** : `https://votre-instance/user/ID/manifest.json`. Le manifest global `/manifest.json` affiche les demandes de tous les utilisateurs ; il ne remplace pas le manifest personnel ni ses filtres. Les deux ont des identifiants d’addon distincts.
+
+Si les rangées Seerr Movies / Seerr Series disparaissent sur un appareil :
+
+1. Sur Stremio ordinateur ou Web, connecté au **même compte Stremio que la TV**, retirez uniquement l’addon SeerrCatalog concerné puis réinstallez son URL personnelle actuelle. Cela ne supprime pas les demandes enregistrées dans SeerrCatalog.
+2. Vérifiez que les rangées apparaissent sur cet appareil, puis lancez la synchronisation des addons sur la TV si le client la propose et relancez Stremio Lite.
+3. Si le problème persiste, relevez le système de la TV, la version de Stremio et les réponses HTTP du manifest personnel et de son catalogue `/user/ID/catalog/movie/seerr-movies.json`. Ne publiez ni clé API, ni jeton Stremio, ni URL personnelle complète.
+
+Stremio peut conserver une copie du manifest dans le compte synchronisé. La version du manifest et la revalidation HTTP ne forcent pas tous les clients à remplacer cette copie. L’ajout des sous-titres conserve les identifiants des catalogues et la ressource `catalog` ; la présence de `subtitles` ne prouve pas une incompatibilité avec Lite. Sans diagnostic de l’appareil, la cause exacte reste à confirmer.
+
 ### Sources de recherche
 
 Pour chaque utilisateur :
