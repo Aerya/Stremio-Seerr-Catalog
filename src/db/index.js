@@ -323,6 +323,17 @@ function getMediaNeedingStreamCheck() {
   return query.all(oneDayAgo).map(m => parseMediaFields(m));
 }
 
+// Resolve the requested user's own record when several users requested the same title.
+function getMediaByStremioId(type, id, userId) {
+  const field = id.startsWith('tt') ? 'imdb_id' : id.startsWith('tmdb:') ? 'tmdb_id' : null;
+  if (!field) return null;
+  const value = field === 'tmdb_id' ? id.slice(5) : id;
+  const scoped = userId !== undefined && userId !== null;
+  const params = scoped ? [type, value, userId] : [type, value];
+  const media = db.prepare(`SELECT * FROM media WHERE type = ? AND ${field} = ? ${scoped ? 'AND user_id = ?' : ''} ORDER BY id LIMIT 1`).get(...params);
+  return media ? parseMediaFields(media) : null;
+}
+
 function getFilteredMedia(filters = {}) {
   let conditions = [];
   let params = [];
@@ -471,6 +482,7 @@ module.exports = {
   getUnwatchedMedia,
   getMediaNeedingStreamCheck,
   getFilteredMedia,
+  getMediaByStremioId,
   // User functions
   createUser,
   getUserById,

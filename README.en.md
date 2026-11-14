@@ -61,6 +61,7 @@ Without a connected Stremio account, manually configured manifests can also be u
 | Feature | Description |
 |---|---|
 | Stremio catalog | Jellyseerr requests become a personal catalog, with an option to show only available content. |
+| Trailers | YouTube links supplied by TMDB in the requested primary languages when opening Stremio details; display and playback depend on the client. |
 | Jellyseerr compatibility | Emulates the Jellyfin, Radarr and Sonarr APIs used by Jellyseerr. |
 | Multi-user | Each user has their own catalog, sources, filters and availability criteria. |
 | Stremio account addons | Automatically loads addons exposing a `stream` resource from the linked account. |
@@ -137,6 +138,16 @@ If the Seerr Movies / Seerr Series rows disappear on a device:
 3. If the problem persists, collect the TV operating system, Stremio version and HTTP responses for the personal manifest and its `/user/ID/catalog/movie/seerr-movies.json` catalogue. Do not publish API keys, Stremio tokens or full personal URLs.
 
 Stremio may retain a copy of the manifest in the synced account. Manifest versioning and HTTP revalidation do not force every client to replace that copy. Adding subtitles preserves the catalogue IDs and the `catalog` resource; the presence of `subtitles` does not prove incompatibility with Lite. The exact cause remains unconfirmed without device diagnostics.
+
+### Trailers in Stremio details
+
+SeerrCatalog supplies YouTube trailers listed by TMDB in movie and series details (`trailers` and `trailerStreams`), using the existing TMDB API key. Existing media benefit when their details are opened, without reimporting or checking releases again. Browsing catalogue posters does not trigger trailer searches.
+
+Selection follows the **user’s primary language tags**, in their configured order, independently of the WebUI language: `FRENCH` / `FR` / `VFF` / `VFQ` → French, `ENGLISH` / `EN` → English, `GERMAN` / `DE` → German, etc. Recognized regional codes such as `fr-FR` are reduced to their language; TMDB does not guarantee the VFF/VFQ distinction. Two explicit languages can return trailers in both. `MULTI`, `VO` and unrecognized custom expressions do not identify a language: `FRENCH + MULTI` selects French, while `MULTI` alone returns no trailers. Fallback tags and SubMaker translations are not used to translate trailers.
+
+There is no fallback to English or another language: without a matching trailer, the details remain available without trailers. Only videos marked `Trailer` are included, prioritizing official ones; teasers and clips are excluded. At most four distinct links are returned. The global manifest uses the selected record owner’s preferences; use the personal manifest for your own preferences.
+
+Results are cached in memory for up to 24 hours (bounded cache, cleared on restart), errors for 5 minutes. Each TMDB call has a 4-second timeout; failure does not prevent details from loading. **The client must support displaying and playing these links**: playback is not guaranteed on every device, and this feature does not add TMDB ratings.
 
 ### Search sources
 

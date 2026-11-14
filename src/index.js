@@ -217,7 +217,7 @@ app.get('/user/:userId/catalog/:type/:id/:extra.json', async (req, res) => {
 app.get('/user/:userId/meta/:type/:id.json', async (req, res) => {
     try {
         const { type, id } = req.params;
-        const result = await metaHandler({ type, id });
+        const result = await metaHandler({ type, id, userId: Number(req.params.userId) });
         res.json(result);
     } catch (e) {
         console.error('Meta error:', e);
