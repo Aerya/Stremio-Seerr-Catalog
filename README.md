@@ -61,6 +61,7 @@ Sans compte Stremio lié, les manifests ajoutés manuellement peuvent également
 | Fonction | Description |
 |---|---|
 | Catalogue Stremio | Les demandes Jellyseerr deviennent un catalogue personnel ; option pour n’afficher que les contenus disponibles. |
+| Bandes-annonces | Liens YouTube fournis par TMDB dans les langues principales demandées, à l’ouverture des fiches Stremio ; affichage et lecture selon le client. |
 | Compatibilité Jellyseerr | Émulation des API Jellyfin, Radarr et Sonarr utilisées par Jellyseerr. |
 | Multi-utilisateurs | Catalogue, sources, filtres et critères de disponibilité propres à chaque utilisateur. |
 | Addons du compte Stremio | Récupération automatique des addons proposant une ressource `stream` depuis le compte lié. |
@@ -137,6 +138,16 @@ Si les rangées Seerr Movies / Seerr Series disparaissent sur un appareil :
 3. Si le problème persiste, relevez le système de la TV, la version de Stremio et les réponses HTTP du manifest personnel et de son catalogue `/user/ID/catalog/movie/seerr-movies.json`. Ne publiez ni clé API, ni jeton Stremio, ni URL personnelle complète.
 
 Stremio peut conserver une copie du manifest dans le compte synchronisé. La version du manifest et la revalidation HTTP ne forcent pas tous les clients à remplacer cette copie. L’ajout des sous-titres conserve les identifiants des catalogues et la ressource `catalog` ; la présence de `subtitles` ne prouve pas une incompatibilité avec Lite. Sans diagnostic de l’appareil, la cause exacte reste à confirmer.
+
+### Bandes-annonces dans les fiches Stremio
+
+SeerrCatalog fournit les bandes-annonces YouTube référencées par TMDB dans les fiches films et séries (`trailers` et `trailerStreams`). La clé TMDB déjà configurée est utilisée. Les médias existants en bénéficient à l’ouverture de leur fiche, sans réimport ni nouvelle recherche de releases. Le catalogue reste léger : aucune recherche de BA lors du chargement des affiches.
+
+La sélection suit les **tags de langues principales de l’utilisateur**, dans leur ordre, indépendamment de la langue de la WebUI : `FRENCH` / `FR` / `VFF` / `VFQ` → français, `ENGLISH` / `EN` → anglais, `GERMAN` / `DE` → allemand, etc. Les codes régionaux reconnus tels que `fr-FR` sont ramenés à leur langue ; la distinction VFF/VFQ n’est pas garantie par TMDB. Deux langues explicites peuvent fournir des BA dans les deux langues. `MULTI`, `VO` et les expressions personnalisées non reconnues ne permettent pas de déduire une langue : `FRENCH + MULTI` sélectionne le français, `MULTI` seul ne fournit aucune BA. Les tags de repli et les traductions SubMaker ne sont pas utilisés pour traduire les bandes-annonces.
+
+Aucun repli vers l’anglais ou une autre langue : sans BA dans les langues demandées, la fiche reste disponible sans BA. Les vidéos marquées `Trailer` sont retenues, avec priorité aux officielles ; teasers et extraits sont exclus. Quatre liens distincts au maximum sont transmis. Le manifest global utilise les préférences du propriétaire de la fiche retenue ; utilisez le manifest personnel pour vos propres préférences.
+
+Les résultats sont mis en cache en mémoire jusqu’à 24 h (cache borné, effacé au redémarrage), les erreurs pendant 5 min. Chaque appel TMDB est limité à 4 s ; une erreur n’empêche pas de consulter la fiche. **Le client doit prendre en charge l’affichage et la lecture de ces liens** : SeerrCatalog ne garantit pas leur lecture sur tous les appareils et n’ajoute pas de notes TMDB.
 
 ### Sources de recherche
 

@@ -1,4 +1,5 @@
 const db = require('../db');
+const { getTrailers } = require('../services/trailers');
 
 /**
  * Convert database media to Stremio meta preview format
@@ -122,26 +123,22 @@ function catalogHandler(args) {
 /**
  * Meta handler - returns details for a single media item
  */
-function metaHandler(args) {
-    const { type, id } = args;
+async function metaHandler(args) {
+    const { type, id, userId } = args;
 
-    let media = null;
-
-    // Try to find by IMDB ID first
-    if (id.startsWith('tt')) {
-        media = db.getMediaByImdb(id);
-    }
-    // Try TMDB ID
-    else if (id.startsWith('tmdb:')) {
-        const tmdbId = parseInt(id.replace('tmdb:', ''));
-        media = db.getMediaByTmdb(type, tmdbId);
-    }
+    const media = db.getMediaByStremioId(type, id, userId);
 
     if (!media) {
         return Promise.resolve({ meta: null });
     }
 
-    return Promise.resolve({ meta: toMeta(media) });
+    const meta = toMeta(media);
+    const trailers = await getTrailers(media, db, userId ?? media.user_id);
+    if (trailers.length) {
+        meta.trailers = trailers;
+        meta.trailerStreams = trailers.map(trailer => ({ ytId: trailer.source }));
+    }
+    return { meta };
 }
 
 module.exports = {
